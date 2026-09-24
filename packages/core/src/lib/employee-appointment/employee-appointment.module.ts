@@ -9,7 +9,9 @@ import { CommandHandlers } from './commands/handlers';
 import { EmailSendModule } from '../email-send/email-send.module';
 import { EmployeeModule } from '../employee/employee.module';
 import { OrganizationModule } from '../organization/organization.module';
+import { OrganizationContactModule } from '../organization-contact/organization-contact.module';
 import { RolePermissionModule } from '../role-permission/role-permission.module';
+import { VehicleModule } from '../vehicle/vehicle.module';
 import { TypeOrmEmployeeAppointmentRepository } from './repository/type-orm-employee-appointment.repository';
 import { MikroOrmEmployeeAppointmentRepository } from './repository/mikro-orm-employee-appointment.repository';
 
@@ -20,11 +22,18 @@ import { MikroOrmEmployeeAppointmentRepository } from './repository/mikro-orm-em
 		EmailSendModule,
 		EmployeeModule,
 		OrganizationModule,
+		OrganizationContactModule,
+		VehicleModule,
 		RolePermissionModule,
 		CqrsModule
 	],
 	controllers: [EmployeeAppointmentController],
-	providers: [EmployeeAppointmentService, TypeOrmEmployeeAppointmentRepository, MikroOrmEmployeeAppointmentRepository, ...CommandHandlers],
+	providers: [
+		EmployeeAppointmentService,
+		TypeOrmEmployeeAppointmentRepository,
+		MikroOrmEmployeeAppointmentRepository,
+		...CommandHandlers
+	],
 	exports: [EmployeeAppointmentService, TypeOrmEmployeeAppointmentRepository, MikroOrmEmployeeAppointmentRepository]
 })
 export class EmployeeAppointmentModule {}

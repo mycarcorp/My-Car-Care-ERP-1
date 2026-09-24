@@ -9,32 +9,28 @@ import { OrganizationService } from '../../../organization/organization.service'
 import { RequestContext } from '../../../core/context';
 
 @CommandHandler(EmployeeAppointmentCreateCommand)
-export class EmployeeAppointmentCreateHandler
-	implements ICommandHandler<EmployeeAppointmentCreateCommand> {
+export class EmployeeAppointmentCreateHandler implements ICommandHandler<EmployeeAppointmentCreateCommand> {
 	constructor(
 		private readonly employeeAppointmentService: EmployeeAppointmentService,
 		private readonly emailService: EmailService,
 		private readonly employeeService: EmployeeService,
 		private readonly organizationService: OrganizationService
-	) { }
+	) {}
 
-	public async execute(
-		command?: EmployeeAppointmentCreateCommand
-	): Promise<EmployeeAppointment> {
+	public async execute(command?: EmployeeAppointmentCreateCommand): Promise<EmployeeAppointment> {
 		const { employeeAppointmentInput, languageCode } = command;
 
 		const appointment = new EmployeeAppointment();
 		const employee = employeeAppointmentInput.employeeId
-			? await this.employeeService.findOneByIdString(
-				employeeAppointmentInput.employeeId
-			)
+			? await this.employeeService.findOneByIdString(employeeAppointmentInput.employeeId)
 			: null;
-		const organization = await this.organizationService.findOneByIdString(
-			employeeAppointmentInput.organizationId
-		);
+		const organization = await this.organizationService.findOneByIdString(employeeAppointmentInput.organizationId);
 
 		appointment.employee = employee;
 		appointment.organization = organization;
+		appointment.customerId = employeeAppointmentInput.customerId;
+		appointment.vehicleId = employeeAppointmentInput.vehicleId;
+		appointment.originalConcern = employeeAppointmentInput.originalConcern;
 		appointment.agenda = employeeAppointmentInput.agenda;
 		appointment.description = employeeAppointmentInput.description;
 		appointment.bufferTimeEnd = employeeAppointmentInput.bufferTimeEnd;
@@ -48,9 +44,7 @@ export class EmployeeAppointmentCreateHandler
 		appointment.location = employeeAppointmentInput.location;
 		appointment.tenantId = RequestContext.currentTenantId();
 
-		const createdAppointment = await this.employeeAppointmentService.create(
-			appointment
-		);
+		const createdAppointment = await this.employeeAppointmentService.create(appointment);
 
 		if (appointment.emails) {
 			this._sendAppointmentEmail(appointment, languageCode);
@@ -59,14 +53,7 @@ export class EmployeeAppointmentCreateHandler
 		return createdAppointment;
 	}
 
-	private _sendAppointmentEmail(
-		appointment: EmployeeAppointment,
-		languageCode: LanguagesEnum
-	) {
-		appointment.emails
-			.split(', ')
-			.forEach((email) =>
-				this.emailService.sendAppointmentMail(email, languageCode)
-			);
+	private _sendAppointmentEmail(appointment: EmployeeAppointment, languageCode: LanguagesEnum) {
+		appointment.emails.split(', ').forEach((email) => this.emailService.sendAppointmentMail(email, languageCode));
 	}
 }

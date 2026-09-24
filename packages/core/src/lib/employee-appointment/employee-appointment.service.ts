@@ -1,7 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { UpdateResult } from 'typeorm';
 import { ID, IEmployeeAppointment, IEmployeeAppointmentCreateInput } from '@gauzy/contracts';
 import { TenantAwareCrudService } from './../core/crud';
+import { RequestContext } from '../core/context';
 import { signPurposeToken, TokenPurposeEnum, verifyPurposeToken } from '../auth/purpose-token';
+import { OrganizationContactService } from '../organization-contact/organization-contact.service';
+import { VehicleService } from '../vehicle/vehicle.service';
 import { TypeOrmEmployeeAppointmentRepository } from './repository/type-orm-employee-appointment.repository';
 import { MikroOrmEmployeeAppointmentRepository } from './repository/mikro-orm-employee-appointment.repository';
 import { EmployeeAppointment } from './employee-appointment.entity';
@@ -10,7 +14,9 @@ import { EmployeeAppointment } from './employee-appointment.entity';
 export class EmployeeAppointmentService extends TenantAwareCrudService<EmployeeAppointment> {
 	constructor(
 		typeOrmEmployeeAppointmentRepository: TypeOrmEmployeeAppointmentRepository,
-		mikroOrmEmployeeAppointmentRepository: MikroOrmEmployeeAppointmentRepository
+		mikroOrmEmployeeAppointmentRepository: MikroOrmEmployeeAppointmentRepository,
+		private readonly organizationContactService: OrganizationContactService,
+		private readonly vehicleService: VehicleService
 	) {
 		super(typeOrmEmployeeAppointmentRepository, mikroOrmEmployeeAppointmentRepository);
 	}
@@ -34,6 +40,48 @@ export class EmployeeAppointmentService extends TenantAwareCrudService<EmployeeA
 	 */
 	async saveAppointment(input: IEmployeeAppointmentCreateInput): Promise<EmployeeAppointment> {
 		return await this.save(input);
+	}
+
+	async create(entity: Partial<EmployeeAppointment>): Promise<EmployeeAppointment> {
+		await this.validateMyCarCareAppointment(entity);
+		return super.create(entity);
+	}
+
+	async update(id: ID, entity: Partial<EmployeeAppointment>): Promise<UpdateResult | EmployeeAppointment> {
+		const existing = await this.findOneByIdString(id);
+		await this.validateMyCarCareAppointment({ ...existing, ...entity });
+		return super.update(id, entity);
+	}
+
+	private async validateMyCarCareAppointment(entity: Partial<EmployeeAppointment>): Promise<void> {
+		const hasAutomotiveFields = Boolean(entity.customerId || entity.vehicleId || entity.originalConcern);
+		if (!hasAutomotiveFields) {
+			return;
+		}
+
+		if (!entity.customerId || !entity.vehicleId || !entity.originalConcern?.trim()) {
+			throw new BadRequestException(
+				'My Car Care appointments require a customer, vehicle, and original customer concern.'
+			);
+		}
+
+		const [customer, vehicle] = await Promise.all([
+			this.organizationContactService.findOneByIdString(entity.customerId),
+			this.vehicleService.findOneByIdString(entity.vehicleId)
+		]);
+		const tenantId = RequestContext.currentTenantId();
+		const organizationId = RequestContext.currentOrganizationId() ?? entity.organizationId;
+
+		if (
+			(tenantId && (customer.tenantId !== tenantId || vehicle.tenantId !== tenantId)) ||
+			(organizationId &&
+				(customer.organizationId !== organizationId || vehicle.organizationId !== organizationId)) ||
+			vehicle.customerId !== customer.id
+		) {
+			throw new BadRequestException(
+				'Appointment customer and vehicle must belong to the current tenant and organization, and the vehicle must belong to the customer.'
+			);
+		}
 	}
 
 	/**

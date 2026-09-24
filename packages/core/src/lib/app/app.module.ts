@@ -52,6 +52,7 @@ import { CustomSmtpModule } from '../custom-smtp/custom-smtp.module';
 import { DashboardWidgetModule } from '../dashboard/dashboard-widget/dashboard-widget.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
 import { DealModule } from '../deal/deal.module';
+import { DiagnosticModule } from '../diagnostic/diagnostic.module';
 import { EmailCheckModule } from '../email-check/email-check.module';
 import { EmailHistoryModule } from '../email-history/email-history.module';
 import { EmailResetModule } from '../email-reset/email-reset.module';
@@ -71,6 +72,8 @@ import { EquipmentSharingPolicyModule } from '../equipment-sharing-policy/equipm
 import { EquipmentSharingModule } from '../equipment-sharing/equipment-sharing.module';
 import { EquipmentModule } from '../equipment/equipment.module';
 import { EstimateEmailModule } from '../estimate-email/estimate-email.module';
+import { EstimateModule } from '../estimate/estimate.module';
+import { CustomerWorkApprovalModule } from '../customer-work-approval/customer-work-approval.module';
 import { EventTypeModule } from '../event-types/event-type.module';
 import { ExpenseCategoriesModule } from '../expense-categories/expense-categories.module';
 import { ExpenseModule } from '../expense/expense.module';
@@ -90,6 +93,7 @@ import { HealthModule } from '../health/health.module';
 import { resolveServeStaticPath } from '../helper';
 import { ImageAssetModule } from '../image-asset/image-asset.module';
 import { IncomeModule } from '../income/income.module';
+import { InspectionModule } from '../inspection/inspection.module';
 import { IntegrationEntitySettingTiedModule } from '../integration-entity-setting-tied/integration-entity-setting-tied.module';
 import { IntegrationEntitySettingModule } from '../integration-entity-setting/integration-entity-setting.module';
 import { IntegrationMapModule } from '../integration-map/integration-map.module';
@@ -124,6 +128,7 @@ import { OrganizationTeamJoinRequestModule } from '../organization-team-join-req
 import { OrganizationTeamModule } from '../organization-team/organization-team.module';
 import { OrganizationVendorModule } from '../organization-vendor/organization-vendor.module';
 import { OrganizationModule } from '../organization/organization.module';
+import { VehicleModule } from '../vehicle/vehicle.module';
 import { PasswordHashModule } from '../password-hash/password-hash.module';
 import { PaymentModule } from '../payment/payment.module';
 import { PayrollRunModule } from '../payroll-run/payroll-run.module';
@@ -137,6 +142,7 @@ import { ProductVariantModule } from '../product-variant/product-variant.module'
 import { ProductModule } from '../product/product.module';
 import { PublicShareModule } from '../public-share/public-share.module';
 import { ReactionModule } from '../reaction/reaction.module';
+import { RepairOrderModule } from '../repair-order/repair-order.module';
 import { RefreshTokenModule } from '../refresh-token/refresh-token.module';
 import { ReportModule } from '../reports/report.module';
 import { RequestApprovalEmployeeModule } from '../request-approval-employee/request-approval-employee.module';
@@ -300,7 +306,7 @@ if (environment.THROTTLE_ENABLED) {
 												rejectUnauthorized: process.env.NODE_ENV === 'production',
 												// Connection timeout
 												connectTimeout: 10_000
-										  }
+											}
 										: {
 												// TCP socket options (RedisTcpOptions)
 												host,
@@ -310,7 +316,7 @@ if (environment.THROTTLE_ENABLED) {
 												keepAliveInitialDelay: 10_000,
 												// Connection timeout
 												connectTimeout: 10_000
-										  },
+											},
 									// Send PING every 30s to keep connection alive
 									pingInterval: 30_000
 								});
@@ -349,7 +355,7 @@ if (environment.THROTTLE_ENABLED) {
 							}
 						}
 					})
-			  ]
+				]
 			: [NestCacheModule.register({ isGlobal: true })]),
 		// Redis client for atomic operations (e.g. GETDEL for single-use OAuth codes)
 		RedisModule,
@@ -370,7 +376,7 @@ if (environment.THROTTLE_ENABLED) {
 						? path.resolve(
 								environment.electronResourcesPath,
 								'app.asar.unpacked/node_modules/@gauzy/core/src/lib/i18n'
-						  )
+							)
 						: path.resolve(__dirname, '../i18n/'),
 				watch: !environment.production
 			},
@@ -399,7 +405,7 @@ if (environment.THROTTLE_ENABLED) {
 							};
 						}
 					})
-			  ]
+				]
 			: []),
 		HealthModule,
 		CoreModule,
@@ -442,6 +448,9 @@ if (environment.THROTTLE_ENABLED) {
 		OrganizationProjectModule,
 		OrganizationProjectModuleModule,
 		OrganizationVendorModule,
+		VehicleModule,
+		RepairOrderModule,
+		InspectionModule,
 		OrganizationAwardModule,
 		OrganizationLanguageModule,
 		OrganizationSprintModule,
@@ -478,6 +487,8 @@ if (environment.THROTTLE_ENABLED) {
 		PaymentModule,
 		PayrollRunModule,
 		EstimateEmailModule,
+		EstimateModule,
+		CustomerWorkApprovalModule,
 		GoalModule,
 		GoalTimeFrameModule,
 		GoalGeneralSettingModule,
@@ -489,6 +500,7 @@ if (environment.THROTTLE_ENABLED) {
 		PipelineModule,
 		StageModule,
 		DealModule,
+		DiagnosticModule,
 		InvoiceEstimateHistoryModule,
 		EquipmentModule,
 		EquipmentSharingModule,
@@ -590,7 +602,7 @@ if (environment.THROTTLE_ENABLED) {
 						enableQueueing: true,
 						logRegisteredJobs: false
 					})
-			  ]
+				]
 			: []),
 		//Token cleanup scheduler is disabled by default; enable when ready
 		TokenModule.forRoot({ enableScheduler: false }),
@@ -608,7 +620,7 @@ if (environment.THROTTLE_ENABLED) {
 						provide: APP_GUARD,
 						useClass: ThrottlerBehindProxyGuard
 					}
-			  ]
+				]
 			: []),
 		{
 			provide: APP_INTERCEPTOR,

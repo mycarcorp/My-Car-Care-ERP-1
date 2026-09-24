@@ -92,6 +92,16 @@ export {
 	OrganizationVendorModule,
 	OrganizationVendorService
 } from './lib/organization-vendor';
+export { VehicleModule, VehicleService } from './lib/vehicle';
+export { RepairOrderModule, RepairOrderService } from './lib/repair-order';
+export { InspectionModule, InspectionService } from './lib/inspection';
+export { DiagnosticModule, DiagnosticService } from './lib/diagnostic';
+export { EstimateModule, EstimateService } from './lib/estimate';
+export {
+	CustomerWorkApprovalModule,
+	CustomerWorkApprovalRequestService,
+	CustomerWorkApprovalService
+} from './lib/customer-work-approval';
 
 export * from './lib/employee';
 export { AutomationTaskSyncCommand, TaskCreateCommand, TaskModule, TaskService, TaskUpdateCommand } from './lib/tasks';
@@ -164,7 +174,12 @@ export * from './lib/database/database.module';
 // caches). Public API because the entities that need it live in plugins — without it every plugin
 // entity is registered for export automatically, which is right for authored records and wrong for
 // tables the platform rebuilds after an import.
-export { isExportSkipped, SKIP_EXPORT_METADATA, SkipExport, skipExport } from './lib/export-import/skip-export.decorator';
+export {
+	isExportSkipped,
+	SKIP_EXPORT_METADATA,
+	SkipExport,
+	skipExport
+} from './lib/export-import/skip-export.decorator';
 // Column-level counterpart: mark a credential column so the CSV export writes it masked. Public for
 // the same reason — plugin entities carry credentials too, and `csv-writer` reads properties
 // directly, so class-transformer's `@Exclude` does not reach them (GHSA-j5h5-r956-rxc3).

@@ -29,7 +29,8 @@ export enum TokenPurposeEnum {
 	ESTIMATE = 'estimate',
 	APPOINTMENT = 'appointment',
 	INVITE = 'invite',
-	TEAM_JOIN = 'team-join'
+	TEAM_JOIN = 'team-join',
+	CUSTOMER_WORK_APPROVAL = 'customer-work-approval'
 }
 
 export type PurposeTokenFailure = 'invalid' | 'expired' | 'purpose' | 'claims';
