@@ -5,6 +5,7 @@ import { IContact, IContactEntityInput } from './contact.model';
 import { IInvoiceItem } from './invoice-item.model';
 import { CurrenciesEnum } from './currency.model';
 import { IImageAsset, IRelationalImageAsset } from './image-asset.model';
+import { InventorySourceEnum } from './purchase-order.model';
 
 export interface IProduct extends IBasePerTenantAndOrganizationEntityModel {
 	name: string;
@@ -113,8 +114,7 @@ export interface IProductTypeTranslated extends IBasePerTenantAndOrganizationEnt
 }
 
 export interface IProductCategoryTranslatable
-	extends ITranslatable<IProductCategoryTranslation>,
-		IRelationalImageAsset {
+	extends ITranslatable<IProductCategoryTranslation>, IRelationalImageAsset {
 	imageUrl?: string;
 	name?: string;
 	products?: IProductTranslatable[];
@@ -225,6 +225,7 @@ export interface IWarehouse extends IBasePerTenantAndOrganizationEntityModel, IC
 	description: string;
 	code: string;
 	active: boolean;
+	inventorySource?: InventorySourceEnum;
 	logo?: IImageAsset;
 	logoId?: string;
 	products?: IWarehouseProduct[];

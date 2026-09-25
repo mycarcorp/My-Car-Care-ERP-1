@@ -74,6 +74,8 @@ import { EquipmentModule } from '../equipment/equipment.module';
 import { EstimateEmailModule } from '../estimate-email/estimate-email.module';
 import { EstimateModule } from '../estimate/estimate.module';
 import { CustomerWorkApprovalModule } from '../customer-work-approval/customer-work-approval.module';
+import { AutomotivePartModule } from '../automotive-part/automotive-part.module';
+import { PurchaseOrderModule } from '../purchase-order/purchase-order.module';
 import { EventTypeModule } from '../event-types/event-type.module';
 import { ExpenseCategoriesModule } from '../expense-categories/expense-categories.module';
 import { ExpenseModule } from '../expense/expense.module';
@@ -489,6 +491,8 @@ if (environment.THROTTLE_ENABLED) {
 		EstimateEmailModule,
 		EstimateModule,
 		CustomerWorkApprovalModule,
+		AutomotivePartModule,
+		PurchaseOrderModule,
 		GoalModule,
 		GoalTimeFrameModule,
 		GoalGeneralSettingModule,

@@ -1,34 +1,29 @@
-import {
-	JoinColumn,
-	JoinTable,
-	RelationId
-} from 'typeorm';
-import {
-	ApiProperty,
-	ApiPropertyOptional
-} from '@nestjs/swagger';
+import { JoinColumn, JoinTable, RelationId } from 'typeorm';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
 	IContact,
 	IImageAsset,
 	IMerchant,
 	ITag,
 	IWarehouse,
-	IWarehouseProduct
+	IWarehouseProduct,
+	InventorySourceEnum
 } from '@gauzy/contracts';
-import {
-	Contact,
-	Tag,
-	TenantOrganizationBaseEntity,
-	ImageAsset,
-	Merchant
-} from '../core/entities/internal';
+import { Contact, Tag, TenantOrganizationBaseEntity, ImageAsset, Merchant } from '../core/entities/internal';
 import { WarehouseProduct } from './warehouse-product.entity';
-import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToMany, MultiORMManyToOne, MultiORMOneToMany, MultiORMOneToOne } from './../core/decorators/entity';
+import {
+	ColumnIndex,
+	MultiORMColumn,
+	MultiORMEntity,
+	MultiORMManyToMany,
+	MultiORMManyToOne,
+	MultiORMOneToMany,
+	MultiORMOneToOne
+} from './../core/decorators/entity';
 import { MikroOrmWarehouseRepository } from './repository/mikro-orm-warehouse.repository';
 
 @MultiORMEntity('warehouse', { mikroOrmRepository: () => MikroOrmWarehouseRepository })
 export class Warehouse extends TenantOrganizationBaseEntity implements IWarehouse {
-
 	@ApiProperty({ type: () => String })
 	@MultiORMColumn()
 	name: string;
@@ -48,6 +43,10 @@ export class Warehouse extends TenantOrganizationBaseEntity implements IWarehous
 	@ApiPropertyOptional({ type: () => Boolean })
 	@MultiORMColumn({ default: true })
 	active: boolean;
+
+	@ApiPropertyOptional({ enum: InventorySourceEnum })
+	@MultiORMColumn({ nullable: true, type: 'simple-enum', enum: InventorySourceEnum })
+	inventorySource?: InventorySourceEnum;
 
 	/*
 	|--------------------------------------------------------------------------
@@ -141,7 +140,7 @@ export class Warehouse extends TenantOrganizationBaseEntity implements IWarehous
 		/** Specifies the name of the pivot table in the database. */
 		pivotTable: 'tag_warehouse',
 		joinColumn: 'warehouseId',
-		inverseJoinColumn: 'tagId',
+		inverseJoinColumn: 'tagId'
 	})
 	@JoinTable({
 		/** Specifies the name of the pivot table in the database. */

@@ -102,6 +102,13 @@ export {
 	CustomerWorkApprovalRequestService,
 	CustomerWorkApprovalService
 } from './lib/customer-work-approval';
+export {
+	AutomotivePartModule,
+	AutomotivePartService,
+	AutomotivePartVendorService,
+	PartStockMovementService
+} from './lib/automotive-part';
+export { PurchaseOrderModule, PurchaseOrderService, PurchaseReceiptService } from './lib/purchase-order';
 
 export * from './lib/employee';
 export { AutomationTaskSyncCommand, TaskCreateCommand, TaskModule, TaskService, TaskUpdateCommand } from './lib/tasks';

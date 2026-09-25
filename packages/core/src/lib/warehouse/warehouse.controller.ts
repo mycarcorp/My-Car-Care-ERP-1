@@ -1,5 +1,5 @@
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { FindOptionsWhere, UpdateResult } from 'typeorm';
 import {
 	IPagination,
@@ -18,7 +18,7 @@ import { UUIDValidationPipe, UseValidationPipe } from './../shared/pipes';
 import { WarehouseService } from './warehouse.service';
 import { Warehouse } from './warehouse.entity';
 import { WarehouseProductService } from './warehouse-product-service';
-import { CreateWarehouseDTO, UpdateWarehouseDTO } from './dto';
+import { ClassifyWarehouseInventorySourceDTO, CreateWarehouseDTO, UpdateWarehouseDTO } from './dto';
 
 @ApiTags('Warehouses')
 @UseGuards(TenantPermissionGuard, PermissionGuard)
@@ -251,5 +251,15 @@ export class WarehouseController extends CrudController<Warehouse> {
 			...entity,
 			id
 		});
+	}
+
+	@Patch('/:id/inventory-source')
+	@Permissions(PermissionsEnum.ORG_INVENTORY_PRODUCT_EDIT)
+	@UseValidationPipe({ whitelist: true, transform: true })
+	async classifyInventorySource(
+		@Param('id', UUIDValidationPipe) id: ID,
+		@Body() body: ClassifyWarehouseInventorySourceDTO
+	): Promise<IWarehouse> {
+		return this.warehouseService.classifyInventorySource(id, body.inventorySource);
 	}
 }

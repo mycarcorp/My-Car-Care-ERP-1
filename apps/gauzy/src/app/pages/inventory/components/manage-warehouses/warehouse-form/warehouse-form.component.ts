@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
-import { ITag, IWarehouse, IImageAsset, IOrganization } from '@gauzy/contracts';
+import { ITag, IWarehouse, IImageAsset, IOrganization, InventorySourceEnum } from '@gauzy/contracts';
 import { distinctUntilChange } from '@gauzy/ui-core/common';
 import { TranslateService } from '@ngx-translate/core';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
@@ -15,10 +15,10 @@ import { FormHelpers, LocationFormComponent, LeafletMapComponent, SelectAssetCom
 
 @UntilDestroy({ checkProperties: true })
 @Component({
-    selector: 'ga-warehouse-form',
-    templateUrl: './warehouse-form.component.html',
-    styleUrls: ['./warehouse-form.component.scss'],
-    standalone: false
+	selector: 'ga-warehouse-form',
+	templateUrl: './warehouse-form.component.html',
+	styleUrls: ['./warehouse-form.component.scss'],
+	standalone: false
 })
 export class WarehouseFormComponent extends TranslationBaseComponent implements AfterViewInit, OnInit, OnDestroy {
 	FormHelpers: typeof FormHelpers = FormHelpers;
@@ -26,6 +26,12 @@ export class WarehouseFormComponent extends TranslationBaseComponent implements 
 	hoverState: boolean;
 	organization: IOrganization;
 	warehouse: IWarehouse;
+	selectedInventorySource: InventorySourceEnum | null = null;
+	isClassifyingInventorySource = false;
+	readonly inventorySources = [
+		{ value: InventorySourceEnum.SERVICE_CENTER, label: 'Service Center' },
+		{ value: InventorySourceEnum.RECON, label: 'Recon' }
+	];
 	logo: IImageAsset;
 	images: IImageAsset[] = [];
 
@@ -235,6 +241,24 @@ export class WarehouseFormComponent extends TranslationBaseComponent implements 
 				.finally(() => {
 					this.cancel();
 				});
+		}
+	}
+
+	async classifyInventorySource() {
+		if (!this.warehouse?.id || !this.selectedInventorySource || this.warehouse.inventorySource) return;
+		this.isClassifyingInventorySource = true;
+		try {
+			this.warehouse = await this.warehouseService.classifyInventorySource(
+				this.warehouse.id,
+				this.selectedInventorySource
+			);
+			this.toastrService.success(`Warehouse classified as ${this.selectedInventorySource}.`);
+		} catch {
+			this.toastrService.danger(
+				'Warehouse could not be classified. It may already contain inventory or operational history.'
+			);
+		} finally {
+			this.isClassifyingInventorySource = false;
 		}
 	}
 

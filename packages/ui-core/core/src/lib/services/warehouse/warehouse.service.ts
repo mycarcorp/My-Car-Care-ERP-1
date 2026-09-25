@@ -7,7 +7,8 @@ import {
 	IWarehouseProduct,
 	IWarehouseProductVariant,
 	IPagination,
-	IWarehouseFindInput
+	IWarehouseFindInput,
+	InventorySourceEnum
 } from '@gauzy/contracts';
 import { API_PREFIX, toParams } from '@gauzy/ui-core/common';
 
@@ -33,6 +34,12 @@ export class WarehouseService {
 
 	update(id: IWarehouse['id'], warehouse: IWarehouse): Promise<IWarehouse> {
 		return firstValueFrom(this.http.put<IWarehouse>(`${this.WAREHOUSES_URL}/${id}`, warehouse));
+	}
+
+	classifyInventorySource(id: IWarehouse['id'], inventorySource: InventorySourceEnum): Promise<IWarehouse> {
+		return firstValueFrom(
+			this.http.patch<IWarehouse>(`${this.WAREHOUSES_URL}/${id}/inventory-source`, { inventorySource })
+		);
 	}
 
 	getById(id: IWarehouse['id'], relations: string[] = []) {

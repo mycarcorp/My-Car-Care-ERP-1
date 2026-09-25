@@ -1,23 +1,34 @@
 @forward '../../manage-merchants/merchant-form/merchant-form.component';
 
 :host {
-	nb-stepper ::ng-deep .step-content {
-		height: calc(100vh - 17.25rem);
-	}
+  nb-stepper ::ng-deep .step-content {
+    height: calc(100vh - 17.25rem);
+  }
 
-	.next-button-container {
-		display: flex;
-		gap: 1rem;
-	}
+  .next-button-container {
+    display: flex;
+    gap: 1rem;
+  }
 
-	.step-container {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		gap: 1rem;
+  .inventory-source-classifier {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
-		.step-form {
-			flex-grow: 10;
-		}
-	}
+  .inventory-source-value {
+    color: var(--gauzy-text-color-1);
+    font-weight: 600;
+  }
+
+  .step-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 1rem;
+
+    .step-form {
+      flex-grow: 10;
+    }
+  }
 }
