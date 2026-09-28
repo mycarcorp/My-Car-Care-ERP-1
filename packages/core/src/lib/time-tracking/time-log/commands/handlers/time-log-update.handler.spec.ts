@@ -48,10 +48,20 @@ describe('TimeLogUpdateHandler (GHSA-6qvm-3wg4-26w4)', () => {
 	});
 	afterEach(() => jest.restoreAllMocks());
 
-	const body = { description: 'edited', isBillable: true, tenantId: TENANT_B, organizationId: 'org-b' } as any;
+	const body = {
+		description: 'edited',
+		isBillable: true,
+		tenantId: TENANT_B,
+		organizationId: 'org-b',
+		automotiveJobId: 'job-foreign'
+	} as any;
 
 	it('CONTROL: the pre-fix payload carries the body tenant and organization into the update', () => {
-		expect({ ...body }).toMatchObject({ tenantId: TENANT_B, organizationId: 'org-b' });
+		expect({ ...body }).toMatchObject({
+			tenantId: TENANT_B,
+			organizationId: 'org-b',
+			automotiveJobId: 'job-foreign'
+		});
 	});
 
 	it('updates within the stored tenant, without the body tenant / organization', async () => {
@@ -74,7 +84,9 @@ describe('TimeLogUpdateHandler (GHSA-6qvm-3wg4-26w4)', () => {
 	});
 
 	it('keeps the fields internal callers rely on (the timer stop sends isRunning / stoppedAt)', () => {
-		expect(omitScopeFields({ isRunning: false, stoppedAt: 'x', id: 'y', tenant: {}, organization: {}, employee: {} })).toEqual({
+		expect(
+			omitScopeFields({ isRunning: false, stoppedAt: 'x', id: 'y', tenant: {}, organization: {}, employee: {} })
+		).toEqual({
 			isRunning: false,
 			stoppedAt: 'x'
 		});

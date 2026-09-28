@@ -155,7 +155,8 @@ export interface IDateRange {
 	end: Date;
 }
 export interface ITimeLog
-	extends IBasePerTenantAndOrganizationEntityModel,
+	extends
+		IBasePerTenantAndOrganizationEntityModel,
 		IRelationalOrganizationProject,
 		IRelationalOrganizationTeam,
 		ITaggable {
@@ -165,6 +166,7 @@ export interface ITimeLog
 	timesheetId?: ID;
 	task?: ITask;
 	taskId?: ID;
+	automotiveJobId?: ID;
 	timeSlots?: ITimeSlot[];
 	project?: IOrganizationProject;
 	projectId?: ID;
@@ -350,10 +352,7 @@ export interface IURLMetaData {
 }
 
 export interface ITimerStatusInput
-	extends ITimeLogTodayFilters,
-		IBaseRelationsEntityModel,
-		IEmployeeEntityInput,
-		IRelationalOrganizationTeam {
+	extends ITimeLogTodayFilters, IBaseRelationsEntityModel, IEmployeeEntityInput, IRelationalOrganizationTeam {
 	source?: TimeLogSourceEnum;
 	employeeIds?: ID[];
 }
@@ -380,8 +379,7 @@ export interface ITimerPosition {
 }
 
 export interface ITimerToggleInput
-	extends IBasePerTenantAndOrganizationEntityModel,
-		Pick<IRelationalOrganizationTeam, 'organizationTeamId'> {
+	extends IBasePerTenantAndOrganizationEntityModel, Pick<IRelationalOrganizationTeam, 'organizationTeamId'> {
 	projectId?: ID;
 	taskId?: ID;
 	organizationContactId?: ID;
@@ -400,6 +398,7 @@ export interface IManualTimeInput extends IBasePerTenantAndOrganizationEntityMod
 	employeeId?: ID;
 	projectId?: ID;
 	taskId?: ID;
+	automotiveJobId?: ID;
 	organizationContactId?: ID;
 	logType?: TimeLogType;
 	description?: string;

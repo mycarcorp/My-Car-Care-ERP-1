@@ -18,7 +18,15 @@ import { MikroOrmTimeSlotRepository } from '../../../time-slot/repository/mikro-
 /**
  * Input keys that decide WHERE a time log lives. They are never taken from the input.
  */
-const TIME_LOG_SCOPE_FIELDS = ['id', 'tenantId', 'tenant', 'organizationId', 'organization', 'employee'] as const;
+const TIME_LOG_SCOPE_FIELDS = [
+	'id',
+	'tenantId',
+	'tenant',
+	'organizationId',
+	'organization',
+	'employee',
+	'automotiveJobId'
+] as const;
 
 /**
  * Returns a copy of the input without the scope fields.
@@ -201,14 +209,18 @@ export class TimeLogUpdateHandler implements ICommandHandler<TimeLogUpdateComman
 		switch (this.ormType) {
 			case MultiORMEnum.MikroORM: {
 				const em = this.mikroOrmTimeSlotRepository.getEntityManager();
-				slots = await em.find('TimeSlot', {
-					organizationId,
-					tenantId,
-					employeeId,
-					startedAt: { $in: startTimes }
-				} as any, {
-					populate: ['timeLogs', 'screenshots', 'activities', 'timeSlotMinutes']
-				}) as any[];
+				slots = (await em.find(
+					'TimeSlot',
+					{
+						organizationId,
+						tenantId,
+						employeeId,
+						startedAt: { $in: startTimes }
+					} as any,
+					{
+						populate: ['timeLogs', 'screenshots', 'activities', 'timeSlotMinutes']
+					}
+				)) as any[];
 				break;
 			}
 			case MultiORMEnum.TypeORM:

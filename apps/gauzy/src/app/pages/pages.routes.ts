@@ -32,6 +32,7 @@ export const getPagesRoutes = (_pageRouteRegistryService: PageRouteRegistryServi
 		...getContactsRoute(),
 		...getProjectsRoute(),
 		...getTasksRoute(),
+		...getAutomotiveJobsRoute(),
 		...getSalesRoutes(_pageRouteRegistryService),
 		...getEmployeesRoutes(_pageRouteRegistryService),
 		...getOrganizationRoutes(_pageRouteRegistryService),
@@ -155,6 +156,15 @@ function getTasksRoute(): Route[] {
 		{
 			path: 'tasks',
 			loadChildren: () => import('./tasks/tasks.module').then((m) => m.TasksModule)
+		}
+	];
+}
+
+function getAutomotiveJobsRoute(): Route[] {
+	return [
+		{
+			path: 'automotive-jobs',
+			loadChildren: () => import('./automotive-jobs/automotive-jobs.module').then((m) => m.AutomotiveJobsModule)
 		}
 	];
 }

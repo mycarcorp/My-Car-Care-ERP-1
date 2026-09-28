@@ -109,6 +109,7 @@ export {
 	PartStockMovementService
 } from './lib/automotive-part';
 export { PurchaseOrderModule, PurchaseOrderService, PurchaseReceiptService } from './lib/purchase-order';
+export { AutomotiveJobModule, AutomotiveJobService } from './lib/automotive-job';
 
 export * from './lib/employee';
 export { AutomationTaskSyncCommand, TaskCreateCommand, TaskModule, TaskService, TaskUpdateCommand } from './lib/tasks';

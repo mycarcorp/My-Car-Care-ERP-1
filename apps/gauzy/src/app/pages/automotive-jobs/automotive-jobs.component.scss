@@ -1,0 +1,82 @@
+:host {
+  display: block;
+}
+
+.header-row,
+.job-heading,
+.assignment-row,
+.job-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ro-reference,
+.authorized-copy span,
+.empty-state {
+  color: var(--gauzy-text-color-2);
+}
+
+.jobs-section,
+.authorized-section {
+  margin-bottom: 1.5rem;
+}
+
+.job-list,
+.authorized-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.job-row,
+.authorized-row {
+  border: 1px solid var(--gauzy-border-color-1);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+}
+
+.job-heading p,
+.authorized-copy p {
+  margin: 0.25rem 0;
+  color: var(--gauzy-text-color-2);
+}
+
+.job-edit-grid,
+.authorized-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(12rem, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+  margin-top: 0.75rem;
+}
+
+.job-edit-grid label,
+.authorized-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.assignment-row,
+.job-actions {
+  justify-content: flex-start;
+  margin-top: 0.75rem;
+}
+
+.assignment-row ga-employee-multi-select {
+  width: min(100%, 24rem);
+}
+
+@media (max-width: 768px) {
+  .job-edit-grid,
+  .authorized-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .header-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -7,7 +7,14 @@ import {
 	NotFoundException
 } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { SelectQueryBuilder, Brackets, WhereExpressionBuilder, DeleteResult, UpdateResult, FindOptionsWhere } from 'typeorm';
+import {
+	SelectQueryBuilder,
+	Brackets,
+	WhereExpressionBuilder,
+	DeleteResult,
+	UpdateResult,
+	FindOptionsWhere
+} from 'typeorm';
 import { chain, pluck } from 'underscore';
 import {
 	IManualTimeInput,
@@ -63,6 +70,8 @@ import { TypeOrmOrganizationProjectRepository } from '../../organization-project
 import { TypeOrmOrganizationContactRepository } from '../../organization-contact/repository/type-orm-organization-contact.repository';
 import { ManagedEmployeeService } from '../../employee/managed-employee.service';
 import { TimeLog } from './time-log.entity';
+import { AutomotiveJob } from '../../automotive-job/automotive-job.entity';
+import { AutomotiveJobStatusEnum } from '@gauzy/contracts';
 
 @Injectable()
 export class TimeLogService extends TenantAwareCrudService<TimeLog> {
@@ -1583,6 +1592,17 @@ export class TimeLogService extends TenantAwareCrudService<TimeLog> {
 			// judge the write by one organization's rules and then persist it — log, slots and timesheet —
 			// under another's. The body value is only a fallback for an employee without an organization.
 			const organizationId = employee.organizationId ?? request.organizationId;
+			if (request.automotiveJobId) {
+				const job = await this.typeOrmTimeLogRepository.manager.findOne(AutomotiveJob, {
+					where: { id: request.automotiveJobId, tenantId, organizationId }
+				});
+				if (!job) throw new NotFoundException('Automotive job was not found in this organization.');
+				if (job.status !== AutomotiveJobStatusEnum.IN_PROGRESS || job.assignedEmployeeId !== employeeId) {
+					throw new BadRequestException(
+						'Manual time can only be recorded by the assigned technician on an in-progress job.'
+					);
+				}
+			}
 
 			// Check if future dates are allowed for the organization
 			const futureDateAllowed: IOrganization['futureDateAllowed'] = employee.organization.futureDateAllowed;

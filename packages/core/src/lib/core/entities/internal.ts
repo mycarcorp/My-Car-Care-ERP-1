@@ -60,6 +60,7 @@ export * from '../../customer-work-approval/customer-work-approval-line.entity';
 export * from '../../automotive-part/automotive-part-profile.entity';
 export * from '../../automotive-part/automotive-part-vendor.entity';
 export * from '../../automotive-part/part-stock-movement.entity';
+export * from '../../automotive-job/automotive-job.entity';
 export * from '../../purchase-order/purchase-order.entity';
 export * from '../../purchase-order/purchase-order-line.entity';
 export * from '../../purchase-order/purchase-receipt.entity';

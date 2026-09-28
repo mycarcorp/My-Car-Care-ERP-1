@@ -1,0 +1,129 @@
+<nb-card [nbSpinner]="loading" nbSpinnerStatus="primary">
+	<nb-card-header>
+		<div class="header-row">
+			<h4>Repair Order Jobs</h4>
+			<span class="ro-reference">Repair Order {{ repairOrderId }}</span>
+		</div>
+	</nb-card-header>
+	<nb-card-body>
+		<section class="jobs-section" aria-labelledby="jobs-heading">
+			<h5 id="jobs-heading">Jobs</h5>
+			@if (!jobs.length) {
+				<p class="empty-state">No jobs have been created for this repair order.</p>
+			} @else {
+				<div class="job-list">
+					@for (job of jobs; track job.id) {
+						<article class="job-row">
+							<div class="job-heading">
+								<div>
+									<strong>{{ job.title }}</strong>
+									<p>{{ job.description }}</p>
+								</div>
+								<nb-badge [text]="job.status" status="info"></nb-badge>
+							</div>
+							@if (job.status === statuses.OPEN || job.status === statuses.ASSIGNED) {
+								<div class="job-edit-grid">
+									<label
+										>Estimated hours
+										<input
+											#hours
+											nbInput
+											type="number"
+											min="0"
+											step="0.1"
+											[value]="job.estimatedHours ?? ''"
+										/>
+									</label>
+									<label
+										>Internal notes
+										<textarea #notes nbInput rows="2" [value]="job.internalNotes ?? ''"></textarea>
+									</label>
+									<button
+										nbButton
+										size="small"
+										status="basic"
+										(click)="saveJob(job, hours.value, notes.value)"
+									>
+										Save details
+									</button>
+								</div>
+							}
+							@if (job.status === statuses.OPEN || job.status === statuses.ASSIGNED) {
+								<div class="assignment-row">
+									<ga-employee-multi-select
+										[allEmployees]="employees"
+										[selectedEmployeeIds]="job.assignedEmployeeId || ''"
+										[multiple]="false"
+										[placeholder]="'Assign technician'"
+										(selectedChange)="assign(job, $event)"
+									></ga-employee-multi-select>
+								</div>
+							}
+							<div class="job-actions">
+								@for (nextStatus of availableTransitions(job); track nextStatus) {
+									<button
+										nbButton
+										size="small"
+										status="primary"
+										(click)="transition(job, nextStatus)"
+									>
+										{{ nextStatus }}
+									</button>
+								}
+							</div>
+						</article>
+					}
+				</div>
+			}
+		</section>
+
+		<section class="authorized-section" aria-labelledby="authorized-heading">
+			<h5 id="authorized-heading">Authorized work available</h5>
+			@if (!authorizedWork.length) {
+				<p class="empty-state">No unassigned approved work is available.</p>
+			} @else {
+				<div class="authorized-list">
+					@for (line of authorizedWork; track line.id) {
+						<article class="authorized-row">
+							<div class="authorized-copy">
+								<strong>{{ line.description }}</strong>
+								<p>{{ line.reason }}</p>
+								<span>{{ line.approvedQuantity }} approved</span>
+							</div>
+							<label
+								>Estimated hours
+								<input #newHours nbInput type="number" min="0" step="0.1" />
+							</label>
+							<label
+								>Internal notes
+								<input #newNotes nbInput type="text" />
+							</label>
+							<ga-employee-multi-select
+								[allEmployees]="employees"
+								[multiple]="false"
+								[placeholder]="'Assign technician (optional)'"
+								(selectedChange)="setAuthorizedLineTechnician(line.id, $event)"
+							></ga-employee-multi-select>
+							<button
+								nbButton
+								size="small"
+								status="success"
+								[disabled]="creatingForLineId === line.id"
+								(click)="
+									createJob(
+										line,
+										selectedTechnicianByLine[line.id],
+										newHours.value === '' ? undefined : newHours.valueAsNumber,
+										newNotes.value
+									)
+								"
+							>
+								Create job
+							</button>
+						</article>
+					}
+				</div>
+			}
+		</section>
+	</nb-card-body>
+</nb-card>
