@@ -2,7 +2,12 @@
 	<nb-card-header>
 		<div class="header-row">
 			<h4>Repair Order Jobs</h4>
-			<span class="ro-reference">Repair Order {{ repairOrderId }}</span>
+			<div class="header-actions">
+				<span class="ro-reference">Repair Order {{ repairOrderId }}</span>
+				<a nbButton size="small" status="basic" routerLink="/pages/automotive-jobs/categories">
+					Manage categories
+				</a>
+			</div>
 		</div>
 	</nb-card-header>
 	<nb-card-body>
@@ -18,6 +23,9 @@
 								<div>
 									<strong>{{ job.title }}</strong>
 									<p>{{ job.description }}</p>
+									@if (job.category) {
+										<span class="job-category">{{ job.category.name }}</span>
+									}
 								</div>
 								<nb-badge [text]="job.status" status="info"></nb-badge>
 							</div>
@@ -37,6 +45,15 @@
 									<label
 										>Internal notes
 										<textarea #notes nbInput rows="2" [value]="job.internalNotes ?? ''"></textarea>
+									</label>
+									<label>
+										Category
+										<nb-select fullWidth [(ngModel)]="selectedCategoryByJob[job.id]">
+											<nb-option value="">No category</nb-option>
+											@for (category of categories; track category.id) {
+												<nb-option [value]="category.id">{{ category.name }}</nb-option>
+											}
+										</nb-select>
 									</label>
 									<button
 										nbButton
@@ -98,6 +115,20 @@
 								>Internal notes
 								<input #newNotes nbInput type="text" />
 							</label>
+							<label>
+								Category
+								<nb-select
+									fullWidth
+									[ngModel]="selectedCategoryByLine[line.id] || ''"
+									(ngModelChange)="setAuthorizedLineCategory(line.id, $event)"
+									[ngModelOptions]="{ standalone: true }"
+								>
+									<nb-option value="">No category</nb-option>
+									@for (category of categories; track category.id) {
+										<nb-option [value]="category.id">{{ category.name }}</nb-option>
+									}
+								</nb-select>
+							</label>
 							<ga-employee-multi-select
 								[allEmployees]="employees"
 								[multiple]="false"
@@ -114,7 +145,8 @@
 										line,
 										selectedTechnicianByLine[line.id],
 										newHours.value === '' ? undefined : newHours.valueAsNumber,
-										newNotes.value
+										newNotes.value,
+										selectedCategoryByLine[line.id]
 									)
 								"
 							>

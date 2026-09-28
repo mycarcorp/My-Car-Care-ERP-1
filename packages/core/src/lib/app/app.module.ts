@@ -77,6 +77,7 @@ import { CustomerWorkApprovalModule } from '../customer-work-approval/customer-w
 import { AutomotivePartModule } from '../automotive-part/automotive-part.module';
 import { PurchaseOrderModule } from '../purchase-order/purchase-order.module';
 import { AutomotiveJobModule } from '../automotive-job/automotive-job.module';
+import { AutomotiveJobCategoryModule } from '../automotive-job-category/automotive-job-category.module';
 import { EventTypeModule } from '../event-types/event-type.module';
 import { ExpenseCategoriesModule } from '../expense-categories/expense-categories.module';
 import { ExpenseModule } from '../expense/expense.module';
@@ -495,6 +496,7 @@ if (environment.THROTTLE_ENABLED) {
 		AutomotivePartModule,
 		PurchaseOrderModule,
 		AutomotiveJobModule,
+		AutomotiveJobCategoryModule,
 		GoalModule,
 		GoalTimeFrameModule,
 		GoalGeneralSettingModule,

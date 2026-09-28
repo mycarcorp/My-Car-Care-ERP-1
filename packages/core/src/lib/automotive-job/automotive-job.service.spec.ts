@@ -71,6 +71,7 @@ describe('AutomotiveJobService', () => {
 	let estimates: any;
 	let estimateLines: any;
 	let employees: any;
+	let categories: any;
 
 	beforeEach(() => {
 		jest.spyOn(RequestContext, 'currentTenantId').mockReturnValue(fixture.tenantId);
@@ -95,6 +96,7 @@ describe('AutomotiveJobService', () => {
 				status: AutomotiveJobStatusEnum.OPEN,
 				assignedEmployeeId: undefined
 			})),
+			findOneOrFail: jest.fn(async ({ where }) => jobs.findOneByOrFail(where)),
 			find: jest.fn(async () => []),
 			update: jest.fn(async () => ({ affected: 1 }))
 		};
@@ -105,6 +107,9 @@ describe('AutomotiveJobService', () => {
 		estimates = { findOneByOrFail: jest.fn(async () => ({ ...estimate })) };
 		estimateLines = { findOneByOrFail: jest.fn(async () => ({ ...estimateLine })) };
 		employees = { findOneByOrFail: jest.fn(async () => ({ ...employee })) };
+		categories = {
+			findOneByOrFail: jest.fn(async () => ({ id: 'category-1', ...scope, name: 'Brakes', isActive: true }))
+		};
 		service = new AutomotiveJobService(
 			jobs as never,
 			{} as never,
@@ -114,7 +119,8 @@ describe('AutomotiveJobService', () => {
 			requests as never,
 			estimates as never,
 			estimateLines as never,
-			employees as never
+			employees as never,
+			categories as never
 		);
 	});
 
@@ -136,9 +142,55 @@ describe('AutomotiveJobService', () => {
 			title: approvalLine.description,
 			description: approvalLine.reason,
 			status: AutomotiveJobStatusEnum.OPEN,
+			categoryId: undefined,
 			estimatedHours: 1.5
 		});
 		expect(jobs.save).toHaveBeenCalledTimes(1);
+	});
+
+	it('creates a job with an active category in the current tenant and organization', async () => {
+		const result = await service.createForRepairOrder(repairOrder.id, {
+			customerWorkApprovalLineId: approvalLine.id,
+			categoryId: 'category-1'
+		});
+		expect(categories.findOneByOrFail).toHaveBeenCalledWith({ id: 'category-1', ...scope });
+		expect(result.categoryId).toBe('category-1');
+	});
+
+	it('rejects inactive categories and categories outside the current scope', async () => {
+		categories.findOneByOrFail.mockResolvedValueOnce({ id: 'category-1', ...scope, isActive: false });
+		await expect(
+			service.createForRepairOrder(repairOrder.id, {
+				customerWorkApprovalLineId: approvalLine.id,
+				categoryId: 'category-1'
+			})
+		).rejects.toBeInstanceOf(BadRequestException);
+		categories.findOneByOrFail.mockRejectedValueOnce(new Error('category not found in organization'));
+		await expect(
+			service.createForRepairOrder(repairOrder.id, {
+				customerWorkApprovalLineId: approvalLine.id,
+				categoryId: 'foreign-category'
+			})
+		).rejects.toThrow('category not found in organization');
+		expect(jobs.save).not.toHaveBeenCalled();
+	});
+
+	it('updates an optional category and retrieves it with the job', async () => {
+		jobs.findOneOrFail = jest.fn(async () => ({
+			id: 'job-1',
+			...scope,
+			status: AutomotiveJobStatusEnum.OPEN,
+			category: { id: 'category-1', name: 'Brakes' }
+		}));
+		await service.updateJob('job-1', { categoryId: 'category-1' });
+		expect(jobs.update).toHaveBeenCalledWith({ id: 'job-1', ...scope }, { categoryId: 'category-1' });
+		await expect(service.findOneScoped('job-1')).resolves.toMatchObject({
+			category: { id: 'category-1', name: 'Brakes' }
+		});
+		expect(jobs.findOneOrFail).toHaveBeenCalledWith({
+			where: { id: 'job-1', ...scope },
+			relations: { category: true }
+		});
 	});
 
 	it('creates an assigned job for a valid same-scope active employee', async () => {

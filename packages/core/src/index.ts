@@ -68,6 +68,7 @@ export { CreateEntitySubscriptionEvent } from './lib/entity-subscription/events/
 // carry `@UseGuards(..., FeatureFlagGuard)` cannot satisfy it and the whole API fails to
 // bootstrap with an `UnknownDependenciesException`.
 export { FeatureModule } from './lib/feature/feature.module';
+export * from './lib/automotive-job-category';
 export { FeatureService } from './lib/feature/feature.service';
 export { FeatureOrganizationService } from './lib/feature/feature-organization.service';
 export { RoleAuthorizationService, RoleModule, RoleService } from './lib/role';

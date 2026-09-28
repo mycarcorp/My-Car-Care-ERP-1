@@ -1,0 +1,70 @@
+<nb-card [nbSpinner]="loading" nbSpinnerStatus="primary">
+	<nb-card-header>Automotive Job Categories</nb-card-header>
+	<nb-card-body>
+		<form class="category-form" (ngSubmit)="save()">
+			<label>
+				Name
+				<input nbInput required maxlength="255" [(ngModel)]="name" name="name" />
+			</label>
+			<label>
+				Description
+				<textarea nbInput rows="2" [(ngModel)]="description" name="description"></textarea>
+			</label>
+			<label>
+				Display order
+				<input nbInput type="number" min="0" step="1" [(ngModel)]="displayOrder" name="displayOrder" />
+			</label>
+			@if (selected) {
+				<label class="active-field">
+					<span>Active</span>
+					<nb-toggle [(ngModel)]="isActive" name="isActive"></nb-toggle>
+				</label>
+			}
+			<div class="form-actions">
+				<button nbButton status="primary" type="submit" [disabled]="saving || !name.trim()">
+					{{ selected ? 'Save changes' : 'Add category' }}
+				</button>
+				@if (selected) {
+					<button nbButton status="basic" type="button" (click)="reset()">Cancel</button>
+				}
+			</div>
+		</form>
+
+		<div class="category-list" role="table" aria-label="Automotive job categories">
+			<div class="category-row category-header" role="row">
+				<strong>Name</strong>
+				<strong>Description</strong>
+				<strong>Active</strong>
+				<strong>Order</strong>
+				<strong>Actions</strong>
+			</div>
+			@for (category of categories; track category.id) {
+				<div class="category-row" role="row">
+					<span>{{ category.name }}</span>
+					<span>{{ category.description || '—' }}</span>
+					<span>{{ category.isActive !== false && !category.isArchived ? 'Active' : 'Inactive' }}</span>
+					<span>{{ category.displayOrder ?? '—' }}</span>
+					<div class="row-actions">
+						<button nbButton size="small" status="basic" type="button" (click)="edit(category)">
+							Edit
+						</button>
+						@if (category.isActive !== false && !category.isArchived) {
+							<button nbButton size="small" status="warning" type="button" (click)="archive(category)">
+								Archive
+							</button>
+						} @else {
+							<button nbButton size="small" status="success" type="button" (click)="activate(category)">
+								Activate
+							</button>
+						}
+						<button nbButton size="small" status="danger" type="button" (click)="remove(category)">
+							Delete
+						</button>
+					</div>
+				</div>
+			} @empty {
+				<p class="empty-state">No automotive job categories have been configured.</p>
+			}
+		</div>
+	</nb-card-body>
+</nb-card>

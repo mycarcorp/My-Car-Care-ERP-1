@@ -1,6 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { AutomotiveJobStatusEnum, IAutomotiveJob, ICustomerWorkApprovalLine, IEmployee } from '@gauzy/contracts';
+import {
+	AutomotiveJobStatusEnum,
+	IAutomotiveJob,
+	IAutomotiveJobCategory,
+	ICustomerWorkApprovalLine,
+	IEmployee
+} from '@gauzy/contracts';
 import { firstValueFrom } from 'rxjs';
 import { EmployeesService, Store, ToastrService } from '@gauzy/ui-core/core';
 import { AutomotiveJobApiService } from './automotive-job-api.service';
@@ -17,9 +23,12 @@ export class AutomotiveJobsComponent implements OnInit {
 	jobs: IAutomotiveJob[] = [];
 	authorizedWork: ICustomerWorkApprovalLine[] = [];
 	employees: IEmployee[] = [];
+	categories: IAutomotiveJobCategory[] = [];
 	loading = false;
 	creatingForLineId: string | null = null;
 	readonly selectedTechnicianByLine: Record<string, string | undefined> = {};
+	readonly selectedCategoryByLine: Record<string, string | undefined> = {};
+	readonly selectedCategoryByJob: Record<string, string | undefined> = {};
 
 	constructor(
 		private readonly route: ActivatedRoute,
@@ -33,6 +42,7 @@ export class AutomotiveJobsComponent implements OnInit {
 		this.repairOrderId = this.route.snapshot.paramMap.get('repairOrderId');
 		await this.refresh();
 		await this.loadEmployees();
+		await this.loadCategories();
 	}
 
 	async refresh(): Promise<void> {
@@ -42,10 +52,20 @@ export class AutomotiveJobsComponent implements OnInit {
 				this.api.listForRepairOrder(this.repairOrderId),
 				this.api.listAuthorizedWork(this.repairOrderId)
 			]);
+			for (const job of this.jobs) this.selectedCategoryByJob[job.id] = job.categoryId ?? '';
 		} catch {
 			this.toastr.danger('Could not load authorized work for this repair order.');
 		} finally {
 			this.loading = false;
+		}
+	}
+
+	private async loadCategories(): Promise<void> {
+		try {
+			const { items } = await this.api.listCategories(true);
+			this.categories = items;
+		} catch {
+			this.toastr.danger('Could not load automotive job categories.');
 		}
 	}
 
@@ -67,7 +87,8 @@ export class AutomotiveJobsComponent implements OnInit {
 		line: ICustomerWorkApprovalLine,
 		assignedEmployeeId?: string,
 		estimatedHours?: number,
-		internalNotes?: string
+		internalNotes?: string,
+		categoryId?: string
 	): Promise<void> {
 		this.creatingForLineId = line.id;
 		try {
@@ -76,7 +97,8 @@ export class AutomotiveJobsComponent implements OnInit {
 				assignedEmployeeId: assignedEmployeeId || undefined,
 				estimatedHours:
 					estimatedHours === undefined || estimatedHours === null ? undefined : Number(estimatedHours),
-				internalNotes: internalNotes || undefined
+				internalNotes: internalNotes || undefined,
+				categoryId: categoryId || undefined
 			});
 			this.toastr.success('Automotive job created.');
 			await this.refresh();
@@ -89,9 +111,11 @@ export class AutomotiveJobsComponent implements OnInit {
 
 	async saveJob(job: IAutomotiveJob, estimatedHours: string, internalNotes: string): Promise<void> {
 		try {
+			const categoryId = this.selectedCategoryByJob[job.id] ?? job.categoryId ?? '';
 			await this.api.update(job.id, {
 				estimatedHours: estimatedHours === '' ? undefined : Number(estimatedHours),
-				internalNotes
+				internalNotes,
+				categoryId: categoryId || null
 			});
 			this.toastr.success('Automotive job updated.');
 			await this.refresh();
@@ -140,5 +164,9 @@ export class AutomotiveJobsComponent implements OnInit {
 
 	setAuthorizedLineTechnician(lineId: string, employeeId: string | string[]): void {
 		this.selectedTechnicianByLine[lineId] = Array.isArray(employeeId) ? employeeId[0] : employeeId;
+	}
+
+	setAuthorizedLineCategory(lineId: string, categoryId: string): void {
+		this.selectedCategoryByLine[lineId] = categoryId || undefined;
 	}
 }

@@ -3,6 +3,7 @@
 }
 
 .header-row,
+.header-actions,
 .job-heading,
 .assignment-row,
 .job-actions {
@@ -10,6 +11,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.header-actions {
+  justify-content: flex-end;
 }
 
 .ro-reference,
@@ -41,6 +46,11 @@
 .authorized-copy p {
   margin: 0.25rem 0;
   color: var(--gauzy-text-color-2);
+}
+
+.job-category {
+  color: var(--gauzy-text-color-2);
+  font-size: 0.875rem;
 }
 
 .job-edit-grid,

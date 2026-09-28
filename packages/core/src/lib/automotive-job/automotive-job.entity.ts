@@ -10,6 +10,7 @@ import {
 	RepairOrder,
 	TenantOrganizationBaseEntity
 } from '../core/entities/internal';
+import { AutomotiveJobCategory } from '../automotive-job-category/automotive-job-category.entity';
 import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToOne } from '../core/decorators/entity';
 import { MikroOrmAutomotiveJobRepository } from './repository/mikro-orm-automotive-job.repository';
 
@@ -73,6 +74,16 @@ export class AutomotiveJob extends TenantOrganizationBaseEntity implements IAuto
 	@ColumnIndex()
 	@MultiORMColumn({ nullable: true, relationId: true })
 	assignedEmployeeId?: ID;
+
+	@MultiORMManyToOne(() => AutomotiveJobCategory, { nullable: true, onDelete: 'RESTRICT' })
+	@JoinColumn()
+	category?: AutomotiveJobCategory;
+	@IsOptional()
+	@IsUUID()
+	@RelationId((it: AutomotiveJob) => it.category)
+	@ColumnIndex()
+	@MultiORMColumn({ nullable: true, relationId: true })
+	categoryId?: ID;
 
 	@IsString() @MultiORMColumn({ type: 'text' }) title: string;
 	@IsString() @MultiORMColumn({ type: 'text' }) description: string;

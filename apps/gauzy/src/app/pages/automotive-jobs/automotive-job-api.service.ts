@@ -4,6 +4,9 @@ import { firstValueFrom } from 'rxjs';
 import {
 	AutomotiveJobStatusEnum,
 	IAutomotiveJob,
+	IAutomotiveJobCategory,
+	IAutomotiveJobCategoryCreateInput,
+	IAutomotiveJobCategoryUpdateInput,
 	IAutomotiveJobAssignInput,
 	IAutomotiveJobCreateInput,
 	IAutomotiveJobUpdateInput,
@@ -47,5 +50,37 @@ export class AutomotiveJobApiService {
 		return firstValueFrom(
 			this.http.patch<IAutomotiveJob>(`${this.baseUrl}/automotive-jobs/${id}/status`, { status })
 		);
+	}
+
+	listCategories(activeOnly = false): Promise<{ items: IAutomotiveJobCategory[]; total: number }> {
+		const params = activeOnly ? { activeOnly: true } : {};
+		return firstValueFrom(
+			this.http.get<{ items: IAutomotiveJobCategory[]; total: number }>(
+				`${this.baseUrl}/automotive-job-categories`,
+				{ params }
+			)
+		);
+	}
+
+	createCategory(body: IAutomotiveJobCategoryCreateInput): Promise<IAutomotiveJobCategory> {
+		return firstValueFrom(
+			this.http.post<IAutomotiveJobCategory>(`${this.baseUrl}/automotive-job-categories`, body)
+		);
+	}
+
+	updateCategory(id: string, body: IAutomotiveJobCategoryUpdateInput): Promise<IAutomotiveJobCategory> {
+		return firstValueFrom(
+			this.http.patch<IAutomotiveJobCategory>(`${this.baseUrl}/automotive-job-categories/${id}`, body)
+		);
+	}
+
+	archiveCategory(id: string): Promise<IAutomotiveJobCategory> {
+		return firstValueFrom(
+			this.http.patch<IAutomotiveJobCategory>(`${this.baseUrl}/automotive-job-categories/${id}/archive`, {})
+		);
+	}
+
+	deleteCategory(id: string): Promise<void> {
+		return firstValueFrom(this.http.delete<void>(`${this.baseUrl}/automotive-job-categories/${id}`));
 	}
 }

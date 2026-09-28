@@ -17,6 +17,7 @@ import { Employee } from '../employee/employee.entity';
 import { Estimate } from '../estimate/estimate.entity';
 import { EstimateLine } from '../estimate/estimate-line.entity';
 import { RepairOrder } from '../repair-order/repair-order.entity';
+import { AutomotiveJobCategory } from '../automotive-job-category/automotive-job-category.entity';
 import { AssignAutomotiveJobDTO, CreateAutomotiveJobDTO, UpdateAutomotiveJobDTO } from './dto';
 import { AutomotiveJob } from './automotive-job.entity';
 import { MikroOrmAutomotiveJobRepository } from './repository/mikro-orm-automotive-job.repository';
@@ -43,7 +44,8 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 		private readonly requests: Repository<CustomerWorkApprovalRequest>,
 		@InjectRepository(Estimate) private readonly estimates: Repository<Estimate>,
 		@InjectRepository(EstimateLine) private readonly estimateLines: Repository<EstimateLine>,
-		@InjectRepository(Employee) private readonly employees: Repository<Employee>
+		@InjectRepository(Employee) private readonly employees: Repository<Employee>,
+		@InjectRepository(AutomotiveJobCategory) private readonly categories: Repository<AutomotiveJobCategory>
 	) {
 		super(typeOrmRepository, mikroOrmRepository);
 	}
@@ -62,6 +64,7 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 		const assignedEmployee = input.assignedEmployeeId
 			? await this.findAssignableEmployee(input.assignedEmployeeId, scope)
 			: undefined;
+		const category = input.categoryId ? await this.findActiveCategory(input.categoryId, scope) : undefined;
 		return super.create({
 			repairOrderId: repairOrder.id,
 			estimateId: provenance.approval.estimateId,
@@ -73,6 +76,7 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 			description: provenance.approvalLine.reason,
 			internalNotes: input.internalNotes,
 			assignedEmployeeId: assignedEmployee?.id,
+			categoryId: category?.id,
 			status: assignedEmployee ? AutomotiveJobStatusEnum.ASSIGNED : AutomotiveJobStatusEnum.OPEN,
 			estimatedHours: input.estimatedHours,
 			organizationId: scope.organizationId
@@ -84,6 +88,7 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 		await this.repairOrders.findOneByOrFail({ id: repairOrderId, ...scope });
 		return this.typeOrmRepository.find({
 			where: { repairOrderId, ...scope },
+			relations: { category: true },
 			order: { createdAt: 'ASC' }
 		});
 	}
@@ -123,7 +128,7 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 	}
 
 	async findOneScoped(id: ID): Promise<AutomotiveJob> {
-		return this.typeOrmRepository.findOneByOrFail({ id, ...this.scope() });
+		return this.typeOrmRepository.findOneOrFail({ where: { id, ...this.scope() }, relations: { category: true } });
 	}
 
 	async updateJob(id: ID, input: UpdateAutomotiveJobDTO): Promise<AutomotiveJob> {
@@ -131,7 +136,15 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 		if (![AutomotiveJobStatusEnum.OPEN, AutomotiveJobStatusEnum.ASSIGNED].includes(job.status)) {
 			throw new BadRequestException('Job details are locked after work begins.');
 		}
-		await this.typeOrmRepository.update({ id, ...this.scope() }, input);
+		const { categoryId, ...changes } = input;
+		const category = categoryId ? await this.findActiveCategory(categoryId, this.scope()) : undefined;
+		await this.typeOrmRepository.update(
+			{ id, ...this.scope() },
+			{
+				...changes,
+				...(categoryId !== undefined ? { categoryId: category?.id ?? null } : {})
+			}
+		);
 		return this.findOneScoped(id);
 	}
 
@@ -219,6 +232,17 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 			throw new BadRequestException('Only active employees can be assigned to an automotive job.');
 		}
 		return employee;
+	}
+
+	private async findActiveCategory(
+		id: ID,
+		scope: { tenantId: ID; organizationId: ID }
+	): Promise<AutomotiveJobCategory> {
+		const category = await this.categories.findOneByOrFail({ id, ...scope });
+		if (category.isActive === false || category.isArchived) {
+			throw new BadRequestException('Only active automotive job categories can be assigned.');
+		}
+		return category;
 	}
 
 	private scope(): { tenantId: ID; organizationId: ID } {

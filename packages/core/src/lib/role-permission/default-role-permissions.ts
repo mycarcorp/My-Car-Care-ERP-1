@@ -189,6 +189,10 @@ export const DEFAULT_ROLE_PERMISSIONS = [
 			PermissionsEnum.ORG_PRODUCT_TYPES_EDIT,
 			PermissionsEnum.ORG_PRODUCT_CATEGORIES_VIEW,
 			PermissionsEnum.ORG_PRODUCT_CATEGORIES_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_CATEGORIES_VIEW,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_CATEGORIES_ADD,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_CATEGORIES_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_CATEGORIES_DELETE,
 			PermissionsEnum.VIEW_ALL_ACCOUNTING_TEMPLATES,
 			PermissionsEnum.MIGRATE_GAUZY_CLOUD,
 			PermissionsEnum.INVENTORY_GALLERY_ADD,
@@ -448,6 +452,10 @@ export const DEFAULT_ROLE_PERMISSIONS = [
 			PermissionsEnum.ORG_PRODUCT_TYPES_EDIT,
 			PermissionsEnum.ORG_PRODUCT_CATEGORIES_VIEW,
 			PermissionsEnum.ORG_PRODUCT_CATEGORIES_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_CATEGORIES_VIEW,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_CATEGORIES_ADD,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_CATEGORIES_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_CATEGORIES_DELETE,
 			PermissionsEnum.VIEW_ALL_ACCOUNTING_TEMPLATES,
 			PermissionsEnum.MIGRATE_GAUZY_CLOUD,
 			PermissionsEnum.INVENTORY_GALLERY_ADD,
@@ -657,6 +665,7 @@ export const DEFAULT_ROLE_PERMISSIONS = [
 			PermissionsEnum.EQUIPMENT_MAKE_REQUEST,
 			PermissionsEnum.ORG_PRODUCT_TYPES_VIEW,
 			PermissionsEnum.ORG_PRODUCT_CATEGORIES_VIEW,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_CATEGORIES_VIEW,
 			PermissionsEnum.ACCESS_DELETE_ACCOUNT,
 			PermissionsEnum.PROFILE_EDIT,
 			PermissionsEnum.ALLOW_DELETE_TIME,
@@ -697,10 +706,7 @@ export const DEFAULT_ROLE_PERMISSIONS = [
 	},
 	{
 		role: RolesEnum.CANDIDATE,
-		defaultEnabledPermissions: [
-			PermissionsEnum.ORG_STRATEGIC_INITIATIVE_READ,
-			PermissionsEnum.PLUGIN_VIEW
-		]
+		defaultEnabledPermissions: [PermissionsEnum.ORG_STRATEGIC_INITIATIVE_READ, PermissionsEnum.PLUGIN_VIEW]
 	},
 	{
 		role: RolesEnum.MANAGER,

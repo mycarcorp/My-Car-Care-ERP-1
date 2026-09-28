@@ -11,12 +11,14 @@ import { RepairOrder } from '../repair-order/repair-order.entity';
 import { RolePermissionModule } from '../role-permission/role-permission.module';
 import { AutomotiveJobController } from './automotive-job.controller';
 import { AutomotiveJob } from './automotive-job.entity';
+import { AutomotiveJobCategory } from '../automotive-job-category/automotive-job-category.entity';
 import { AutomotiveJobService } from './automotive-job.service';
 import { MikroOrmAutomotiveJobRepository } from './repository/mikro-orm-automotive-job.repository';
 import { TypeOrmAutomotiveJobRepository } from './repository/type-orm-automotive-job.repository';
 
 const entities = [
 	AutomotiveJob,
+	AutomotiveJobCategory,
 	RepairOrder,
 	CustomerWorkApproval,
 	CustomerWorkApprovalLine,
