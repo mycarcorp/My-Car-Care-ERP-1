@@ -88,6 +88,177 @@
 									</button>
 								}
 							</div>
+							<section class="labor-section" [attr.aria-label]="'Labor for ' + job.title">
+								<div class="labor-header">
+									<h6>Labor</h6>
+									<span>{{ (laborByJob[job.id] || []).length }} operations</span>
+								</div>
+								@if (!(laborByJob[job.id] || []).length) {
+									<p class="empty-state">No labor operations.</p>
+								} @else {
+									<div class="labor-list">
+										@for (labor of laborByJob[job.id]; track labor.id) {
+											<article class="labor-row">
+												<div class="labor-heading">
+													<strong>{{ labor.description }}</strong>
+													<nb-badge [text]="labor.status" status="basic"></nb-badge>
+												</div>
+												<div class="labor-metrics">
+													<span
+														>Billed / estimated:
+														{{ labor.billedHours ?? 'Not set' }} h</span
+													>
+													<span
+														>Actual technician time:
+														{{ labor.actualSeconds / 3600 | number: '1.1-2' }} h</span
+													>
+													<span>
+														Technicians:
+														@for (
+															technician of labor.assignedEmployees || [];
+															track technician.id
+														) {
+															{{ technician.user?.firstName }}
+															{{ technician.user?.lastName }}{{ $last ? '' : ', ' }}
+														}
+													</span>
+													<span
+														>{{ (labor.activeEmployeeIds || []).length }} technician
+														clock(s) running</span
+													>
+												</div>
+												@if (
+													canManageLabor &&
+													labor.status !== 'COMPLETED' &&
+													labor.status !== 'CANCELLED'
+												) {
+													<div class="labor-edit-grid">
+														<label>
+															Description
+															<input
+																#laborDescription
+																nbInput
+																[value]="labor.description"
+																maxlength="500"
+															/>
+														</label>
+														<label>
+															Billed / estimated hours
+															<input
+																#laborHours
+																nbInput
+																type="number"
+																min="0"
+																step="0.1"
+																[value]="labor.billedHours ?? ''"
+															/>
+														</label>
+														<ga-employee-multi-select
+															[allEmployees]="employees"
+															[selectedEmployeeIds]="laborTechnicianById[labor.id] || []"
+															[multiple]="true"
+															[placeholder]="'Assign labor technician'"
+															(selectedChange)="setLaborTechnician(labor.id, $event)"
+														></ga-employee-multi-select>
+														<button
+															nbButton
+															size="small"
+															status="basic"
+															(click)="
+																saveLabor(
+																	labor,
+																	laborDescription.value,
+																	laborHours.value
+																)
+															"
+														>
+															Save labor
+														</button>
+													</div>
+												}
+												@if (
+													(labor.assignedEmployeeIds || []).includes(currentEmployeeId) &&
+													labor.status !== 'COMPLETED' &&
+													labor.status !== 'CANCELLED'
+												) {
+													<div class="labor-actions">
+														@if (
+															(labor.activeEmployeeIds || []).includes(currentEmployeeId)
+														) {
+															<button
+																nbButton
+																size="small"
+																status="warning"
+																(click)="stopLaborClock(labor)"
+															>
+																Stop clock
+															</button>
+														} @else {
+															<button
+																nbButton
+																size="small"
+																status="primary"
+																(click)="startLaborClock(labor)"
+															>
+																Start clock
+															</button>
+														}
+													</div>
+												}
+												@if (
+													(canCompleteLabor ||
+														(labor.assignedEmployeeIds || []).includes(
+															currentEmployeeId
+														)) &&
+													labor.status !== 'COMPLETED' &&
+													labor.status !== 'CANCELLED'
+												) {
+													<button
+														nbButton
+														size="small"
+														status="success"
+														(click)="completeLabor(labor)"
+													>
+														Complete labor
+													</button>
+												}
+											</article>
+										}
+									</div>
+								}
+								@if (
+									canManageLabor &&
+									job.status !== statuses.COMPLETED &&
+									job.status !== statuses.CANCELLED
+								) {
+									<div class="labor-create-grid">
+										<label>
+											New labor description
+											<input #newLaborDescription nbInput maxlength="500" />
+										</label>
+										<label>
+											Billed / estimated hours
+											<input #newLaborHours nbInput type="number" min="0" step="0.1" />
+										</label>
+										<ga-employee-multi-select
+											[allEmployees]="employees"
+											[selectedEmployeeIds]="newLaborTechnicianByJob[job.id] || []"
+											[multiple]="true"
+											[placeholder]="'Assign labor technician (optional)'"
+											(selectedChange)="setNewLaborTechnician(job.id, $event)"
+										></ga-employee-multi-select>
+										<button
+											nbButton
+											size="small"
+											status="basic"
+											[disabled]="!newLaborDescription.value.trim()"
+											(click)="createLabor(job, newLaborDescription.value, newLaborHours.value)"
+										>
+											Add labor
+										</button>
+									</div>
+								}
+							</section>
 						</article>
 					}
 				</div>

@@ -16,6 +16,7 @@ import { IGetTimeLogReportInput, IManualTimeInput } from '@gauzy/contracts';
 import { moment } from '../../core/moment-extend';
 import { getDateRangeFormat, MultiORMEnum } from '../../core/utils';
 import { ManagedEmployeeService } from '../../employee/managed-employee.service';
+import { RequestContext } from '../../core/context';
 import {
 	executedFilters,
 	mockRequestContext,
@@ -24,7 +25,7 @@ import {
 } from '../testing/recording-query-builder';
 import { TypeOrmEmployeeRepository } from '../../employee/repository/type-orm-employee.repository';
 import { TypeOrmTimeLogRepository } from './repository/type-orm-time-log.repository';
-import { TimeLogCreateCommand, IGetConflictTimeLogCommand } from './commands';
+import { TimeLogCreateCommand, IGetConflictTimeLogCommand, TimeLogUpdateCommand } from './commands';
 import { TimeLogService } from './time-log.service';
 
 const TENANT_ID = '5a1c2f0e-6d3b-4c8a-9e2f-1b7d4a6c8e90';
@@ -67,6 +68,149 @@ describe('TimeLogService', () => {
 		service = module.get<TimeLogService>(TimeLogService);
 		// The ORM switch is resolved from DB_ORM at module load; pin it so the suite ignores the local .env.
 		Object.defineProperty(service, 'ormType', { value: MultiORMEnum.TypeORM });
+	});
+
+	describe('automotive labor clock completion', () => {
+		it('stops every active labor log in the authenticated tenant and organization through the existing update command', async () => {
+			const activeLogs = [
+				{ id: 'log-1', startedAt: new Date(Date.now() - 60_000) },
+				{ id: 'log-2', startedAt: new Date(Date.now() - 120_000) }
+			];
+			const find = jest.fn().mockResolvedValue(activeLogs);
+			const execute = jest.fn().mockResolvedValue(undefined);
+			Object.assign(service, {
+				typeOrmTimeLogRepository: { find },
+				commandBus: { execute }
+			});
+			mockRequestContext({
+				tenantId: TENANT_ID,
+				user: { id: USER_ID, employeeId: CURRENT_EMPLOYEE_ID },
+				canChangeSelectedEmployee: true
+			});
+			jest.spyOn(RequestContext, 'currentOrganizationId').mockReturnValue(ORGANIZATION_ID);
+
+			await service.stopRunningAutomotiveJobLaborLogs('labor-1');
+
+			expect(find).toHaveBeenCalledWith({
+				where: {
+					automotiveJobLaborId: 'labor-1',
+					tenantId: TENANT_ID,
+					organizationId: ORGANIZATION_ID,
+					isRunning: true
+				}
+			});
+			expect(execute).toHaveBeenCalledTimes(2);
+			for (const [command] of execute.mock.calls) {
+				expect(command).toBeInstanceOf(TimeLogUpdateCommand);
+				expect(command.input).toMatchObject({ isRunning: false, stoppedAt: expect.any(Date) });
+				expect(command.input.stoppedAt.getTime()).toBeGreaterThanOrEqual(command.input.startedAt ?? 0);
+			}
+		});
+	});
+
+	describe('manual time attached to automotive labor', () => {
+		const laborId = '9e6bb67e-837e-4c33-98b2-e60eaece1a12';
+		const jobId = 'fb4e1ee4-d955-44b5-8350-3ab93c9e79d1';
+		const startedAt = new Date('2026-01-05T09:00:00.000Z');
+		const stoppedAt = new Date('2026-01-05T10:00:00.000Z');
+
+		beforeEach(() => {
+			mockRequestContext({
+				tenantId: TENANT_ID,
+				user: { id: USER_ID, employeeId: CURRENT_EMPLOYEE_ID },
+				canChangeSelectedEmployee: false
+			});
+			Object.assign(service, {
+				typeOrmEmployeeRepository: {
+					findOne: jest.fn().mockResolvedValue({
+						id: CURRENT_EMPLOYEE_ID,
+						tenantId: TENANT_ID,
+						organizationId: ORGANIZATION_ID,
+						organization: { futureDateAllowed: true }
+					})
+				},
+				typeOrmTimeLogRepository: {
+					manager: {
+						findOne: jest.fn(async (entity) =>
+							entity.name === 'AutomotiveJob'
+								? {
+										id: jobId,
+										tenantId: TENANT_ID,
+										organizationId: ORGANIZATION_ID,
+										status: 'IN_PROGRESS',
+										assignedEmployeeId: 'job-default-tech'
+									}
+								: {
+										id: laborId,
+										automotiveJobId: jobId,
+										tenantId: TENANT_ID,
+										organizationId: ORGANIZATION_ID,
+										assignedEmployees: [{ id: CURRENT_EMPLOYEE_ID }],
+										status: 'IN_PROGRESS'
+									}
+						)
+					}
+				},
+				commandBus: {
+					execute: jest.fn(async (command) =>
+						command instanceof TimeLogCreateCommand ? { id: 'created-log' } : []
+					)
+				}
+			});
+			jest.spyOn(service as any, 'allowDate').mockReturnValue(true);
+		});
+
+		it('records a new separate TimeLog against assigned labor, even when the job default technician differs', async () => {
+			await service.addManualTime({
+				employeeId: CURRENT_EMPLOYEE_ID,
+				organizationId: ORGANIZATION_ID,
+				startedAt,
+				stoppedAt,
+				automotiveJobId: jobId,
+				automotiveJobLaborId: laborId
+			});
+			const create = (service as any).commandBus.execute.mock.calls
+				.map(([command]) => command)
+				.find((command) => command instanceof TimeLogCreateCommand);
+			expect(create.input).toMatchObject({
+				automotiveJobId: jobId,
+				automotiveJobLaborId: laborId,
+				employeeId: CURRENT_EMPLOYEE_ID
+			});
+		});
+
+		it('rejects manual time when the labor is assigned to another technician', async () => {
+			const manager = service.typeOrmTimeLogRepository.manager;
+			(manager.findOne as jest.Mock).mockImplementation(async (entity) =>
+				entity.name === 'AutomotiveJob'
+					? {
+							id: jobId,
+							tenantId: TENANT_ID,
+							organizationId: ORGANIZATION_ID,
+							status: 'IN_PROGRESS',
+							assignedEmployeeId: 'job-default-tech'
+						}
+					: {
+							id: laborId,
+							automotiveJobId: jobId,
+							tenantId: TENANT_ID,
+							organizationId: ORGANIZATION_ID,
+							assignedEmployees: [{ id: TARGET_EMPLOYEE_ID }],
+							status: 'IN_PROGRESS'
+						}
+			);
+			await expect(
+				service.addManualTime({
+					employeeId: CURRENT_EMPLOYEE_ID,
+					organizationId: ORGANIZATION_ID,
+					startedAt,
+					stoppedAt,
+					automotiveJobId: jobId,
+					automotiveJobLaborId: laborId
+				})
+			).rejects.toThrow('Manual time can only be recorded by an assigned labor technician.');
+			expect((service as any).commandBus.execute).not.toHaveBeenCalled();
+		});
 	});
 
 	afterEach(() => {

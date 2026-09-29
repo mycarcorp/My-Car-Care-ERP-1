@@ -13,6 +13,10 @@ export class CreateManualTimeLogDTO extends ManualTimeLogDTO implements IManualT
 	@IsOptional()
 	@IsUUID()
 	automotiveJobId?: string;
+	@ApiPropertyOptional({ type: () => String })
+	@IsOptional()
+	@IsUUID()
+	automotiveJobLaborId?: string;
 	/**
 	 * Type of the time log (e.g., MANUAL).
 	 */

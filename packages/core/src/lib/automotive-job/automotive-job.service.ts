@@ -18,6 +18,7 @@ import { Estimate } from '../estimate/estimate.entity';
 import { EstimateLine } from '../estimate/estimate-line.entity';
 import { RepairOrder } from '../repair-order/repair-order.entity';
 import { AutomotiveJobCategory } from '../automotive-job-category/automotive-job-category.entity';
+import { AutomotiveJobLaborService } from '../automotive-job-labor/automotive-job-labor.service';
 import { AssignAutomotiveJobDTO, CreateAutomotiveJobDTO, UpdateAutomotiveJobDTO } from './dto';
 import { AutomotiveJob } from './automotive-job.entity';
 import { MikroOrmAutomotiveJobRepository } from './repository/mikro-orm-automotive-job.repository';
@@ -45,7 +46,8 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 		@InjectRepository(Estimate) private readonly estimates: Repository<Estimate>,
 		@InjectRepository(EstimateLine) private readonly estimateLines: Repository<EstimateLine>,
 		@InjectRepository(Employee) private readonly employees: Repository<Employee>,
-		@InjectRepository(AutomotiveJobCategory) private readonly categories: Repository<AutomotiveJobCategory>
+		@InjectRepository(AutomotiveJobCategory) private readonly categories: Repository<AutomotiveJobCategory>,
+		private readonly jobLabor: AutomotiveJobLaborService
 	) {
 		super(typeOrmRepository, mikroOrmRepository);
 	}
@@ -65,7 +67,7 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 			? await this.findAssignableEmployee(input.assignedEmployeeId, scope)
 			: undefined;
 		const category = input.categoryId ? await this.findActiveCategory(input.categoryId, scope) : undefined;
-		return super.create({
+		const job = await super.create({
 			repairOrderId: repairOrder.id,
 			estimateId: provenance.approval.estimateId,
 			estimateRevisionNumber: provenance.approval.estimateRevisionNumber,
@@ -81,6 +83,14 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 			estimatedHours: input.estimatedHours,
 			organizationId: scope.organizationId
 		});
+		await this.jobLabor.createInitialForJob(
+			job,
+			provenance.approvalLine,
+			provenance.estimateLine,
+			assignedEmployee ? [assignedEmployee.id] : [],
+			input.estimatedHours
+		);
+		return job;
 	}
 
 	async findForRepairOrder(repairOrderId: ID): Promise<AutomotiveJob[]> {
@@ -161,6 +171,7 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 				status: AutomotiveJobStatusEnum.ASSIGNED
 			}
 		);
+		await this.jobLabor.assignDefaultTechnician(id, employee.id);
 		return this.findOneScoped(id);
 	}
 

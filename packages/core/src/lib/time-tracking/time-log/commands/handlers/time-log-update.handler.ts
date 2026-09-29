@@ -25,7 +25,8 @@ const TIME_LOG_SCOPE_FIELDS = [
 	'organizationId',
 	'organization',
 	'employee',
-	'automotiveJobId'
+	'automotiveJobId',
+	'automotiveJobLaborId'
 ] as const;
 
 /**

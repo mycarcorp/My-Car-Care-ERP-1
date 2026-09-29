@@ -12,6 +12,7 @@ import { RolePermissionModule } from '../role-permission/role-permission.module'
 import { AutomotiveJobController } from './automotive-job.controller';
 import { AutomotiveJob } from './automotive-job.entity';
 import { AutomotiveJobCategory } from '../automotive-job-category/automotive-job-category.entity';
+import { AutomotiveJobLaborModule } from '../automotive-job-labor/automotive-job-labor.module';
 import { AutomotiveJobService } from './automotive-job.service';
 import { MikroOrmAutomotiveJobRepository } from './repository/mikro-orm-automotive-job.repository';
 import { TypeOrmAutomotiveJobRepository } from './repository/type-orm-automotive-job.repository';
@@ -29,7 +30,12 @@ const entities = [
 ];
 
 @Module({
-	imports: [TypeOrmModule.forFeature(entities), MikroOrmModule.forFeature(entities), RolePermissionModule],
+	imports: [
+		TypeOrmModule.forFeature(entities),
+		MikroOrmModule.forFeature(entities),
+		RolePermissionModule,
+		AutomotiveJobLaborModule
+	],
 	controllers: [AutomotiveJobController],
 	providers: [AutomotiveJobService, TypeOrmAutomotiveJobRepository, MikroOrmAutomotiveJobRepository],
 	exports: [AutomotiveJobService]

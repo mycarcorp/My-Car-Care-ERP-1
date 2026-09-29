@@ -11,6 +11,8 @@ import {
 	TimeLogSourceEnum,
 	ITimerStatusInput,
 	ITimeLog,
+	AutomotiveJobStatusEnum,
+	AutomotiveJobLaborStatusEnum,
 	PermissionsEnum,
 	ITimeSlot,
 	IEmployee,
@@ -43,6 +45,8 @@ import {
 } from '../time-log/commands';
 import { TypeOrmTimeLogRepository } from '../time-log/repository/type-orm-time-log.repository';
 import { MikroOrmTimeLogRepository } from '../time-log/repository/mikro-orm-time-log.repository';
+import { AutomotiveJob } from '../../automotive-job/automotive-job.entity';
+import { AutomotiveJobLabor } from '../../automotive-job-labor/automotive-job-labor.entity';
 import { TypeOrmEmployeeRepository } from '../../employee/repository/type-orm-employee.repository';
 import { MikroOrmEmployeeRepository } from '../../employee/repository/mikro-orm-employee.repository';
 import { addRelationsToQuery, buildCommonQueryParameters, buildLogQueryParameters } from './timer.helper';
@@ -247,6 +251,9 @@ export class TimerService {
 
 		// Get the employee ID
 		const { id: employeeId, organizationId } = employee;
+		if (request.automotiveJobId || request.automotiveJobLaborId) {
+			await this.validateAutomotiveJobClock(request, employee, tenantId, organizationId);
+		}
 
 		// Stop any previous running timers
 		await this.stopPreviousRunningTimers(employeeId, organizationId, tenantId);
@@ -266,6 +273,8 @@ export class TimerService {
 				taskId: taskId || null,
 				organizationContactId: organizationContactId || null,
 				organizationTeamId: organizationTeamId || null,
+				automotiveJobId: request.automotiveJobId || null,
+				automotiveJobLaborId: request.automotiveJobLaborId || null,
 				description: description || null,
 				isBillable: isBillable || false,
 				version: version || null,
@@ -283,6 +292,59 @@ export class TimerService {
 
 		// Return the newly created time log entry
 		return timeLog;
+	}
+
+	async startAutomotiveJobLaborClock(automotiveJobId: ID, automotiveJobLaborId: ID): Promise<ITimeLog> {
+		return this.startTimer({ automotiveJobId, automotiveJobLaborId });
+	}
+
+	async stopAutomotiveJobLaborClock(automotiveJobLaborId: ID): Promise<ITimeLog> {
+		const activeLog = await this.getLastRunningLog();
+		if (!activeLog || activeLog.automotiveJobLaborId !== automotiveJobLaborId) {
+			throw new NotFoundException('No active clock exists for this labor and technician.');
+		}
+		return this.stopTimer({});
+	}
+
+	private async validateAutomotiveJobClock(
+		request: ITimerToggleInput,
+		employee: IEmployee,
+		tenantId: ID,
+		organizationId: ID
+	): Promise<void> {
+		if (!request.automotiveJobId) {
+			throw new NotAcceptableException('An automotive job is required when clocking automotive work.');
+		}
+		const job = await this.typeOrmTimeLogRepository.manager.findOne(AutomotiveJob, {
+			where: { id: request.automotiveJobId, tenantId, organizationId }
+		});
+		if (!job) throw new NotFoundException('Automotive job was not found in this organization.');
+		let assignedEmployeeId = job.assignedEmployeeId;
+		if (request.automotiveJobLaborId) {
+			const labor = await this.typeOrmTimeLogRepository.manager.findOne(AutomotiveJobLabor, {
+				where: { id: request.automotiveJobLaborId, automotiveJobId: job.id, tenantId, organizationId },
+				relations: { assignedEmployees: true }
+			});
+			if (!labor) throw new NotFoundException('Automotive job labor was not found in this organization.');
+			if (
+				[AutomotiveJobLaborStatusEnum.COMPLETED, AutomotiveJobLaborStatusEnum.CANCELLED].includes(labor.status)
+			) {
+				throw new NotAcceptableException('A clock cannot be started for completed or cancelled labor.');
+			}
+			if (!labor.assignedEmployees?.some((assignedEmployee) => assignedEmployee.id === employee.id)) {
+				throw new ForbiddenException('Only an assigned labor technician can start this clock.');
+			}
+		}
+		if (!request.automotiveJobLaborId) {
+			if (job.status !== AutomotiveJobStatusEnum.IN_PROGRESS) {
+				throw new NotAcceptableException(
+					'A technician clock can only start while the automotive job is in progress.'
+				);
+			}
+			if (!assignedEmployeeId || assignedEmployeeId !== employee.id) {
+				throw new ForbiddenException('Only the assigned technician can start this automotive job clock.');
+			}
+		}
 	}
 
 	/**

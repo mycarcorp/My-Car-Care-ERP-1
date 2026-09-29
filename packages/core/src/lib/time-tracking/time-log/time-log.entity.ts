@@ -37,6 +37,7 @@ import {
 } from '../../core/decorators/entity';
 import { MikroOrmTimeLogRepository } from './repository/mikro-orm-time-log.repository';
 import { AutomotiveJob } from '../../automotive-job/automotive-job.entity';
+import { AutomotiveJobLabor } from '../../automotive-job-labor/automotive-job-labor.entity';
 
 @MultiORMEntity('time_log', { mikroOrmRepository: () => MikroOrmTimeLogRepository })
 export class TimeLog extends TenantOrganizationBaseEntity implements ITimeLog {
@@ -224,6 +225,18 @@ export class TimeLog extends TenantOrganizationBaseEntity implements ITimeLog {
 	@ColumnIndex()
 	@MultiORMColumn({ nullable: true, relationId: true })
 	automotiveJobId?: ID;
+
+	@MultiORMManyToOne(() => AutomotiveJobLabor, { nullable: true, onDelete: 'RESTRICT' })
+	@JoinColumn()
+	automotiveJobLabor?: AutomotiveJobLabor;
+
+	@ApiPropertyOptional({ type: () => String })
+	@IsOptional()
+	@IsUUID()
+	@RelationId((it: TimeLog) => it.automotiveJobLabor)
+	@ColumnIndex()
+	@MultiORMColumn({ nullable: true, relationId: true })
+	automotiveJobLaborId?: ID;
 
 	/**
 	 * OrganizationContact

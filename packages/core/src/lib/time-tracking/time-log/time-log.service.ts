@@ -71,7 +71,8 @@ import { TypeOrmOrganizationContactRepository } from '../../organization-contact
 import { ManagedEmployeeService } from '../../employee/managed-employee.service';
 import { TimeLog } from './time-log.entity';
 import { AutomotiveJob } from '../../automotive-job/automotive-job.entity';
-import { AutomotiveJobStatusEnum } from '@gauzy/contracts';
+import { AutomotiveJobLabor } from '../../automotive-job-labor/automotive-job-labor.entity';
+import { AutomotiveJobLaborStatusEnum, AutomotiveJobStatusEnum } from '@gauzy/contracts';
 
 @Injectable()
 export class TimeLogService extends TenantAwareCrudService<TimeLog> {
@@ -1592,15 +1593,47 @@ export class TimeLogService extends TenantAwareCrudService<TimeLog> {
 			// judge the write by one organization's rules and then persist it — log, slots and timesheet —
 			// under another's. The body value is only a fallback for an employee without an organization.
 			const organizationId = employee.organizationId ?? request.organizationId;
+			if (request.automotiveJobLaborId && !request.automotiveJobId) {
+				throw new BadRequestException('Automotive job is required when specifying automotive labor.');
+			}
 			if (request.automotiveJobId) {
 				const job = await this.typeOrmTimeLogRepository.manager.findOne(AutomotiveJob, {
 					where: { id: request.automotiveJobId, tenantId, organizationId }
 				});
 				if (!job) throw new NotFoundException('Automotive job was not found in this organization.');
-				if (job.status !== AutomotiveJobStatusEnum.IN_PROGRESS || job.assignedEmployeeId !== employeeId) {
-					throw new BadRequestException(
-						'Manual time can only be recorded by the assigned technician on an in-progress job.'
-					);
+				let assignedEmployeeId = job.assignedEmployeeId;
+				if (request.automotiveJobLaborId) {
+					const labor = await this.typeOrmTimeLogRepository.manager.findOne(AutomotiveJobLabor, {
+						where: {
+							id: request.automotiveJobLaborId,
+							automotiveJobId: job.id,
+							tenantId,
+							organizationId
+						},
+						relations: { assignedEmployees: true }
+					});
+					if (!labor) throw new NotFoundException('Automotive job labor was not found in this organization.');
+					if (
+						[AutomotiveJobLaborStatusEnum.COMPLETED, AutomotiveJobLaborStatusEnum.CANCELLED].includes(
+							labor.status
+						)
+					) {
+						throw new BadRequestException(
+							'Manual time cannot be recorded against completed or cancelled labor.'
+						);
+					}
+					if (!labor.assignedEmployees?.some((assignedEmployee) => assignedEmployee.id === employeeId)) {
+						throw new BadRequestException(
+							'Manual time can only be recorded by an assigned labor technician.'
+						);
+					}
+				}
+				if (!request.automotiveJobLaborId) {
+					if (job.status !== AutomotiveJobStatusEnum.IN_PROGRESS || assignedEmployeeId !== employeeId) {
+						throw new BadRequestException(
+							'Manual time can only be recorded by the assigned technician on an in-progress job.'
+						);
+					}
 				}
 			}
 
@@ -1728,6 +1761,27 @@ export class TimeLogService extends TenantAwareCrudService<TimeLog> {
 				throw error;
 			}
 			throw new BadRequestException(`Failed to update manual time log: ${error?.message ?? error}`);
+		}
+	}
+
+	async stopRunningAutomotiveJobLaborLogs(automotiveJobLaborId: ID): Promise<void> {
+		const tenantId = RequestContext.currentTenantId();
+		const organizationId = RequestContext.currentOrganizationId();
+		if (!tenantId || !organizationId) {
+			throw new BadRequestException('Tenant and organization context are required.');
+		}
+		const activeLogs = await this.typeOrmTimeLogRepository.find({
+			where: { automotiveJobLaborId, tenantId, organizationId, isRunning: true }
+		});
+		for (const log of activeLogs) {
+			const startedAt = new Date(log.startedAt);
+			const stoppedAt = new Date();
+			await this.commandBus.execute(
+				new TimeLogUpdateCommand(
+					{ isRunning: false, stoppedAt: stoppedAt >= startedAt ? stoppedAt : startedAt },
+					log.id
+				)
+			);
 		}
 	}
 

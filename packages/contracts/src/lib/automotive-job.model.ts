@@ -1,5 +1,6 @@
 import { IBasePerTenantAndOrganizationEntityModel, ID } from './base-entity.model';
 import { IAutomotiveJobCategory } from './automotive-job-category.model';
+import { IAutomotiveJobLabor } from './automotive-job-labor.model';
 
 export enum AutomotiveJobStatusEnum {
 	OPEN = 'OPEN',
@@ -26,6 +27,7 @@ export interface IAutomotiveJob extends IBasePerTenantAndOrganizationEntityModel
 	authorizedHours?: number;
 	categoryId?: ID;
 	category?: IAutomotiveJobCategory;
+	labor?: IAutomotiveJobLabor[];
 }
 
 export interface IAutomotiveJobCreateInput {

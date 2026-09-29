@@ -17,14 +17,15 @@ import { TimeSlotModule } from './../time-slot/time-slot.module';
 import { TypeOrmTimeLogRepository } from './repository/type-orm-time-log.repository';
 import { MikroOrmTimeLogRepository } from './repository/mikro-orm-time-log.repository';
 import { AutomotiveJob } from '../../automotive-job/automotive-job.entity';
+import { AutomotiveJobLabor } from '../../automotive-job-labor/automotive-job-labor.entity';
 
 @Module({
 	controllers: [TimeLogController],
 	imports: [
 		// `Organization` is registered here so that `OrganizationPermissionGuard`, which this
 		// controller applies, can read the organization time-tracking policy columns.
-		TypeOrmModule.forFeature([TimeLog, Organization, AutomotiveJob]),
-		MikroOrmModule.forFeature([TimeLog, Organization, AutomotiveJob]),
+		TypeOrmModule.forFeature([TimeLog, Organization, AutomotiveJob, AutomotiveJobLabor]),
+		MikroOrmModule.forFeature([TimeLog, Organization, AutomotiveJob, AutomotiveJobLabor]),
 		RolePermissionModule,
 		forwardRef(() => EmployeeModule),
 		forwardRef(() => OrganizationProjectModule),

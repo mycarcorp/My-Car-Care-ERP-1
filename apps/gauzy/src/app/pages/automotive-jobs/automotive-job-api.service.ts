@@ -7,6 +7,10 @@ import {
 	IAutomotiveJobCategory,
 	IAutomotiveJobCategoryCreateInput,
 	IAutomotiveJobCategoryUpdateInput,
+	IAutomotiveJobLabor,
+	IAutomotiveJobLaborCreateInput,
+	IAutomotiveJobLaborUpdateInput,
+	IAutomotiveJobLaborView,
 	IAutomotiveJobAssignInput,
 	IAutomotiveJobCreateInput,
 	IAutomotiveJobUpdateInput,
@@ -82,5 +86,37 @@ export class AutomotiveJobApiService {
 
 	deleteCategory(id: string): Promise<void> {
 		return firstValueFrom(this.http.delete<void>(`${this.baseUrl}/automotive-job-categories/${id}`));
+	}
+
+	listLabor(jobId: string): Promise<IAutomotiveJobLaborView[]> {
+		return firstValueFrom(
+			this.http.get<IAutomotiveJobLaborView[]>(`${this.baseUrl}/automotive-jobs/${jobId}/labor`)
+		);
+	}
+
+	createLabor(jobId: string, body: IAutomotiveJobLaborCreateInput): Promise<IAutomotiveJobLabor> {
+		return firstValueFrom(
+			this.http.post<IAutomotiveJobLabor>(`${this.baseUrl}/automotive-jobs/${jobId}/labor`, body)
+		);
+	}
+
+	updateLabor(laborId: string, body: IAutomotiveJobLaborUpdateInput): Promise<IAutomotiveJobLabor> {
+		return firstValueFrom(
+			this.http.put<IAutomotiveJobLabor>(`${this.baseUrl}/automotive-job-labor/${laborId}`, body)
+		);
+	}
+
+	completeLabor(laborId: string): Promise<IAutomotiveJobLabor> {
+		return firstValueFrom(
+			this.http.patch<IAutomotiveJobLabor>(`${this.baseUrl}/automotive-job-labor/${laborId}/complete`, {})
+		);
+	}
+
+	startLaborClock(laborId: string): Promise<unknown> {
+		return firstValueFrom(this.http.post(`${this.baseUrl}/automotive-job-labor/${laborId}/clock/start`, {}));
+	}
+
+	stopLaborClock(laborId: string): Promise<unknown> {
+		return firstValueFrom(this.http.post(`${this.baseUrl}/automotive-job-labor/${laborId}/clock/stop`, {}));
 	}
 }

@@ -167,6 +167,7 @@ export interface ITimeLog
 	task?: ITask;
 	taskId?: ID;
 	automotiveJobId?: ID;
+	automotiveJobLaborId?: ID;
 	timeSlots?: ITimeSlot[];
 	project?: IOrganizationProject;
 	projectId?: ID;
@@ -380,6 +381,8 @@ export interface ITimerPosition {
 
 export interface ITimerToggleInput
 	extends IBasePerTenantAndOrganizationEntityModel, Pick<IRelationalOrganizationTeam, 'organizationTeamId'> {
+	automotiveJobId?: ID;
+	automotiveJobLaborId?: ID;
 	projectId?: ID;
 	taskId?: ID;
 	organizationContactId?: ID;
@@ -399,6 +402,7 @@ export interface IManualTimeInput extends IBasePerTenantAndOrganizationEntityMod
 	projectId?: ID;
 	taskId?: ID;
 	automotiveJobId?: ID;
+	automotiveJobLaborId?: ID;
 	organizationContactId?: ID;
 	logType?: TimeLogType;
 	description?: string;

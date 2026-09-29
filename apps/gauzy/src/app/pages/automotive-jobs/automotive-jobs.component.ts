@@ -4,11 +4,14 @@ import {
 	AutomotiveJobStatusEnum,
 	IAutomotiveJob,
 	IAutomotiveJobCategory,
+	IAutomotiveJobLaborView,
 	ICustomerWorkApprovalLine,
-	IEmployee
+	IEmployee,
+	PermissionsEnum
 } from '@gauzy/contracts';
 import { firstValueFrom } from 'rxjs';
 import { EmployeesService, Store, ToastrService } from '@gauzy/ui-core/core';
+import { NgxPermissionsService } from 'ngx-permissions';
 import { AutomotiveJobApiService } from './automotive-job-api.service';
 
 @Component({
@@ -29,13 +32,20 @@ export class AutomotiveJobsComponent implements OnInit {
 	readonly selectedTechnicianByLine: Record<string, string | undefined> = {};
 	readonly selectedCategoryByLine: Record<string, string | undefined> = {};
 	readonly selectedCategoryByJob: Record<string, string | undefined> = {};
+	readonly laborByJob: Record<string, IAutomotiveJobLaborView[]> = {};
+	readonly newLaborTechnicianByJob: Record<string, string[]> = {};
+	readonly laborTechnicianById: Record<string, string[]> = {};
+	currentEmployeeId?: string;
+	canManageLabor = false;
+	canCompleteLabor = false;
 
 	constructor(
 		private readonly route: ActivatedRoute,
 		private readonly api: AutomotiveJobApiService,
 		private readonly employeesService: EmployeesService,
 		private readonly store: Store,
-		private readonly toastr: ToastrService
+		private readonly toastr: ToastrService,
+		private readonly permissions: NgxPermissionsService
 	) {}
 
 	async ngOnInit(): Promise<void> {
@@ -43,6 +53,15 @@ export class AutomotiveJobsComponent implements OnInit {
 		await this.refresh();
 		await this.loadEmployees();
 		await this.loadCategories();
+		this.currentEmployeeId = this.store.user?.employee?.id;
+		this.canManageLabor = await this.permissions.hasPermission([
+			PermissionsEnum.ALL_ORG_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_LABOR_EDIT
+		]);
+		this.canCompleteLabor = await this.permissions.hasPermission([
+			PermissionsEnum.ALL_ORG_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_LABOR_COMPLETE
+		]);
 	}
 
 	async refresh(): Promise<void> {
@@ -53,6 +72,13 @@ export class AutomotiveJobsComponent implements OnInit {
 				this.api.listAuthorizedWork(this.repairOrderId)
 			]);
 			for (const job of this.jobs) this.selectedCategoryByJob[job.id] = job.categoryId ?? '';
+			const laborResults = await Promise.all(this.jobs.map((job) => this.api.listLabor(job.id)));
+			this.jobs.forEach((job, index) => {
+				this.laborByJob[job.id] = laborResults[index];
+				for (const labor of laborResults[index]) {
+					this.laborTechnicianById[labor.id] = [...(labor.assignedEmployeeIds ?? [])];
+				}
+			});
 		} catch {
 			this.toastr.danger('Could not load authorized work for this repair order.');
 		} finally {
@@ -142,6 +168,79 @@ export class AutomotiveJobsComponent implements OnInit {
 			await this.refresh();
 		} catch {
 			this.toastr.danger('That job status transition is not allowed.');
+		}
+	}
+
+	async createLabor(job: IAutomotiveJob, description: string, billedHours: string): Promise<void> {
+		try {
+			await this.api.createLabor(job.id, {
+				description,
+				assignedEmployeeIds: this.newLaborTechnicianByJob[job.id] ?? [],
+				billedHours: billedHours === '' ? undefined : Number(billedHours)
+			});
+			this.newLaborTechnicianByJob[job.id] = undefined;
+			this.toastr.success('Automotive labor added.');
+			await this.refresh();
+		} catch {
+			this.toastr.danger('Could not add automotive labor.');
+		}
+	}
+
+	async saveLabor(labor: IAutomotiveJobLaborView, description: string, billedHours: string): Promise<void> {
+		try {
+			await this.api.updateLabor(labor.id, {
+				description,
+				assignedEmployeeIds: this.laborTechnicianById[labor.id] ?? [],
+				billedHours: billedHours === '' ? null : Number(billedHours)
+			});
+			this.toastr.success('Automotive labor updated.');
+			await this.refresh();
+		} catch {
+			this.toastr.danger('Could not update labor assignment or billed hours.');
+		}
+	}
+
+	setNewLaborTechnician(jobId: string, employeeIds: string | string[]): void {
+		this.newLaborTechnicianByJob[jobId] = Array.isArray(employeeIds)
+			? employeeIds
+			: employeeIds
+				? [employeeIds]
+				: [];
+	}
+
+	setLaborTechnician(laborId: string, employeeIds: string | string[]): void {
+		this.laborTechnicianById[laborId] = Array.isArray(employeeIds) ? employeeIds : employeeIds ? [employeeIds] : [];
+	}
+
+	async startLaborClock(labor: IAutomotiveJobLaborView): Promise<void> {
+		try {
+			await this.api.startLaborClock(labor.id);
+			this.toastr.success('Labor clock started.');
+			await this.refresh();
+		} catch {
+			this.toastr.danger(
+				'Could not start this labor clock. Confirm you are assigned and the job is in progress.'
+			);
+		}
+	}
+
+	async stopLaborClock(labor: IAutomotiveJobLaborView): Promise<void> {
+		try {
+			await this.api.stopLaborClock(labor.id);
+			this.toastr.success('Labor clock stopped.');
+			await this.refresh();
+		} catch {
+			this.toastr.danger('Could not stop this labor clock.');
+		}
+	}
+
+	async completeLabor(labor: IAutomotiveJobLaborView): Promise<void> {
+		try {
+			await this.api.completeLabor(labor.id);
+			this.toastr.success('Labor completed. Any active labor clock was stopped.');
+			await this.refresh();
+		} catch {
+			this.toastr.danger('Could not complete this labor.');
 		}
 	}
 

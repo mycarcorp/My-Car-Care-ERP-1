@@ -11,8 +11,15 @@ import {
 	TenantOrganizationBaseEntity
 } from '../core/entities/internal';
 import { AutomotiveJobCategory } from '../automotive-job-category/automotive-job-category.entity';
-import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToOne } from '../core/decorators/entity';
+import {
+	ColumnIndex,
+	MultiORMColumn,
+	MultiORMEntity,
+	MultiORMManyToOne,
+	MultiORMOneToMany
+} from '../core/decorators/entity';
 import { MikroOrmAutomotiveJobRepository } from './repository/mikro-orm-automotive-job.repository';
+import { AutomotiveJobLabor } from '../automotive-job-labor/automotive-job-labor.entity';
 
 @ColumnIndex('IDX_automotive_job_approval_line_unique', ['customerWorkApprovalLineId'], { unique: true })
 @ColumnIndex('IDX_automotive_job_ro_status', ['repairOrderId', 'status'])
@@ -96,4 +103,7 @@ export class AutomotiveJob extends TenantOrganizationBaseEntity implements IAuto
 
 	@IsOptional() @IsNumber() @Min(0) @MultiORMColumn({ nullable: true, type: 'numeric' }) estimatedHours?: number;
 	@IsOptional() @IsNumber() @Min(0) @MultiORMColumn({ nullable: true, type: 'numeric' }) authorizedHours?: number;
+
+	@MultiORMOneToMany(() => AutomotiveJobLabor, (labor) => labor.automotiveJob)
+	labor?: AutomotiveJobLabor[];
 }

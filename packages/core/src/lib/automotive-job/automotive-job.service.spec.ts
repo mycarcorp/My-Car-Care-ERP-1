@@ -72,6 +72,7 @@ describe('AutomotiveJobService', () => {
 	let estimateLines: any;
 	let employees: any;
 	let categories: any;
+	let jobLabor: any;
 
 	beforeEach(() => {
 		jest.spyOn(RequestContext, 'currentTenantId').mockReturnValue(fixture.tenantId);
@@ -110,6 +111,10 @@ describe('AutomotiveJobService', () => {
 		categories = {
 			findOneByOrFail: jest.fn(async () => ({ id: 'category-1', ...scope, name: 'Brakes', isActive: true }))
 		};
+		jobLabor = {
+			createInitialForJob: jest.fn(async () => ({ id: 'labor-1' })),
+			assignDefaultTechnician: jest.fn(async () => undefined)
+		};
 		service = new AutomotiveJobService(
 			jobs as never,
 			{} as never,
@@ -120,7 +125,8 @@ describe('AutomotiveJobService', () => {
 			estimates as never,
 			estimateLines as never,
 			employees as never,
-			categories as never
+			categories as never,
+			jobLabor as never
 		);
 	});
 
@@ -146,6 +152,13 @@ describe('AutomotiveJobService', () => {
 			estimatedHours: 1.5
 		});
 		expect(jobs.save).toHaveBeenCalledTimes(1);
+		expect(jobLabor.createInitialForJob).toHaveBeenCalledWith(
+			expect.objectContaining({ id: 'job-1' }),
+			expect.objectContaining({ id: approvalLine.id }),
+			expect.objectContaining({ id: estimateLine.id }),
+			[],
+			1.5
+		);
 	});
 
 	it('creates a job with an active category in the current tenant and organization', async () => {
