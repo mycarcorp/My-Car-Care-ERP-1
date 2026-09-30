@@ -6,7 +6,7 @@ import { ProductVariant } from '../product-variant/product-variant.entity';
 import { RolePermissionModule } from '../role-permission/role-permission.module';
 import { Warehouse } from '../warehouse/warehouse.entity';
 import { WarehouseProductVariant } from '../warehouse/warehouse-product-variant.entity';
-import { AutomotivePartController } from './automotive-part.controller';
+import { AutomotivePartController, AutomotiveJobPartConsumptionController } from './automotive-part.controller';
 import { AutomotivePartProfile } from './automotive-part-profile.entity';
 import { AutomotivePartService } from './automotive-part.service';
 import { AutomotivePartVendor } from './automotive-part-vendor.entity';
@@ -32,7 +32,7 @@ const entities = [
 
 @Module({
 	imports: [TypeOrmModule.forFeature(entities), MikroOrmModule.forFeature(entities), RolePermissionModule],
-	controllers: [AutomotivePartController],
+	controllers: [AutomotivePartController, AutomotiveJobPartConsumptionController],
 	providers: [
 		AutomotivePartService,
 		AutomotivePartVendorService,

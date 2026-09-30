@@ -2,11 +2,13 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, 
 import { ID, PermissionsEnum } from '@gauzy/contracts';
 import { PermissionGuard, TenantPermissionGuard } from '../shared/guards';
 import { Permissions } from '../shared/decorators';
-import { UUIDValidationPipe } from '../shared/pipes';
+import { UUIDValidationPipe, UseValidationPipe } from '../shared/pipes';
 import {
 	CreateAutomotivePartDTO,
 	CreateAutomotivePartVendorDTO,
 	CreatePartInventoryAdjustmentDTO,
+	ConsumeAutomotiveJobPartDTO,
+	ReverseAutomotiveJobPartDTO,
 	UpdateAutomotivePartDTO,
 	UpdateAutomotivePartVendorDTO
 } from './dto';
@@ -88,5 +90,35 @@ export class AutomotivePartController {
 	@Get(':id/stock-movements')
 	stockMovements(@Param('id', UUIDValidationPipe) id: ID) {
 		return this.stock.movements(id);
+	}
+}
+
+@UseGuards(TenantPermissionGuard, PermissionGuard)
+@Controller('/automotive-jobs/:jobId/parts/consumptions')
+export class AutomotiveJobPartConsumptionController {
+	constructor(private readonly stock: PartStockMovementService) {}
+
+	@Permissions(PermissionsEnum.ORG_AUTOMOTIVE_JOB_PART_CONSUME)
+	@Post()
+	@UseValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })
+	consume(@Param('jobId', UUIDValidationPipe) jobId: ID, @Body() body: ConsumeAutomotiveJobPartDTO) {
+		return this.stock.consumeForJob(jobId, body);
+	}
+
+	@Permissions(PermissionsEnum.ORG_AUTOMOTIVE_JOB_PART_VIEW)
+	@Get()
+	list(@Param('jobId', UUIDValidationPipe) jobId: ID) {
+		return this.stock.consumptionsForJob(jobId);
+	}
+
+	@Permissions(PermissionsEnum.ORG_AUTOMOTIVE_JOB_PART_REVERSE)
+	@Post(':movementId/reverse')
+	@UseValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })
+	reverse(
+		@Param('jobId', UUIDValidationPipe) jobId: ID,
+		@Param('movementId', UUIDValidationPipe) movementId: ID,
+		@Body() body: ReverseAutomotiveJobPartDTO
+	) {
+		return this.stock.reverseForJob(jobId, movementId, body.reason);
 	}
 }

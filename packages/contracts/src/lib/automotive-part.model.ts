@@ -3,7 +3,9 @@ import { IBasePerTenantAndOrganizationEntityModel, ID } from './base-entity.mode
 export enum PartStockMovementTypeEnum {
 	ADJUSTMENT_IN = 'ADJUSTMENT_IN',
 	ADJUSTMENT_OUT = 'ADJUSTMENT_OUT',
-	RECEIPT_IN = 'RECEIPT_IN'
+	RECEIPT_IN = 'RECEIPT_IN',
+	JOB_CONSUMPTION_OUT = 'JOB_CONSUMPTION_OUT',
+	JOB_CONSUMPTION_REVERSAL_IN = 'JOB_CONSUMPTION_REVERSAL_IN'
 }
 
 export interface IAutomotivePartProfile extends IBasePerTenantAndOrganizationEntityModel {
@@ -34,6 +36,13 @@ export interface IPartStockMovement extends IBasePerTenantAndOrganizationEntityM
 	warehouseProductVariantId: ID;
 	inventorySource?: import('./purchase-order.model').InventorySourceEnum;
 	purchaseReceiptId?: ID;
+	automotiveJobId?: ID;
+	repairOrderId?: ID;
+	unitCost?: number;
+	costCurrency?: string;
+	recordedByUserId?: ID;
+	reversesMovementId?: ID;
+	operationKey?: string;
 	type: PartStockMovementTypeEnum;
 	quantityDelta: number;
 	quantityBefore: number;

@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 import { PartStockMovementTypeEnum } from '@gauzy/contracts';
 
 export class CreateAutomotivePartDTO {
@@ -42,8 +42,20 @@ export class UpdateAutomotivePartVendorDTO {
 export class CreatePartInventoryAdjustmentDTO {
 	@IsUUID() warehouseId: string;
 	@IsUUID() warehouseProductVariantId: string;
-	@IsEnum(PartStockMovementTypeEnum) type: PartStockMovementTypeEnum;
+	@IsIn([PartStockMovementTypeEnum.ADJUSTMENT_IN, PartStockMovementTypeEnum.ADJUSTMENT_OUT]) type: PartStockMovementTypeEnum;
 	@IsNumber() @Min(0.001) quantity: number;
 	@IsNotEmpty() @IsString() reason: string;
 	@IsOptional() @IsString() notes?: string;
+}
+
+export class ConsumeAutomotiveJobPartDTO {
+	@IsUUID() automotivePartProfileId: string;
+	@IsUUID() warehouseId: string;
+	@IsUUID() warehouseProductVariantId: string;
+	@IsNumber() @Min(0.001) quantity: number;
+	@IsUUID() operationKey: string;
+}
+
+export class ReverseAutomotiveJobPartDTO {
+	@IsNotEmpty() @IsString() @MaxLength(1000) reason: string;
 }

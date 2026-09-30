@@ -32,6 +32,7 @@ export interface IAutomotiveJob extends IBasePerTenantAndOrganizationEntityModel
 
 export interface IAutomotiveJobCreateInput {
 	customerWorkApprovalLineId: ID;
+	assignedEmployeeId?: ID;
 	estimatedHours?: number;
 	internalNotes?: string;
 	categoryId?: ID;

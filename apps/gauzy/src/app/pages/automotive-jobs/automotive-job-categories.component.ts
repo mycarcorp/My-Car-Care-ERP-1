@@ -22,7 +22,7 @@ export class AutomotiveJobCategoriesComponent implements OnInit {
 
 	constructor(
 		private readonly api: AutomotiveJobApiService,
-		private readonly toastr: ToastrService
+		private readonly toastr: ToastrService,
 		private readonly changeDetector: ChangeDetectorRef
 	) {}
 
