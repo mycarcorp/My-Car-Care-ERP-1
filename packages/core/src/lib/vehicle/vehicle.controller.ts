@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { IPagination, IVehicle, PermissionsEnum } from '@gauzy/contracts';
 import { BaseQueryDTO, CrudController } from '../core/crud';
 import { PermissionGuard, TenantPermissionGuard } from '../shared/guards';
@@ -20,7 +21,7 @@ export class VehicleController extends CrudController<Vehicle> {
 	@Get('pagination')
 	@UseValidationPipe({ transform: true })
 	async pagination(@Query() filter: BaseQueryDTO<Vehicle>): Promise<IPagination<IVehicle>> {
-		return this.vehicleService.pagination(filter);
+		return this.vehicleService.paginate(filter);
 	}
 
 	@Get()
@@ -45,7 +46,10 @@ export class VehicleController extends CrudController<Vehicle> {
 	@UseValidationPipe({ transform: true })
 	@ApiOperation({ summary: 'Update a vehicle' })
 	@ApiResponse({ status: HttpStatus.OK, type: Vehicle })
-	async update(@Param('id', UUIDValidationPipe) id: string, @Body() entity: UpdateVehicleDTO): Promise<IVehicle> {
+	async update(
+		@Param('id', UUIDValidationPipe) id: string,
+		@Body() entity: QueryDeepPartialEntity<Vehicle>
+	): Promise<IVehicle> {
 		return this.vehicleService.create({ ...entity, id });
 	}
 }
