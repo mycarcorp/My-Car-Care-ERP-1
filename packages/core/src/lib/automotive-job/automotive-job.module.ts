@@ -13,6 +13,7 @@ import { AutomotiveJobController } from './automotive-job.controller';
 import { AutomotiveJob } from './automotive-job.entity';
 import { AutomotiveJobCategory } from '../automotive-job-category/automotive-job-category.entity';
 import { AutomotiveJobLaborModule } from '../automotive-job-labor/automotive-job-labor.module';
+import { AutomotiveJobQcModule } from '../automotive-job-qc/automotive-job-qc.module';
 import { AutomotiveJobService } from './automotive-job.service';
 import { MikroOrmAutomotiveJobRepository } from './repository/mikro-orm-automotive-job.repository';
 import { TypeOrmAutomotiveJobRepository } from './repository/type-orm-automotive-job.repository';
@@ -34,7 +35,8 @@ const entities = [
 		TypeOrmModule.forFeature(entities),
 		MikroOrmModule.forFeature(entities),
 		RolePermissionModule,
-		AutomotiveJobLaborModule
+		AutomotiveJobLaborModule,
+		AutomotiveJobQcModule
 	],
 	controllers: [AutomotiveJobController],
 	providers: [AutomotiveJobService, TypeOrmAutomotiveJobRepository, MikroOrmAutomotiveJobRepository],

@@ -19,6 +19,7 @@ import { EstimateLine } from '../estimate/estimate-line.entity';
 import { RepairOrder } from '../repair-order/repair-order.entity';
 import { AutomotiveJobCategory } from '../automotive-job-category/automotive-job-category.entity';
 import { AutomotiveJobLaborService } from '../automotive-job-labor/automotive-job-labor.service';
+import { AutomotiveJobQcService } from '../automotive-job-qc/automotive-job-qc.service';
 import { AssignAutomotiveJobDTO, CreateAutomotiveJobDTO, UpdateAutomotiveJobDTO } from './dto';
 import { AutomotiveJob } from './automotive-job.entity';
 import { MikroOrmAutomotiveJobRepository } from './repository/mikro-orm-automotive-job.repository';
@@ -47,7 +48,8 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 		@InjectRepository(EstimateLine) private readonly estimateLines: Repository<EstimateLine>,
 		@InjectRepository(Employee) private readonly employees: Repository<Employee>,
 		@InjectRepository(AutomotiveJobCategory) private readonly categories: Repository<AutomotiveJobCategory>,
-		private readonly jobLabor: AutomotiveJobLaborService
+		private readonly jobLabor: AutomotiveJobLaborService,
+		private readonly jobQc: AutomotiveJobQcService
 	) {
 		super(typeOrmRepository, mikroOrmRepository);
 	}
@@ -182,6 +184,9 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 		}
 		if (status === AutomotiveJobStatusEnum.ASSIGNED && !job.assignedEmployeeId) {
 			throw new BadRequestException('Assign a technician before assigning the job.');
+		}
+		if (status === AutomotiveJobStatusEnum.COMPLETED) {
+			await this.jobQc.assertCanCompleteJob(id, this.scope());
 		}
 		await this.typeOrmRepository.update({ id, ...this.scope() }, { status });
 		return this.findOneScoped(id);

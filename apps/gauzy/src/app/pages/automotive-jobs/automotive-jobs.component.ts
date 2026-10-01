@@ -5,6 +5,8 @@ import {
 	IAutomotiveJob,
 	IAutomotiveJobCategory,
 	IAutomotiveJobLaborView,
+	IAutomotiveJobQcAttempt,
+	AutomotiveJobQcStatusEnum,
 	ICustomerWorkApprovalLine,
 	IEmployee,
 	PermissionsEnum
@@ -38,6 +40,11 @@ export class AutomotiveJobsComponent implements OnInit {
 	currentEmployeeId?: string;
 	canManageLabor = false;
 	canCompleteLabor = false;
+	canStartQc = false;
+	canPassQc = false;
+	canFailQc = false;
+	readonly qcByJob: Record<string, IAutomotiveJobQcAttempt[]> = {};
+	readonly qcReasonByAttempt: Record<string, string> = {};
 
 	constructor(
 		private readonly route: ActivatedRoute,
@@ -62,6 +69,9 @@ export class AutomotiveJobsComponent implements OnInit {
 			PermissionsEnum.ALL_ORG_EDIT,
 			PermissionsEnum.ORG_AUTOMOTIVE_JOB_LABOR_COMPLETE
 		]);
+		this.canStartQc = await this.permissions.hasPermission([PermissionsEnum.ALL_ORG_EDIT, PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_START]);
+		this.canPassQc = await this.permissions.hasPermission([PermissionsEnum.ALL_ORG_EDIT, PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_PASS]);
+		this.canFailQc = await this.permissions.hasPermission([PermissionsEnum.ALL_ORG_EDIT, PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_FAIL]);
 	}
 
 	async refresh(): Promise<void> {
@@ -73,8 +83,10 @@ export class AutomotiveJobsComponent implements OnInit {
 			]);
 			for (const job of this.jobs) this.selectedCategoryByJob[job.id] = job.categoryId ?? '';
 			const laborResults = await Promise.all(this.jobs.map((job) => this.api.listLabor(job.id)));
+			const qcResults = await Promise.all(this.jobs.map((job) => this.api.listQc(job.id)));
 			this.jobs.forEach((job, index) => {
 				this.laborByJob[job.id] = laborResults[index];
+				this.qcByJob[job.id] = qcResults[index];
 				for (const labor of laborResults[index]) {
 					this.laborTechnicianById[labor.id] = [...(labor.assignedEmployeeIds ?? [])];
 				}
@@ -243,6 +255,45 @@ export class AutomotiveJobsComponent implements OnInit {
 			this.toastr.danger('Could not complete this labor.');
 		}
 	}
+
+	async startQc(job: IAutomotiveJob): Promise<void> {
+		try {
+			await this.api.startQc(job.id);
+			this.toastr.success('QC attempt started.');
+			await this.refresh();
+		} catch {
+			this.toastr.danger('Could not start a QC attempt.');
+		}
+	}
+
+	async passQc(attempt: IAutomotiveJobQcAttempt): Promise<void> {
+		try {
+			await this.api.passQc(attempt.id);
+			this.toastr.success('QC passed. Complete the job when all gates are satisfied.');
+			await this.refresh();
+		} catch {
+			this.toastr.danger('Could not pass this QC attempt.');
+		}
+	}
+
+	async failQc(attempt: IAutomotiveJobQcAttempt): Promise<void> {
+		const reason = this.qcReasonByAttempt[attempt.id]?.trim();
+		if (!reason) return;
+		try {
+			await this.api.failQc(attempt.id, { reason });
+			this.toastr.warning('QC failed. The job remains in progress for rework.');
+			await this.refresh();
+		} catch {
+			this.toastr.danger('Could not fail this QC attempt.');
+		}
+	}
+
+	qcStatus(jobId: string): string {
+		const attempts = this.qcByJob[jobId] || [];
+		return attempts.length ? attempts[attempts.length - 1].status : 'NOT_STARTED';
+	}
+
+	readonly qcStatuses = AutomotiveJobQcStatusEnum;
 
 	availableTransitions(job: IAutomotiveJob): AutomotiveJobStatusEnum[] {
 		switch (job.status) {

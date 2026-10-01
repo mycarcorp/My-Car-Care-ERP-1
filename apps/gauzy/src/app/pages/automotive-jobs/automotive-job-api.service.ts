@@ -11,6 +11,9 @@ import {
 	IAutomotiveJobLaborCreateInput,
 	IAutomotiveJobLaborUpdateInput,
 	IAutomotiveJobLaborView,
+	IAutomotiveJobQcAttempt,
+	IAutomotiveJobQcCreateInput,
+	IAutomotiveJobQcFailInput,
 	IAutomotiveJobAssignInput,
 	IAutomotiveJobCreateInput,
 	IAutomotiveJobUpdateInput,
@@ -118,5 +121,21 @@ export class AutomotiveJobApiService {
 
 	stopLaborClock(laborId: string): Promise<unknown> {
 		return firstValueFrom(this.http.post(`${this.baseUrl}/automotive-job-labor/${laborId}/clock/stop`, {}));
+	}
+
+	listQc(jobId: string): Promise<IAutomotiveJobQcAttempt[]> {
+		return firstValueFrom(this.http.get<IAutomotiveJobQcAttempt[]>(`${this.baseUrl}/automotive-jobs/${jobId}/qc`));
+	}
+
+	startQc(jobId: string, body: IAutomotiveJobQcCreateInput = {}): Promise<IAutomotiveJobQcAttempt> {
+		return firstValueFrom(this.http.post<IAutomotiveJobQcAttempt>(`${this.baseUrl}/automotive-jobs/${jobId}/qc`, body));
+	}
+
+	passQc(qcId: string): Promise<IAutomotiveJobQcAttempt> {
+		return firstValueFrom(this.http.patch<IAutomotiveJobQcAttempt>(`${this.baseUrl}/automotive-job-qc/${qcId}/pass`, {}));
+	}
+
+	failQc(qcId: string, body: IAutomotiveJobQcFailInput): Promise<IAutomotiveJobQcAttempt> {
+		return firstValueFrom(this.http.patch<IAutomotiveJobQcAttempt>(`${this.baseUrl}/automotive-job-qc/${qcId}/fail`, body));
 	}
 }

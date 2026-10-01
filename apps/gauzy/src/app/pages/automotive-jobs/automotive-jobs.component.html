@@ -259,6 +259,45 @@
 									</div>
 								}
 							</section>
+							<section class="qc-section" [attr.aria-label]="'QC for ' + job.title">
+								<div class="qc-header">
+									<h6>Quality control</h6>
+									<nb-badge [text]="qcStatus(job.id)" status="basic"></nb-badge>
+								</div>
+								@if (!(qcByJob[job.id] || []).length) {
+									<p class="empty-state">No QC attempt started.</p>
+								} @else {
+									<div class="qc-history">
+										@for (attempt of qcByJob[job.id]; track attempt.id; let last = $last) {
+											<div class="qc-attempt">
+												<div class="qc-attempt-heading">
+													<strong>Attempt {{ $index + 1 }}</strong>
+													<nb-badge [text]="attempt.status" status="basic"></nb-badge>
+												</div>
+												@if (attempt.reason) { <p>{{ attempt.reason }}</p> }
+												@if (attempt.notes) { <p>{{ attempt.notes }}</p> }
+												@if (last && attempt.status === qcStatuses.PENDING) {
+													@if (canPassQc) {
+														<button nbButton size="small" status="success" (click)="passQc(attempt)">Pass QC</button>
+													}
+													@if (canFailQc) {
+														<div class="qc-fail-actions">
+															<input nbInput placeholder="Failure reason" [value]="qcReasonByAttempt[attempt.id] || ''" (input)="qcReasonByAttempt[attempt.id] = $any($event.target).value" />
+															<button nbButton size="small" status="danger" [disabled]="!(qcReasonByAttempt[attempt.id] || '').trim()" (click)="failQc(attempt)">Fail QC</button>
+														</div>
+													}
+												}
+											</div>
+										}
+									</div>
+								}
+								@if (canStartQc && job.status === statuses.IN_PROGRESS && qcStatus(job.id) !== qcStatuses.PENDING) {
+									<button nbButton size="small" status="basic" (click)="startQc(job)">Start QC</button>
+								}
+								@if (job.status === statuses.IN_PROGRESS && qcStatus(job.id) !== qcStatuses.PASSED) {
+									<span class="qc-blocked">Job completion requires passed QC.</span>
+								}
+							</section>
 						</article>
 					}
 				</div>

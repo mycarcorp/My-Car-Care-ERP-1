@@ -73,6 +73,7 @@ export * from './lib/customer-work-approval.model';
 export * from './lib/automotive-part.model';
 export * from './lib/automotive-job.model';
 export * from './lib/automotive-job-labor.model';
+export * from './lib/automotive-job-qc.model';
 export * from './lib/automotive-job-category.model';
 export * from './lib/purchase-order.model';
 export * from './lib/event-type.model';

@@ -11,6 +11,7 @@ import { RequestContext } from '../core/context';
 import { MultiORMEnum } from '../core/utils';
 import { createTenantFixture } from '../core/testing/tenant-isolation/tenant-isolation.fixtures';
 import { AutomotiveJobService } from './automotive-job.service';
+import { AutomotiveJobQcService } from '../automotive-job-qc/automotive-job-qc.service';
 import { TimeLogService } from '../time-tracking/time-log/time-log.service';
 import { TimeLogCreateCommand } from '../time-tracking/time-log/commands/time-log-create.command';
 
@@ -73,6 +74,7 @@ describe('AutomotiveJobService', () => {
 	let employees: any;
 	let categories: any;
 	let jobLabor: any;
+	let jobQc: any;
 
 	beforeEach(() => {
 		jest.spyOn(RequestContext, 'currentTenantId').mockReturnValue(fixture.tenantId);
@@ -115,6 +117,7 @@ describe('AutomotiveJobService', () => {
 			createInitialForJob: jest.fn(async () => ({ id: 'labor-1' })),
 			assignDefaultTechnician: jest.fn(async () => undefined)
 		};
+		jobQc = { assertCanCompleteJob: jest.fn(async () => undefined) };
 		service = new AutomotiveJobService(
 			jobs as never,
 			{} as never,
@@ -126,7 +129,8 @@ describe('AutomotiveJobService', () => {
 			estimateLines as never,
 			employees as never,
 			categories as never,
-			jobLabor as never
+			jobLabor as never,
+			jobQc as never
 		);
 	});
 
@@ -354,7 +358,15 @@ describe('AutomotiveJobService', () => {
 		await service.assign('job-1', { employeeId: employee.id });
 		await service.updateStatus('job-1', AutomotiveJobStatusEnum.IN_PROGRESS);
 		await service.updateStatus('job-1', AutomotiveJobStatusEnum.COMPLETED);
+		expect(jobQc.assertCanCompleteJob).toHaveBeenCalledWith('job-1', scope);
 		expect(jobs.update).toHaveBeenCalledTimes(3);
+	});
+
+	it('blocks completion when QC or labor gates fail', async () => {
+		jobs.findOneByOrFail.mockResolvedValueOnce({ id: 'job-1', ...scope, status: AutomotiveJobStatusEnum.IN_PROGRESS });
+		jobQc.assertCanCompleteJob.mockRejectedValueOnce(new BadRequestException('QC is required'));
+		await expect(service.updateStatus('job-1', AutomotiveJobStatusEnum.COMPLETED)).rejects.toBeInstanceOf(BadRequestException);
+		expect(jobs.update).not.toHaveBeenCalled();
 	});
 
 	it.each([

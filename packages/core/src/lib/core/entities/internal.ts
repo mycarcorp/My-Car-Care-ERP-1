@@ -62,6 +62,7 @@ export * from '../../automotive-part/automotive-part-vendor.entity';
 export * from '../../automotive-part/part-stock-movement.entity';
 export * from '../../automotive-job/automotive-job.entity';
 export * from '../../automotive-job-labor/automotive-job-labor.entity';
+export * from '../../automotive-job-qc/automotive-job-qc-attempt.entity';
 export * from '../../automotive-job-category/automotive-job-category.entity';
 export * from '../../purchase-order/purchase-order.entity';
 export * from '../../purchase-order/purchase-order-line.entity';
