@@ -17,6 +17,7 @@ import { Employee } from '../employee/employee.entity';
 import { Estimate } from '../estimate/estimate.entity';
 import { EstimateLine } from '../estimate/estimate-line.entity';
 import { RepairOrder } from '../repair-order/repair-order.entity';
+import { RepairOrderService } from '../repair-order/repair-order.service';
 import { AutomotiveJobCategory } from '../automotive-job-category/automotive-job-category.entity';
 import { AutomotiveJobLaborService } from '../automotive-job-labor/automotive-job-labor.service';
 import { AutomotiveJobQcService } from '../automotive-job-qc/automotive-job-qc.service';
@@ -49,7 +50,8 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 		@InjectRepository(Employee) private readonly employees: Repository<Employee>,
 		@InjectRepository(AutomotiveJobCategory) private readonly categories: Repository<AutomotiveJobCategory>,
 		private readonly jobLabor: AutomotiveJobLaborService,
-		private readonly jobQc: AutomotiveJobQcService
+		private readonly jobQc: AutomotiveJobQcService,
+		private readonly repairOrderService: RepairOrderService
 	) {
 		super(typeOrmRepository, mikroOrmRepository);
 	}
@@ -189,6 +191,12 @@ export class AutomotiveJobService extends TenantAwareCrudService<AutomotiveJob> 
 			await this.jobQc.assertCanCompleteJob(id, this.scope());
 		}
 		await this.typeOrmRepository.update({ id, ...this.scope() }, { status });
+		if (status === AutomotiveJobStatusEnum.IN_PROGRESS) {
+			await this.repairOrderService.markInProgressIfOpen(job.repairOrderId, this.scope());
+		}
+		if (status === AutomotiveJobStatusEnum.COMPLETED) {
+			await this.repairOrderService.evaluateReadiness(job.repairOrderId, this.scope());
+		}
 		return this.findOneScoped(id);
 	}
 

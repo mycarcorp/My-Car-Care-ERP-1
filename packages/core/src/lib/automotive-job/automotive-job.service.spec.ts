@@ -75,6 +75,7 @@ describe('AutomotiveJobService', () => {
 	let categories: any;
 	let jobLabor: any;
 	let jobQc: any;
+	let repairOrderService: any;
 
 	beforeEach(() => {
 		jest.spyOn(RequestContext, 'currentTenantId').mockReturnValue(fixture.tenantId);
@@ -118,6 +119,10 @@ describe('AutomotiveJobService', () => {
 			assignDefaultTechnician: jest.fn(async () => undefined)
 		};
 		jobQc = { assertCanCompleteJob: jest.fn(async () => undefined) };
+		repairOrderService = {
+			markInProgressIfOpen: jest.fn(async () => undefined),
+			evaluateReadiness: jest.fn(async () => undefined)
+		};
 		service = new AutomotiveJobService(
 			jobs as never,
 			{} as never,
@@ -130,7 +135,8 @@ describe('AutomotiveJobService', () => {
 			employees as never,
 			categories as never,
 			jobLabor as never,
-			jobQc as never
+			jobQc as never,
+			repairOrderService as never
 		);
 	});
 

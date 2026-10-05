@@ -8,6 +8,7 @@ import { Employee } from '../employee/employee.entity';
 import { Estimate } from '../estimate/estimate.entity';
 import { EstimateLine } from '../estimate/estimate-line.entity';
 import { RepairOrder } from '../repair-order/repair-order.entity';
+import { RepairOrderModule } from '../repair-order/repair-order.module';
 import { RolePermissionModule } from '../role-permission/role-permission.module';
 import { AutomotiveJobController } from './automotive-job.controller';
 import { AutomotiveJob } from './automotive-job.entity';
@@ -36,7 +37,8 @@ const entities = [
 		MikroOrmModule.forFeature(entities),
 		RolePermissionModule,
 		AutomotiveJobLaborModule,
-		AutomotiveJobQcModule
+		AutomotiveJobQcModule,
+		RepairOrderModule
 	],
 	controllers: [AutomotiveJobController],
 	providers: [AutomotiveJobService, TypeOrmAutomotiveJobRepository, MikroOrmAutomotiveJobRepository],

@@ -1,6 +1,7 @@
 import '../core/entities/internal';
 
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { AutomotiveJobStatusEnum, RepairOrderStatusEnum } from '@gauzy/contracts';
 import { getMetadataArgsStorage } from 'typeorm';
 import { CrudService } from '../core/crud/crud.service';
 import { RequestContext } from '../core/context';
@@ -62,7 +63,11 @@ describe('RepairOrderService vehicle arrival', () => {
 			{} as any,
 			appointmentService as any,
 			customerService as any,
-			vehicleService as any
+			vehicleService as any,
+			{} as any,
+			{} as any,
+			{} as any,
+			{} as any
 		);
 		jest.spyOn(RequestContext, 'currentUser').mockReturnValue({
 			...tenant.user,
@@ -148,6 +153,309 @@ describe('RepairOrderService vehicle arrival', () => {
 		});
 
 		await expect(service.arrive({ appointmentId: APPOINTMENT_ID })).rejects.toBeInstanceOf(BadRequestException);
+	});
+});
+
+describe('RepairOrderService lifecycle', () => {
+	const REPAIR_ORDER_ID = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
+	const LABOR_ID = '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b';
+	let service: RepairOrderService;
+	let tenant: ReturnType<typeof createTenantFixture>;
+	let repairOrders: InMemoryTenantRepository<RepairOrder>;
+	let jobs: InMemoryTenantRepository;
+	let labors: InMemoryTenantRepository;
+	let timeLogs: InMemoryTenantRepository;
+
+	const seedRepairOrder = (status: RepairOrderStatusEnum, overrides: Record<string, unknown> = {}) =>
+		repairOrders.seed({
+			id: REPAIR_ORDER_ID,
+			tenantId: tenant.tenantId,
+			organizationId: tenant.organizationId,
+			status,
+			...overrides
+		} as RepairOrder);
+
+	const seedJob = (id: string, status: AutomotiveJobStatusEnum) =>
+		jobs.seed({
+			id,
+			tenantId: tenant.tenantId,
+			organizationId: tenant.organizationId,
+			repairOrderId: REPAIR_ORDER_ID,
+			status
+		});
+
+	const seedRunningLaborLog = (jobId: string) => {
+		labors.seed({
+			id: LABOR_ID,
+			tenantId: tenant.tenantId,
+			organizationId: tenant.organizationId,
+			automotiveJobId: jobId
+		});
+		timeLogs.seed({
+			id: 'a7b1c3d4-2e5f-4a6b-8c9d-0e1f2a3b4c5d',
+			tenantId: tenant.tenantId,
+			organizationId: tenant.organizationId,
+			automotiveJobLaborId: LABOR_ID,
+			isRunning: true
+		});
+	};
+
+	beforeEach(() => {
+		tenant = createTenantFixture();
+		repairOrders = new InMemoryTenantRepository<RepairOrder>(
+			new Set(['id', 'tenantId', 'organizationId', 'appointmentId', 'customerId', 'vehicleId'])
+		);
+		jobs = new InMemoryTenantRepository(new Set(['id', 'tenantId', 'organizationId']));
+		labors = new InMemoryTenantRepository(new Set(['id', 'tenantId', 'organizationId']));
+		timeLogs = new InMemoryTenantRepository(new Set(['id', 'tenantId', 'organizationId']));
+		service = new RepairOrderService(
+			repairOrders as any,
+			{} as any,
+			{} as any,
+			{} as any,
+			{} as any,
+			jobs as any,
+			labors as any,
+			timeLogs as any,
+			{} as any
+		);
+		jest.spyOn(RequestContext, 'currentTenantId').mockReturnValue(tenant.tenantId);
+		jest.spyOn(RequestContext, 'currentOrganizationId').mockReturnValue(tenant.organizationId);
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
+	});
+
+	it('moves an open repair order to in-progress when work starts', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.OPEN);
+
+		await service.markInProgressIfOpen(REPAIR_ORDER_ID);
+
+		expect((await repairOrders.findOneBy({ id: REPAIR_ORDER_ID }))?.status).toBe(
+			RepairOrderStatusEnum.IN_PROGRESS
+		);
+	});
+
+	it.each([RepairOrderStatusEnum.IN_PROGRESS, RepairOrderStatusEnum.READY])(
+		'keeps a %s repair order untouched when work starts',
+		async (status) => {
+			seedRepairOrder(status);
+			const updateSpy = jest.spyOn(repairOrders, 'update');
+
+			await service.markInProgressIfOpen(REPAIR_ORDER_ID);
+
+			expect(updateSpy).not.toHaveBeenCalled();
+			expect((await repairOrders.findOneBy({ id: REPAIR_ORDER_ID }))?.status).toBe(status);
+		}
+	);
+
+	it.each([RepairOrderStatusEnum.CLOSED, RepairOrderStatusEnum.CANCELLED])(
+		'rejects starting work on a terminal %s repair order',
+		async (status) => {
+			seedRepairOrder(status);
+
+			await expect(service.markInProgressIfOpen(REPAIR_ORDER_ID)).rejects.toBeInstanceOf(
+				BadRequestException
+			);
+		}
+	);
+
+	it('marks an in-progress repair order ready once every non-cancelled job is completed', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.IN_PROGRESS);
+		seedJob('job-1', AutomotiveJobStatusEnum.COMPLETED);
+		seedJob('job-2', AutomotiveJobStatusEnum.COMPLETED);
+		labors.seed({
+			id: LABOR_ID,
+			tenantId: tenant.tenantId,
+			organizationId: tenant.organizationId,
+			automotiveJobId: 'job-1'
+		});
+
+		const result = await service.evaluateReadiness(REPAIR_ORDER_ID);
+
+		expect(result.status).toBe(RepairOrderStatusEnum.READY);
+	});
+
+	it('excludes cancelled jobs from the readiness check', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.IN_PROGRESS);
+		seedJob('job-1', AutomotiveJobStatusEnum.COMPLETED);
+		seedJob('job-2', AutomotiveJobStatusEnum.CANCELLED);
+
+		const result = await service.evaluateReadiness(REPAIR_ORDER_ID);
+
+		expect(result.status).toBe(RepairOrderStatusEnum.READY);
+	});
+
+	it('stays in-progress while a non-cancelled job is not completed', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.IN_PROGRESS);
+		seedJob('job-1', AutomotiveJobStatusEnum.COMPLETED);
+		seedJob('job-2', AutomotiveJobStatusEnum.IN_PROGRESS);
+
+		const result = await service.evaluateReadiness(REPAIR_ORDER_ID);
+
+		expect(result.status).toBe(RepairOrderStatusEnum.IN_PROGRESS);
+	});
+
+	it('stays in-progress when no non-cancelled job remains', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.IN_PROGRESS);
+		seedJob('job-1', AutomotiveJobStatusEnum.CANCELLED);
+
+		const result = await service.evaluateReadiness(REPAIR_ORDER_ID);
+
+		expect(result.status).toBe(RepairOrderStatusEnum.IN_PROGRESS);
+	});
+
+	it('stays in-progress while a labor time log is still running', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.IN_PROGRESS);
+		seedJob('job-1', AutomotiveJobStatusEnum.COMPLETED);
+		seedRunningLaborLog('job-1');
+
+		const result = await service.evaluateReadiness(REPAIR_ORDER_ID);
+
+		expect(result.status).toBe(RepairOrderStatusEnum.IN_PROGRESS);
+	});
+
+	it.each([RepairOrderStatusEnum.READY, RepairOrderStatusEnum.CLOSED, RepairOrderStatusEnum.CANCELLED])(
+		'leaves a %s repair order unchanged when evaluating readiness',
+		async (status) => {
+			seedRepairOrder(status);
+			const saveSpy = jest.spyOn(repairOrders, 'save');
+
+			const result = await service.evaluateReadiness(REPAIR_ORDER_ID);
+
+			expect(result.status).toBe(status);
+			expect(saveSpy).not.toHaveBeenCalled();
+		}
+	);
+
+	it('closes a ready repair order', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.READY);
+
+		const result = await service.close(REPAIR_ORDER_ID, {});
+
+		expect(result.status).toBe(RepairOrderStatusEnum.CLOSED);
+	});
+
+	it('returns an already closed repair order without changes', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.CLOSED);
+		const saveSpy = jest.spyOn(repairOrders, 'save');
+
+		const result = await service.close(REPAIR_ORDER_ID, {});
+
+		expect(result.status).toBe(RepairOrderStatusEnum.CLOSED);
+		expect(saveSpy).not.toHaveBeenCalled();
+	});
+
+	it.each([RepairOrderStatusEnum.OPEN, RepairOrderStatusEnum.IN_PROGRESS])(
+		'rejects closing a %s repair order',
+		async (status) => {
+			seedRepairOrder(status);
+
+			await expect(service.close(REPAIR_ORDER_ID, {})).rejects.toBeInstanceOf(BadRequestException);
+		}
+	);
+
+	it.each([RepairOrderStatusEnum.OPEN, RepairOrderStatusEnum.IN_PROGRESS, RepairOrderStatusEnum.READY])(
+		'cancels a %s repair order with a reason',
+		async (status) => {
+			seedRepairOrder(status);
+
+			const result = await service.cancel(REPAIR_ORDER_ID, { cancelReason: 'Customer no-show' });
+
+			expect(result.status).toBe(RepairOrderStatusEnum.CANCELLED);
+		}
+	);
+
+	it('returns an already cancelled repair order without changes', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.CANCELLED);
+		const saveSpy = jest.spyOn(repairOrders, 'save');
+
+		const result = await service.cancel(REPAIR_ORDER_ID, { cancelReason: 'Duplicate visit' });
+
+		expect(result.status).toBe(RepairOrderStatusEnum.CANCELLED);
+		expect(saveSpy).not.toHaveBeenCalled();
+	});
+
+	it('rejects cancelling a closed repair order', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.CLOSED);
+
+		await expect(service.cancel(REPAIR_ORDER_ID, { cancelReason: 'Customer request' })).rejects.toBeInstanceOf(
+			BadRequestException
+		);
+	});
+
+	it('requires a cancellation reason', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.OPEN);
+
+		await expect(service.cancel(REPAIR_ORDER_ID, { cancelReason: '   ' })).rejects.toBeInstanceOf(
+			BadRequestException
+		);
+	});
+
+	it.each([AutomotiveJobStatusEnum.OPEN, AutomotiveJobStatusEnum.ASSIGNED, AutomotiveJobStatusEnum.IN_PROGRESS])(
+		'blocks cancellation while a %s job exists',
+		async (status) => {
+			seedRepairOrder(RepairOrderStatusEnum.IN_PROGRESS);
+			seedJob('job-1', status);
+
+			await expect(service.cancel(REPAIR_ORDER_ID, { cancelReason: 'Customer request' })).rejects.toBeInstanceOf(
+				ConflictException
+			);
+		}
+	);
+
+	it('returns a ready repair order to in-progress for rework', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.READY);
+
+		await service.markRework(REPAIR_ORDER_ID);
+
+		expect((await repairOrders.findOneBy({ id: REPAIR_ORDER_ID }))?.status).toBe(
+			RepairOrderStatusEnum.IN_PROGRESS
+		);
+	});
+
+	it.each([RepairOrderStatusEnum.OPEN, RepairOrderStatusEnum.IN_PROGRESS])(
+		'keeps a %s repair order untouched on rework',
+		async (status) => {
+			seedRepairOrder(status);
+			const updateSpy = jest.spyOn(repairOrders, 'update');
+
+			await service.markRework(REPAIR_ORDER_ID);
+
+			expect(updateSpy).not.toHaveBeenCalled();
+		}
+	);
+
+	it.each([RepairOrderStatusEnum.CLOSED, RepairOrderStatusEnum.CANCELLED])(
+		'rejects rework on a terminal %s repair order',
+		async (status) => {
+			seedRepairOrder(status);
+
+			await expect(service.markRework(REPAIR_ORDER_ID)).rejects.toBeInstanceOf(BadRequestException);
+		}
+	);
+
+	it('hides repair orders outside the current tenant scope', async () => {
+		repairOrders.seed({
+			id: REPAIR_ORDER_ID,
+			tenantId: 'ce74d25f-5a8e-4f0c-b3cb-199a66a7a8a7',
+			organizationId: tenant.organizationId,
+			status: RepairOrderStatusEnum.OPEN
+		} as RepairOrder);
+
+		await expect(service.markInProgressIfOpen(REPAIR_ORDER_ID)).rejects.toBeInstanceOf(NotFoundException);
+		await expect(service.close(REPAIR_ORDER_ID, {})).rejects.toBeInstanceOf(NotFoundException);
+		await expect(
+			service.cancel(REPAIR_ORDER_ID, { cancelReason: 'Customer request' })
+		).rejects.toBeInstanceOf(NotFoundException);
+	});
+
+	it('requires a tenant and organization context', async () => {
+		jest.spyOn(RequestContext, 'currentOrganizationId').mockReturnValue(null);
+		seedRepairOrder(RepairOrderStatusEnum.OPEN);
+
+		await expect(service.markInProgressIfOpen(REPAIR_ORDER_ID)).rejects.toBeInstanceOf(BadRequestException);
 	});
 });
 

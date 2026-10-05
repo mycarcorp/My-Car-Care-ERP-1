@@ -32,3 +32,11 @@ export interface IRepairOrderArrivalInput {
 	appointmentId: ID;
 	arrivalOdometer?: number;
 }
+
+export interface IRepairOrderCloseInput {
+	closeNotes?: string;
+}
+
+export interface IRepairOrderCancelInput {
+	cancelReason: string;
+}

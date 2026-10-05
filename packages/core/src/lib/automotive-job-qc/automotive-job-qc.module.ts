@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AutomotiveJob } from '../automotive-job/automotive-job.entity';
 import { AutomotiveJobLabor } from '../automotive-job-labor/automotive-job-labor.entity';
 import { TimeLog } from '../time-tracking/time-log/time-log.entity';
 import { Employee } from '../employee/employee.entity';
+import { RepairOrderModule } from '../repair-order/repair-order.module';
 import { RolePermissionModule } from '../role-permission/role-permission.module';
 import { AutomotiveJobQcAttempt } from './automotive-job-qc-attempt.entity';
 import { AutomotiveJobQcController } from './automotive-job-qc.controller';
@@ -15,7 +16,12 @@ import { TypeOrmAutomotiveJobQcAttemptRepository } from './repository/type-orm-a
 const entities = [AutomotiveJobQcAttempt, AutomotiveJob, AutomotiveJobLabor, TimeLog, Employee];
 
 @Module({
-	imports: [TypeOrmModule.forFeature(entities), MikroOrmModule.forFeature(entities), RolePermissionModule],
+	imports: [
+		TypeOrmModule.forFeature(entities),
+		MikroOrmModule.forFeature(entities),
+		RolePermissionModule,
+		forwardRef(() => RepairOrderModule)
+	],
 	controllers: [AutomotiveJobQcController],
 	providers: [AutomotiveJobQcService, TypeOrmAutomotiveJobQcAttemptRepository, MikroOrmAutomotiveJobQcAttemptRepository],
 	exports: [AutomotiveJobQcService]

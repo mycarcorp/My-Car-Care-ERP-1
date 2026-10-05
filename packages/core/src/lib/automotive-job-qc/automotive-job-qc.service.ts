@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
 	AutomotiveJobLaborStatusEnum,
@@ -13,6 +13,7 @@ import { TenantAwareCrudService } from '../core/crud';
 import { AutomotiveJob } from '../automotive-job/automotive-job.entity';
 import { AutomotiveJobLabor } from '../automotive-job-labor/automotive-job-labor.entity';
 import { Employee } from '../employee/employee.entity';
+import { RepairOrderService } from '../repair-order/repair-order.service';
 import { TimeLog } from '../time-tracking/time-log/time-log.entity';
 import { CreateAutomotiveJobQcAttemptDTO, FailAutomotiveJobQcAttemptDTO } from './dto';
 import { AutomotiveJobQcAttempt } from './automotive-job-qc-attempt.entity';
@@ -27,7 +28,8 @@ export class AutomotiveJobQcService extends TenantAwareCrudService<AutomotiveJob
 		@InjectRepository(AutomotiveJob) private readonly jobs: Repository<AutomotiveJob>,
 		@InjectRepository(AutomotiveJobLabor) private readonly labors: Repository<AutomotiveJobLabor>,
 		@InjectRepository(TimeLog) private readonly timeLogs: Repository<TimeLog>,
-		@InjectRepository(Employee) private readonly employees: Repository<Employee>
+		@InjectRepository(Employee) private readonly employees: Repository<Employee>,
+		@Inject(forwardRef(() => RepairOrderService)) private readonly repairOrderService: RepairOrderService
 	) {
 		super(qcRepository, mikroOrmRepository);
 	}
@@ -89,6 +91,7 @@ export class AutomotiveJobQcService extends TenantAwareCrudService<AutomotiveJob
 		attempt.updatedByUserId = RequestContext.currentUser()?.id;
 		if (job.status !== AutomotiveJobStatusEnum.IN_PROGRESS) {
 			await this.jobs.update({ id: job.id, ...scope }, { status: AutomotiveJobStatusEnum.IN_PROGRESS });
+			await this.repairOrderService.markRework(job.repairOrderId, scope);
 		}
 		return this.save(attempt);
 	}

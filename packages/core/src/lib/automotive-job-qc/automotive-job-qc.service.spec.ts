@@ -18,6 +18,7 @@ describe('AutomotiveJobQcService', () => {
 	let labors: any;
 	let timeLogs: any;
 	let employees: any;
+	let repairOrderService: any;
 
 	beforeEach(() => {
 		jest.spyOn(RequestContext, 'currentTenantId').mockReturnValue(scope.tenantId);
@@ -36,7 +37,8 @@ describe('AutomotiveJobQcService', () => {
 		labors = { find: jest.fn(async () => []) };
 		timeLogs = { findOne: jest.fn(async () => null) };
 		employees = { findOneBy: jest.fn(async () => ({ ...employee })) };
-		service = new AutomotiveJobQcService(qc as never, {} as never, jobs as never, labors as never, timeLogs as never, employees as never);
+		repairOrderService = { markRework: jest.fn(async () => undefined) };
+		service = new AutomotiveJobQcService(qc as never, {} as never, jobs as never, labors as never, timeLogs as never, employees as never, repairOrderService as never);
 	});
 
 	afterEach(() => jest.restoreAllMocks());
