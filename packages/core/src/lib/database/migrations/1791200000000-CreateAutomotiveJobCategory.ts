@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableColumn, TableForeignKey, TableIndex } from 'typeorm';
 import { DatabaseTypeEnum } from '@gauzy/config';
 
 export class CreateAutomotiveJobCategory1791200000000 implements MigrationInterface {
@@ -79,12 +79,15 @@ export class CreateAutomotiveJobCategory1791200000000 implements MigrationInterf
 			})
 		]);
 
-		await queryRunner.addColumn('automotive_job', {
-			name: 'categoryId',
-			type: idType,
-			length: idLength,
-			isNullable: true
-		});
+		await queryRunner.addColumn(
+			'automotive_job',
+			new TableColumn({
+				name: 'categoryId',
+				type: idType,
+				length: idLength,
+				isNullable: true
+			})
+		);
 		await queryRunner.createIndex(
 			'automotive_job',
 			new TableIndex({ name: 'IDX_automotive_job_category', columnNames: ['categoryId'] })

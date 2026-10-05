@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableColumn, TableForeignKey, TableIndex } from 'typeorm';
 import { DatabaseTypeEnum } from '@gauzy/config';
 import { randomUUID } from 'crypto';
 
@@ -61,8 +61,14 @@ export class CreateAutomotiveJobLabor1791300000000 implements MigrationInterface
 					{ name: 'completedAt', type: dateType, isNullable: true }
 				],
 				indices: [
-					new TableIndex({ name: 'IDX_automotive_job_labor_scope', columnNames: ['tenantId', 'organizationId'] }),
-					new TableIndex({ name: 'IDX_automotive_job_labor_job_status', columnNames: ['automotiveJobId', 'status'] }),
+					new TableIndex({
+						name: 'IDX_automotive_job_labor_scope',
+						columnNames: ['tenantId', 'organizationId']
+					}),
+					new TableIndex({
+						name: 'IDX_automotive_job_labor_job_status',
+						columnNames: ['automotiveJobId', 'status']
+					}),
 					new TableIndex({
 						name: 'IDX_automotive_job_labor_approval_line',
 						columnNames: ['customerWorkApprovalLineId']
@@ -231,18 +237,16 @@ export class CreateAutomotiveJobLabor1791300000000 implements MigrationInterface
 			for (const job of existingJobs) {
 				if (!job.assignedEmployeeId) continue;
 				const employee = employeesById.get(job.assignedEmployeeId);
-				if (
-					!employee ||
-					employee.tenantId !== job.tenantId ||
-					employee.organizationId !== job.organizationId
-				) {
+				if (!employee || employee.tenantId !== job.tenantId || employee.organizationId !== job.organizationId) {
 					throw new Error(
 						`Cannot backfill AutomotiveJob ${job.id}: assigned employee ${job.assignedEmployeeId} is not in the same tenant and organization.`
 					);
 				}
 				const automotiveJobLaborId = jobIdToLaborId.get(job.id);
 				if (!automotiveJobLaborId) {
-					throw new Error(`Cannot backfill AutomotiveJob ${job.id}: no AutomotiveJobLabor ID mapping exists.`);
+					throw new Error(
+						`Cannot backfill AutomotiveJob ${job.id}: no AutomotiveJobLabor ID mapping exists.`
+					);
 				}
 				laborEmployeeRows.push({ automotiveJobLaborId, employeeId: job.assignedEmployeeId });
 			}
@@ -256,12 +260,15 @@ export class CreateAutomotiveJobLabor1791300000000 implements MigrationInterface
 			}
 		}
 
-		await queryRunner.addColumn('time_log', {
-			name: 'automotiveJobLaborId',
-			type: idType,
-			length: idLength,
-			isNullable: true
-		});
+		await queryRunner.addColumn(
+			'time_log',
+			new TableColumn({
+				name: 'automotiveJobLaborId',
+				type: idType,
+				length: idLength,
+				isNullable: true
+			})
+		);
 		await queryRunner.createIndex(
 			'time_log',
 			new TableIndex({ name: 'IDX_time_log_automotive_job_labor', columnNames: ['automotiveJobLaborId'] })

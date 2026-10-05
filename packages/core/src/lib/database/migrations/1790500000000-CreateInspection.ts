@@ -1,39 +1,115 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
 import { DatabaseTypeEnum } from '@gauzy/config';
+import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
 
 export class CreateInspection1790500000000 implements MigrationInterface {
 	name = 'CreateInspection1790500000000';
+
 	public async up(queryRunner: QueryRunner): Promise<void> {
-		const type = queryRunner.connection.options.type as DatabaseTypeEnum;
-		const id = type === DatabaseTypeEnum.postgres ? 'uuid' : 'varchar(255)';
-		const date = type === DatabaseTypeEnum.postgres ? 'timestamp' : 'datetime';
-		const json = type === DatabaseTypeEnum.postgres ? 'jsonb' : type === DatabaseTypeEnum.mysql ? 'json' : 'text';
-		await queryRunner.query(
-			`CREATE TABLE inspection (id ${id} PRIMARY KEY ${type === DatabaseTypeEnum.postgres ? 'DEFAULT gen_random_uuid()' : ''}, "createdAt" ${date} NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" ${date} NOT NULL DEFAULT CURRENT_TIMESTAMP, "deletedAt" ${date}, "isActive" ${type === DatabaseTypeEnum.mysql ? 'tinyint' : 'boolean'} DEFAULT ${type === DatabaseTypeEnum.mysql ? 1 : 'true'}, "isArchived" ${type === DatabaseTypeEnum.mysql ? 'tinyint' : 'boolean'} DEFAULT ${type === DatabaseTypeEnum.mysql ? 0 : 'false'}, "tenantId" ${id}, "organizationId" ${id}, status varchar(255) NOT NULL DEFAULT 'DRAFT', "inspectedAt" ${date} NOT NULL, "repairOrderId" ${id} NOT NULL, "vehicleId" ${id} NOT NULL, "technicianEmployeeId" ${id} NOT NULL)`
+		const databaseType = queryRunner.connection.options.type as DatabaseTypeEnum;
+		const isMySql = databaseType === DatabaseTypeEnum.mysql;
+		const isPostgres = databaseType === DatabaseTypeEnum.postgres;
+		const idType = isPostgres ? 'uuid' : 'varchar';
+		const idLength = isPostgres ? undefined : '255';
+		const dateType = isPostgres ? 'timestamp' : 'datetime';
+
+		await queryRunner.createTable(
+			new Table({
+				name: 'inspection',
+				columns: [
+					{
+						name: 'id',
+						type: idType,
+						length: isPostgres ? undefined : '36',
+						isPrimary: true,
+						isNullable: false,
+						default: isPostgres ? 'gen_random_uuid()' : undefined
+					},
+					{ name: 'createdAt', type: dateType, isNullable: false, default: 'CURRENT_TIMESTAMP' },
+					{ name: 'updatedAt', type: dateType, isNullable: false, default: 'CURRENT_TIMESTAMP' },
+					{ name: 'deletedAt', type: dateType, isNullable: true },
+					{
+						name: 'isActive',
+						type: isMySql ? 'tinyint' : 'boolean',
+						isNullable: true,
+						default: isMySql ? '1' : 'true'
+					},
+					{
+						name: 'isArchived',
+						type: isMySql ? 'tinyint' : 'boolean',
+						isNullable: true,
+						default: isMySql ? '0' : 'false'
+					},
+					{ name: 'tenantId', type: idType, length: idLength, isNullable: true },
+					{ name: 'organizationId', type: idType, length: idLength, isNullable: true },
+					{ name: 'status', type: 'varchar', length: '255', isNullable: false, default: "'DRAFT'" },
+					{ name: 'inspectedAt', type: dateType, isNullable: false },
+					{ name: 'repairOrderId', type: idType, length: idLength, isNullable: false },
+					{ name: 'vehicleId', type: idType, length: idLength, isNullable: false },
+					{ name: 'technicianEmployeeId', type: idType, length: idLength, isNullable: false }
+				],
+				indices: [
+					new TableIndex({ name: 'IDX_inspection_repair_order', columnNames: ['repairOrderId'] }),
+					new TableIndex({ name: 'IDX_inspection_vehicle', columnNames: ['vehicleId'] }),
+					new TableIndex({ name: 'IDX_inspection_technician', columnNames: ['technicianEmployeeId'] })
+				]
+			})
 		);
-		await queryRunner.query(
-			`CREATE TABLE inspection_finding (id ${id} PRIMARY KEY ${type === DatabaseTypeEnum.postgres ? 'DEFAULT gen_random_uuid()' : ''}, "createdAt" ${date} NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" ${date} NOT NULL DEFAULT CURRENT_TIMESTAMP, "deletedAt" ${date}, "isActive" ${type === DatabaseTypeEnum.mysql ? 'tinyint' : 'boolean'} DEFAULT ${type === DatabaseTypeEnum.mysql ? 1 : 'true'}, "isArchived" ${type === DatabaseTypeEnum.mysql ? 'tinyint' : 'boolean'} DEFAULT ${type === DatabaseTypeEnum.mysql ? 0 : 'false'}, "tenantId" ${id}, "organizationId" ${id}, description text NOT NULL, result varchar(255) NOT NULL, "inspectionId" ${id} NOT NULL)`
+
+		await queryRunner.createTable(
+			new Table({
+				name: 'inspection_finding',
+				columns: [
+					{
+						name: 'id',
+						type: idType,
+						length: isPostgres ? undefined : '36',
+						isPrimary: true,
+						isNullable: false,
+						default: isPostgres ? 'gen_random_uuid()' : undefined
+					},
+					{ name: 'createdAt', type: dateType, isNullable: false, default: 'CURRENT_TIMESTAMP' },
+					{ name: 'updatedAt', type: dateType, isNullable: false, default: 'CURRENT_TIMESTAMP' },
+					{ name: 'deletedAt', type: dateType, isNullable: true },
+					{
+						name: 'isActive',
+						type: isMySql ? 'tinyint' : 'boolean',
+						isNullable: true,
+						default: isMySql ? '1' : 'true'
+					},
+					{
+						name: 'isArchived',
+						type: isMySql ? 'tinyint' : 'boolean',
+						isNullable: true,
+						default: isMySql ? '0' : 'false'
+					},
+					{ name: 'tenantId', type: idType, length: idLength, isNullable: true },
+					{ name: 'organizationId', type: idType, length: idLength, isNullable: true },
+					{ name: 'description', type: 'text', isNullable: false },
+					{ name: 'result', type: 'varchar', length: '255', isNullable: false },
+					{ name: 'inspectionId', type: idType, length: idLength, isNullable: false }
+				],
+				indices: [new TableIndex({ name: 'IDX_inspection_finding_inspection', columnNames: ['inspectionId'] })]
+			})
 		);
-		await queryRunner.query(`CREATE INDEX "IDX_inspection_repair_order" ON inspection ("repairOrderId")`);
-		await queryRunner.query(`CREATE INDEX "IDX_inspection_vehicle" ON inspection ("vehicleId")`);
-		await queryRunner.query(`CREATE INDEX "IDX_inspection_technician" ON inspection ("technicianEmployeeId")`);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_inspection_finding_inspection" ON inspection_finding ("inspectionId")`
-		);
-		await queryRunner.query(
-			`ALTER TABLE inspection ADD CONSTRAINT "FK_inspection_repair_order" FOREIGN KEY ("repairOrderId") REFERENCES repair_order(id) ON DELETE RESTRICT`
-		);
-		await queryRunner.query(
-			`ALTER TABLE inspection ADD CONSTRAINT "FK_inspection_vehicle" FOREIGN KEY ("vehicleId") REFERENCES vehicle(id) ON DELETE RESTRICT`
-		);
-		await queryRunner.query(
-			`ALTER TABLE inspection ADD CONSTRAINT "FK_inspection_technician" FOREIGN KEY ("technicianEmployeeId") REFERENCES employee(id) ON DELETE RESTRICT`
-		);
-		await queryRunner.query(
-			`ALTER TABLE inspection_finding ADD CONSTRAINT "FK_inspection_finding_inspection" FOREIGN KEY ("inspectionId") REFERENCES inspection(id) ON DELETE RESTRICT`
-		);
-		void json;
+
+		const fk = (name: string, column: string, table: string) =>
+			new TableForeignKey({
+				name,
+				columnNames: [column],
+				referencedTableName: table,
+				referencedColumnNames: ['id'],
+				onDelete: 'RESTRICT'
+			});
+		await queryRunner.createForeignKeys('inspection', [
+			fk('FK_inspection_repair_order', 'repairOrderId', 'repair_order'),
+			fk('FK_inspection_vehicle', 'vehicleId', 'vehicle'),
+			fk('FK_inspection_technician', 'technicianEmployeeId', 'employee')
+		]);
+		await queryRunner.createForeignKeys('inspection_finding', [
+			fk('FK_inspection_finding_inspection', 'inspectionId', 'inspection')
+		]);
 	}
+
 	public async down(queryRunner: QueryRunner): Promise<void> {
 		await queryRunner.query('DROP TABLE inspection_finding');
 		await queryRunner.query('DROP TABLE inspection');

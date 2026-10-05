@@ -50,6 +50,6 @@ export class VehicleController extends CrudController<Vehicle> {
 		@Param('id', UUIDValidationPipe) id: string,
 		@Body() entity: QueryDeepPartialEntity<Vehicle>
 	): Promise<IVehicle> {
-		return this.vehicleService.create({ ...entity, id });
+		return this.vehicleService.create({ ...entity, id } as Partial<Vehicle>);
 	}
 }
