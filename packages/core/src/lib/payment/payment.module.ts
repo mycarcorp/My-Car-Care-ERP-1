@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { EmailSendModule } from './../email-send/email-send.module';
 import { RolePermissionModule } from '../role-permission/role-permission.module';
+import { Invoice } from '../invoice/invoice.entity';
 import { Payment } from './payment.entity';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
@@ -12,7 +13,7 @@ import { MikroOrmPaymentRepository } from './repository/mikro-orm-payment.reposi
 
 @Module({
 	imports: [
-		TypeOrmModule.forFeature([Payment]),
+		TypeOrmModule.forFeature([Payment, Invoice]),
 		MikroOrmModule.forFeature([Payment]),
 		RolePermissionModule,
 		EmailSendModule

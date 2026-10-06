@@ -1,36 +1,284 @@
-import { Injectable } from '@nestjs/common';
-import { Between, In, Brackets, WhereExpressionBuilder, Raw, SelectQueryBuilder } from 'typeorm';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import {
+	Between,
+	In,
+	Brackets,
+	WhereExpressionBuilder,
+	Raw,
+	SelectQueryBuilder,
+	DeleteResult,
+	EntityManager,
+	FindOptionsWhere,
+	Repository,
+	UpdateResult
+} from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { chain } from 'underscore';
 import * as moment from 'moment';
 import {
+	CurrenciesEnum,
 	ID,
 	IDateRangePicker,
 	IGetPaymentInput,
 	IInvoice,
+	InvoiceStatusTypesEnum,
 	IPagination,
 	IPayment,
 	LanguagesEnum,
-	PaymentStats
+	PaymentStats,
+	PermissionsEnum
 } from '@gauzy/contracts';
 import { isNotEmpty } from '@gauzy/utils';
 import { Payment } from './payment.entity';
+import { Invoice } from '../invoice/invoice.entity';
 import { BaseQueryDTO, TenantAwareCrudService } from './../core/crud';
 import { RequestContext } from '../core/context';
 import { LIKE_OPERATOR } from '../core/util';
-import { getDateRangeFormat, getDaysBetweenDates, MultiORMEnum, resolveTimeZone } from '../core/utils';
+import {
+	getDateRangeFormat,
+	getDaysBetweenDates,
+	LegacyFindOneOptions,
+	MultiORMEnum,
+	resolveTimeZone
+} from '../core/utils';
 import { EmailService } from './../email-send/email.service';
 import { prepareSQLQuery as p } from './../database/database.helper';
 import { MikroOrmPaymentRepository } from './repository/mikro-orm-payment.repository';
 import { TypeOrmPaymentRepository } from './repository/type-orm-payment.repository';
+
+/**
+ * Rounds to two decimal places, guarding against floating point artifacts.
+ */
+const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
 
 @Injectable()
 export class PaymentService extends TenantAwareCrudService<Payment> {
 	constructor(
 		readonly typeOrmPaymentRepository: TypeOrmPaymentRepository,
 		readonly mikroOrmPaymentRepository: MikroOrmPaymentRepository,
-		private readonly emailService: EmailService
+		private readonly emailService: EmailService,
+		@InjectRepository(Invoice) private readonly invoices: Repository<Invoice>
 	) {
 		super(typeOrmPaymentRepository, mikroOrmPaymentRepository);
+	}
+
+	/**
+	 * Creates (or, when `entity.id` is present, updates) a payment and transactionally
+	 * recalculates the owning invoice's payment state. The actual payment rows are the
+	 * single source of truth for the invoice's `alreadyPaid` / `amountDue` / payment
+	 * status: client-supplied values for those fields are stripped and never trusted.
+	 *
+	 * The controller's update path calls `create({ ...entity, id })`, so this single
+	 * override keeps both the create and the upsert-by-id paths safe.
+	 *
+	 * @param entity - The payment payload.
+	 * @returns The saved payment.
+	 */
+	public async create(entity: IPayment): Promise<Payment> {
+		const scope = this.scope();
+
+		// Strip client-supplied invoice financial fields; they are recomputed
+		// server-side from the actual payment rows and are never trusted.
+		delete (entity as any).alreadyPaid;
+		delete (entity as any).amountDue;
+		delete (entity as any).status;
+
+		const isUpdate = isNotEmpty(entity.id);
+		const hasAmount = entity.amount !== undefined && entity.amount !== null;
+
+		// The amount is mandatory on create and validated whenever supplied on update.
+		if (!isUpdate || hasAmount) {
+			const amount = Number(entity.amount);
+			if (!Number.isFinite(amount) || amount <= 0) {
+				throw new BadRequestException('Payment amount must be a positive number.');
+			}
+		}
+
+		// Reject foreign, void or currency-mismatched invoices before opening a transaction.
+		if (entity.invoiceId) {
+			await this.validatePaymentInvoice(entity.invoiceId, entity.currency as CurrenciesEnum | undefined, scope);
+		}
+
+		// Inherited Gauzy self-enrichment: when the caller may not act for another
+		// employee, attribute the payment to the current employee.
+		const employeeId = RequestContext.currentEmployeeId();
+		const canChangeSelectedEmployee = RequestContext.hasPermission(PermissionsEnum.CHANGE_SELECTED_EMPLOYEE);
+
+		return this.typeOrmRepository.manager.transaction(async (manager: EntityManager) => {
+			let previousInvoiceId: ID | undefined;
+			if (isUpdate) {
+				const existing = await manager.findOne(Payment, {
+					where: { id: entity.id, ...scope },
+					select: { id: true, invoiceId: true }
+				});
+				if (!existing) {
+					throw new NotFoundException('Payment not found in this organization.');
+				}
+				previousInvoiceId = existing.invoiceId;
+			}
+
+			const payment = await manager.save(
+				Payment,
+				manager.create(Payment, {
+					...entity,
+					...scope,
+					// Preserve the inherited Gauzy convention: a caller without
+					// CHANGE_SELECTED_EMPLOYEE records the payment for themselves.
+					...(isNotEmpty(employeeId) && !canChangeSelectedEmployee ? { employeeId } : {})
+				})
+			);
+
+			// `invoiceId: null` (or a different invoice) re-parents the payment: the
+			// previously linked invoice must be recalculated as well.
+			const effectiveInvoiceId = entity.invoiceId !== undefined ? entity.invoiceId : previousInvoiceId;
+			if (effectiveInvoiceId) {
+				await this.recalculateInvoicePaymentState(effectiveInvoiceId, manager, scope);
+			}
+			if (previousInvoiceId && previousInvoiceId !== effectiveInvoiceId) {
+				await this.recalculateInvoicePaymentState(previousInvoiceId, manager, scope);
+			}
+			return payment;
+		});
+	}
+
+	/**
+	 * Updates a payment by id through the same hardened, transactional path as create().
+	 * (The payment controller's update endpoint calls `create({ ...entity, id })`; this
+	 * override keeps direct `update(id, entity)` callers safe as well.)
+	 *
+	 * @param id - The payment id or where-conditions.
+	 * @param partialEntity - The partial payment payload.
+	 * @returns The updated payment.
+	 */
+	public async update(
+		id: string | FindOptionsWhere<Payment>,
+		partialEntity: QueryDeepPartialEntity<Payment>
+	): Promise<Payment | UpdateResult> {
+		if (typeof id !== 'string') {
+			return super.update(id, partialEntity);
+		}
+		return this.create({ ...(partialEntity as object), id } as IPayment);
+	}
+
+	/**
+	 * Deletes a payment by id and transactionally recalculates the owning invoice's
+	 * payment state from the remaining payment rows.
+	 *
+	 * @param criteria - The payment id (string) or where-conditions.
+	 * @param options - Additional find options (passed through for non-id criteria).
+	 * @returns The delete result.
+	 */
+	public async delete(
+		criteria: string | FindOptionsWhere<Payment>,
+		options?: LegacyFindOneOptions<Payment>
+	): Promise<DeleteResult> {
+		if (typeof criteria !== 'string') {
+			return super.delete(criteria, options);
+		}
+
+		const scope = this.scope();
+		const payment = await this.typeOrmRepository.findOneBy({ id: criteria, ...scope });
+		if (!payment) {
+			throw new NotFoundException('Payment not found in this organization.');
+		}
+		const invoiceId = payment.invoiceId;
+
+		return this.typeOrmRepository.manager.transaction(async (manager: EntityManager) => {
+			const result = await manager.delete(Payment, { id: criteria, ...scope });
+			if (invoiceId) {
+				await this.recalculateInvoicePaymentState(invoiceId, manager, scope);
+			}
+			return result;
+		});
+	}
+
+	/**
+	 * Recalculates and persists an invoice's payment-derived state (`alreadyPaid`,
+	 * `amountDue`, `paid` and payment status) from the actual payment rows, inside the
+	 * caller's transaction. A VOID invoice keeps its status; when nothing has been paid
+	 * the existing non-payment status (DRAFT / SENT / VIEWED) is preserved.
+	 *
+	 * @param invoiceId - The invoice to recalculate.
+	 * @param manager - The transactional entity manager.
+	 * @param scope - The current tenant/organization scope.
+	 */
+	private async recalculateInvoicePaymentState(
+		invoiceId: ID,
+		manager: EntityManager,
+		scope: { tenantId: ID; organizationId: ID }
+	): Promise<void> {
+		const invoice = await manager.findOne(Invoice, { where: { id: invoiceId, ...scope } });
+		if (!invoice) {
+			throw new NotFoundException('Invoice not found in this organization.');
+		}
+
+		const rows = await manager.find(Payment, {
+			where: { invoiceId, ...scope },
+			select: { id: true, amount: true }
+		});
+		const totalPaid = round2(rows.reduce((sum, payment) => sum + Number(payment.amount), 0));
+
+		const totalValue = Number(invoice.totalValue);
+		const amountDue = round2(totalValue - totalPaid);
+
+		invoice.alreadyPaid = totalPaid;
+		invoice.amountDue = amountDue;
+		invoice.paid = totalPaid >= totalValue && totalValue > 0;
+
+		if (invoice.status === InvoiceStatusTypesEnum.VOID) {
+			// A void invoice never changes status; only the money columns are refreshed.
+		} else if (totalPaid > 0) {
+			if (totalPaid < totalValue) {
+				invoice.status = InvoiceStatusTypesEnum.PARTIALLY_PAID;
+			} else if (totalPaid === totalValue) {
+				invoice.status = InvoiceStatusTypesEnum.FULLY_PAID;
+			} else {
+				invoice.status = InvoiceStatusTypesEnum.OVERPAID;
+			}
+		}
+		// totalPaid <= 0: preserve the existing non-payment status.
+
+		await manager.save(Invoice, invoice);
+	}
+
+	/**
+	 * Validates that the invoice belongs to the current tenant/organization scope, is
+	 * not VOID, and (when a currency is supplied) matches the payment currency.
+	 *
+	 * @param invoiceId - The invoice the payment is being attached to.
+	 * @param currency - The payment currency, when supplied.
+	 * @param scope - The current tenant/organization scope.
+	 * @returns The scoped invoice.
+	 */
+	private async validatePaymentInvoice(
+		invoiceId: ID,
+		currency: CurrenciesEnum | undefined,
+		scope: { tenantId: ID; organizationId: ID }
+	): Promise<Invoice> {
+		const invoice = await this.invoices.findOneBy({ id: invoiceId, ...scope });
+		if (!invoice) {
+			throw new BadRequestException('Invoice not found in this organization.');
+		}
+		if (invoice.status === InvoiceStatusTypesEnum.VOID) {
+			throw new BadRequestException('A void invoice cannot accept payments.');
+		}
+		if (currency && invoice.currency && currency !== invoice.currency) {
+			throw new BadRequestException('Payment currency must match the invoice currency.');
+		}
+		return invoice;
+	}
+
+	/**
+	 * The current tenant/organization scope, required for every payment mutation.
+	 */
+	private scope(): { tenantId: ID; organizationId: ID } {
+		const tenantId = RequestContext.currentTenantId();
+		const organizationId = RequestContext.currentOrganizationId();
+		if (!tenantId || !organizationId) {
+			throw new BadRequestException('Tenant and organization context are required.');
+		}
+		return { tenantId, organizationId };
 	}
 
 	/**
