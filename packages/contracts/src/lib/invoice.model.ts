@@ -1,7 +1,8 @@
-import { IBasePerTenantAndOrganizationEntityModel } from './base-entity.model';
+import { IBasePerTenantAndOrganizationEntityModel, ID } from './base-entity.model';
 import { IOrganization } from './organization.model';
 import { IOrganizationContact } from './organization-contact.model';
 import { IInvoiceItem } from './invoice-item.model';
+import { IRepairOrder } from './repair-order.model';
 import { ITag } from './tag.model';
 import { IPayment } from './payment.model';
 import { IInvoiceEstimateHistory } from './invoice-estimate-history.model';
@@ -32,6 +33,8 @@ export interface IInvoice extends IBasePerTenantAndOrganizationEntityModel {
 	organizationContactName?: string;
 	fromOrganization?: IOrganization;
 	toContact?: IOrganizationContact;
+	repairOrderId?: ID;
+	repairOrder?: IRepairOrder;
 	invoiceItems?: IInvoiceItem[];
 	invoiceType?: string;
 	sentTo?: string;
@@ -66,6 +69,7 @@ export interface IInvoiceCreateInput extends IBasePerTenantAndOrganizationEntity
 	organizationContactName?: string;
 	fromOrganization?: IOrganization;
 	toContact?: IOrganizationContact;
+	repairOrderId?: ID;
 	invoiceType?: string;
 	sentTo?: string;
 	tags?: ITag[];

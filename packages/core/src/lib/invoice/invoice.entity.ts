@@ -15,6 +15,7 @@ import {
 	IsEnum
 } from 'class-validator';
 import {
+	ID,
 	IInvoice,
 	CurrenciesEnum,
 	InvoiceTypeEnum,
@@ -24,6 +25,7 @@ import {
 	IInvoiceItem,
 	IOrganizationContact,
 	IOrganization,
+	IRepairOrder,
 	ITag
 } from '@gauzy/contracts';
 import { isMySQL } from '@gauzy/config';
@@ -34,6 +36,7 @@ import {
 	Organization,
 	OrganizationContact,
 	Payment,
+	RepairOrder,
 	Tag,
 	TenantOrganizationBaseEntity
 } from '../core/entities/internal';
@@ -262,6 +265,20 @@ export class Invoice extends TenantOrganizationBaseEntity implements IInvoice {
 	@ColumnIndex()
 	@MultiORMColumn({ nullable: true, relationId: true })
 	toContactId?: string;
+
+	// Repair Order this invoice was generated from (My Car Care)
+	@ApiPropertyOptional({ type: () => () => RepairOrder })
+	@MultiORMManyToOne(() => RepairOrder, { nullable: true, onDelete: 'SET NULL' })
+	@JoinColumn()
+	repairOrder?: IRepairOrder;
+
+	@ApiPropertyOptional({ type: () => String })
+	@RelationId((it: Invoice) => it.repairOrder)
+	@IsString()
+	@IsOptional()
+	@ColumnIndex()
+	@MultiORMColumn({ nullable: true, relationId: true })
+	repairOrderId?: ID;
 
 	/*
 	|--------------------------------------------------------------------------
