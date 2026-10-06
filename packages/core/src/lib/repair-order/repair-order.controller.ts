@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ID, IInvoice, IPagination, IRepairOrder, PermissionsEnum } from '@gauzy/contracts';
+import { ID, IInvoice, IPagination, IRepairOrder, IServiceHistoryRecord, PermissionsEnum } from '@gauzy/contracts';
 import { BaseQueryDTO, FindOptionsQueryDTO } from '../core/crud';
 import { Permissions } from '../shared/decorators';
 import { PermissionGuard, TenantPermissionGuard } from '../shared/guards';
@@ -9,6 +9,7 @@ import { CancelRepairOrderDTO, CloseRepairOrderDTO, VehicleArrivalDTO } from './
 import { RepairOrder } from './repair-order.entity';
 import { RepairOrderInvoiceService } from './repair-order-invoice.service';
 import { RepairOrderService } from './repair-order.service';
+import { ServiceHistoryService } from './service-history.service';
 
 @ApiTags('RepairOrder')
 @UseGuards(TenantPermissionGuard)
@@ -16,7 +17,8 @@ import { RepairOrderService } from './repair-order.service';
 export class RepairOrderController {
 	constructor(
 		private readonly repairOrderService: RepairOrderService,
-		private readonly repairOrderInvoiceService: RepairOrderInvoiceService
+		private readonly repairOrderInvoiceService: RepairOrderInvoiceService,
+		private readonly serviceHistory: ServiceHistoryService
 	) {}
 
 	@Get()
@@ -31,6 +33,31 @@ export class RepairOrderController {
 	@Permissions(PermissionsEnum.ORG_REPAIR_ORDER_VIEW)
 	async findById(@Param('id', UUIDValidationPipe) id: ID, @Query() options: FindOptionsQueryDTO<RepairOrder>) {
 		return this.repairOrderService.findOneByIdString(id, options);
+	}
+
+	@Get(':id/history')
+	@UseGuards(PermissionGuard)
+	@Permissions(PermissionsEnum.ORG_REPAIR_ORDER_VIEW)
+	async getHistory(@Param('id', UUIDValidationPipe) id: ID): Promise<IServiceHistoryRecord> {
+		return this.serviceHistory.getRepairOrderHistory(id);
+	}
+
+	@Get('vehicle/:vehicleId/service-history')
+	@UseGuards(PermissionGuard)
+	@Permissions(PermissionsEnum.ORG_REPAIR_ORDER_VIEW)
+	async getVehicleServiceHistory(
+		@Param('vehicleId', UUIDValidationPipe) vehicleId: ID
+	): Promise<IServiceHistoryRecord[]> {
+		return this.serviceHistory.getVehicleServiceHistory(vehicleId);
+	}
+
+	@Get('contact/:contactId/service-history')
+	@UseGuards(PermissionGuard)
+	@Permissions(PermissionsEnum.ORG_REPAIR_ORDER_VIEW)
+	async getContactServiceHistory(
+		@Param('contactId', UUIDValidationPipe) contactId: ID
+	): Promise<IServiceHistoryRecord[]> {
+		return this.serviceHistory.getContactServiceHistory(contactId);
 	}
 
 	@Post('arrival')
