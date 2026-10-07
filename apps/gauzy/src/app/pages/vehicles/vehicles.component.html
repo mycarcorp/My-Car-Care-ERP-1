@@ -1,0 +1,73 @@
+<nb-card class="vehicles">
+	<nb-card-header class="vehicles__header">
+		<h4>{{ 'VEHICLES_PAGE.TITLE' | translate }}</h4>
+		<button
+			*ngxPermissionsOnly="['ALL_ORG_EDIT']"
+			nbButton
+			status="primary"
+			(click)="registerVehicle()"
+		>
+			{{ 'VEHICLES_PAGE.REGISTER' | translate }}
+		</button>
+	</nb-card-header>
+	<nb-card-body>
+		<div class="vehicles__toolbar">
+			<input
+				nbInput
+				type="text"
+				class="vehicles__search"
+				[placeholder]="'VEHICLES_PAGE.SEARCH_PLACEHOLDER' | translate"
+				(input)="onSearch($any($event.target).value)"
+			/>
+		</div>
+
+		<div *ngIf="loading" class="vehicles__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<ng-template [ngIf]="!loading">
+			<ng-template [ngIf]="vehicles.length" [ngIfElse]="noVehicles">
+				<table class="table vehicles__table">
+					<thead>
+						<tr>
+							<th>{{ 'VEHICLES_PAGE.VIN' | translate }}</th>
+							<th>{{ 'VEHICLES_PAGE.YEAR' | translate }}</th>
+							<th>{{ 'VEHICLES_PAGE.MAKE' | translate }}</th>
+							<th>{{ 'VEHICLES_PAGE.MODEL' | translate }}</th>
+							<th>{{ 'VEHICLES_PAGE.PLATE' | translate }}</th>
+							<th>{{ 'VEHICLES_PAGE.CUSTOMER' | translate }}</th>
+							<th>{{ 'VEHICLES_PAGE.CREATED' | translate }}</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr *ngFor="let vehicle of vehicles">
+							<td>{{ vehicle.vinNormalized }}</td>
+							<td>{{ vehicle.year }}</td>
+							<td>{{ vehicle.make }}</td>
+							<td>{{ vehicle.model }}</td>
+							<td>{{ vehicle.plate }}</td>
+							<td>{{ vehicle['customer']?.name }}</td>
+							<td>{{ vehicle.createdAt | date: 'shortDate' }}</td>
+							<td>
+								<button nbButton size="small" status="basic" (click)="view(vehicle)">
+									{{ 'VEHICLES_PAGE.VIEW' | translate }}
+								</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<ga-pagination
+					*ngIf="smartTableSource"
+					[source]="smartTableSource"
+					(totalItemsChange)="onPageChange($event)"
+				></ga-pagination>
+			</ng-template>
+			<ng-template #noVehicles>
+				<div class="vehicles__empty">
+					{{ 'VEHICLES_PAGE.EMPTY' | translate }}
+				</div>
+			</ng-template>
+		</ng-template>
+	</nb-card-body>
+</nb-card>

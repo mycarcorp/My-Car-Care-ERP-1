@@ -1,0 +1,82 @@
+<nb-card class="repair-orders">
+	<nb-card-header class="repair-orders__header">
+		<h4>{{ 'REPAIR_ORDERS_PAGE.TITLE' | translate }}</h4>
+		<button
+			*ngxPermissionsOnly="['ORG_REPAIR_ORDER_ARRIVE']"
+			nbButton
+			status="primary"
+			(click)="openArrival()"
+		>
+			{{ 'REPAIR_ORDERS_PAGE.ARRIVE' | translate }}
+		</button>
+	</nb-card-header>
+	<nb-card-body>
+		<div class="repair-orders__toolbar">
+			<input
+				nbInput
+				type="text"
+				class="repair-orders__search"
+				[placeholder]="'REPAIR_ORDERS_PAGE.SEARCH_PLACEHOLDER' | translate"
+				(input)="onSearch($any($event.target).value)"
+			/>
+			<nb-select
+				class="repair-orders__status"
+				[placeholder]="'REPAIR_ORDERS_PAGE.STATUS_FILTER' | translate"
+				[(ngModel)]="statusFilter"
+				(ngModelChange)="onStatusChange($event)"
+			>
+				<nb-option [value]="''">{{ 'REPAIR_ORDERS_PAGE.ALL_STATUSES' | translate }}</nb-option>
+				<nb-option *ngFor="let status of statuses" [value]="status">{{ status }}</nb-option>
+			</nb-select>
+		</div>
+
+		<div *ngIf="loading" class="repair-orders__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<ng-template [ngIf]="!loading">
+			<ng-template [ngIf]="repairOrders.length" [ngIfElse]="noRepairOrders">
+				<table class="table repair-orders__table">
+					<thead>
+						<tr>
+							<th>{{ 'REPAIR_ORDERS_PAGE.RO_NUMBER' | translate }}</th>
+							<th>{{ 'REPAIR_ORDERS_PAGE.CUSTOMER' | translate }}</th>
+							<th>{{ 'REPAIR_ORDERS_PAGE.VEHICLE' | translate }}</th>
+							<th>{{ 'REPAIR_ORDERS_PAGE.STATUS' | translate }}</th>
+							<th>{{ 'REPAIR_ORDERS_PAGE.ARRIVED' | translate }}</th>
+							<th>{{ 'REPAIR_ORDERS_PAGE.CREATED' | translate }}</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr *ngFor="let repairOrder of repairOrders">
+							<td>{{ repairOrder.repairOrderNumber }}</td>
+							<td>{{ repairOrder['customer']?.name }}</td>
+							<td>{{ repairOrder['vehicleLabel'] }}</td>
+							<td>
+								<nb-badge [text]="repairOrder.status" status="basic"></nb-badge>
+							</td>
+							<td>{{ repairOrder.arrivedAt | date: 'short' }}</td>
+							<td>{{ repairOrder.createdAt | date: 'shortDate' }}</td>
+							<td>
+								<button nbButton size="small" status="basic" (click)="view(repairOrder)">
+									{{ 'REPAIR_ORDERS_PAGE.VIEW' | translate }}
+								</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<ga-pagination
+					*ngIf="smartTableSource"
+					[source]="smartTableSource"
+					(totalItemsChange)="onPageChange($event)"
+				></ga-pagination>
+			</ng-template>
+			<ng-template #noRepairOrders>
+				<div class="repair-orders__empty">
+					{{ 'REPAIR_ORDERS_PAGE.EMPTY' | translate }}
+				</div>
+			</ng-template>
+		</ng-template>
+	</nb-card-body>
+</nb-card>

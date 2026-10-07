@@ -1,0 +1,112 @@
+<nb-card class="vehicle-mutation">
+	<nb-card-header>
+		{{
+			(isEdit ? 'VEHICLES_PAGE.MUTATION.EDIT_TITLE' : 'VEHICLES_PAGE.MUTATION.REGISTER_TITLE') | translate
+		}}
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="vehicle-mutation__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+		<ng-container *ngIf="!loading">
+			<div class="form-group">
+				<label for="vin">{{ 'VEHICLES_PAGE.VIN' | translate }} *</label>
+				<input
+					id="vin"
+					nbInput
+					type="text"
+					fullWidth
+					[placeholder]="'VEHICLES_PAGE.MUTATION.VIN_PLACEHOLDER' | translate"
+					[(ngModel)]="vinNormalized"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="year">{{ 'VEHICLES_PAGE.YEAR' | translate }}</label>
+				<input
+					id="year"
+					nbInput
+					type="number"
+					fullWidth
+					[placeholder]="'VEHICLES_PAGE.MUTATION.YEAR_PLACEHOLDER' | translate"
+					[(ngModel)]="year"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="make">{{ 'VEHICLES_PAGE.MAKE' | translate }}</label>
+				<input
+					id="make"
+					nbInput
+					type="text"
+					fullWidth
+					[placeholder]="'VEHICLES_PAGE.MUTATION.MAKE_PLACEHOLDER' | translate"
+					[(ngModel)]="make"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="model">{{ 'VEHICLES_PAGE.MODEL' | translate }} *</label>
+				<input
+					id="model"
+					nbInput
+					type="text"
+					fullWidth
+					[placeholder]="'VEHICLES_PAGE.MUTATION.MODEL_PLACEHOLDER' | translate"
+					[(ngModel)]="model"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="customer">{{ 'VEHICLES_PAGE.CUSTOMER' | translate }} *</label>
+				<nb-select
+					id="customer"
+					fullWidth
+					[placeholder]="'VEHICLES_PAGE.MUTATION.CUSTOMER_PLACEHOLDER' | translate"
+					[(ngModel)]="customerId"
+				>
+					<nb-option *ngFor="let customer of customers" [value]="customer.id">
+						{{ customer.name }}
+					</nb-option>
+				</nb-select>
+			</div>
+			<div class="form-group">
+				<label for="plate">{{ 'VEHICLES_PAGE.PLATE' | translate }}</label>
+				<input
+					id="plate"
+					nbInput
+					type="text"
+					fullWidth
+					[placeholder]="'VEHICLES_PAGE.MUTATION.PLATE_PLACEHOLDER' | translate"
+					[(ngModel)]="plate"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="color">{{ 'VEHICLES_PAGE.COLOR' | translate }}</label>
+				<input
+					id="color"
+					nbInput
+					type="text"
+					fullWidth
+					[placeholder]="'VEHICLES_PAGE.MUTATION.COLOR_PLACEHOLDER' | translate"
+					[(ngModel)]="color"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="mileage">{{ 'VEHICLES_PAGE.CURRENT_MILEAGE' | translate }}</label>
+				<input
+					id="mileage"
+					nbInput
+					type="number"
+					fullWidth
+					[placeholder]="'VEHICLES_PAGE.MUTATION.MILEAGE_PLACEHOLDER' | translate"
+					[(ngModel)]="currentMileage"
+				/>
+			</div>
+		</ng-container>
+	</nb-card-body>
+	<nb-card-footer class="vehicle-mutation__footer">
+		<button nbButton status="basic" (click)="close()" [disabled]="submitting">
+			{{ 'VEHICLES_PAGE.MUTATION.CANCEL' | translate }}
+		</button>
+		<button nbButton status="primary" (click)="submit()" [disabled]="submitting">
+			{{ (isEdit ? 'VEHICLES_PAGE.MUTATION.SAVE' : 'VEHICLES_PAGE.MUTATION.REGISTER') | translate }}
+		</button>
+	</nb-card-footer>
+</nb-card>

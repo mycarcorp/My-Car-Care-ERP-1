@@ -1,0 +1,115 @@
+<nb-card class="vehicle-detail">
+	<nb-card-header class="vehicle-detail__header">
+		<button nbButton size="small" status="basic" (click)="back()">
+			{{ 'VEHICLES_PAGE.DETAIL.BACK' | translate }}
+		</button>
+		<h4 *ngIf="vehicle">{{ vehicleTitle }}</h4>
+		<ng-container *ngxPermissionsOnly="['ALL_ORG_EDIT']">
+			<button *ngIf="vehicle" nbButton size="small" status="primary" (click)="edit()">
+				{{ 'VEHICLES_PAGE.DETAIL.EDIT' | translate }}
+			</button>
+		</ng-container>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="vehicle-detail__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<div *ngIf="!loading && notFound" class="vehicle-detail__not-found">
+			{{ 'VEHICLES_PAGE.DETAIL.NOT_FOUND' | translate }}
+		</div>
+
+		<ng-container *ngIf="!loading && vehicle">
+			<div class="vehicle-detail__summary">
+				<div class="vehicle-detail__row">
+					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.VIN' | translate }}</span>
+					<span>{{ vehicle.vinNormalized }}</span>
+				</div>
+				<div class="vehicle-detail__row">
+					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.YEAR' | translate }}</span>
+					<span>{{ vehicle.year }}</span>
+				</div>
+				<div class="vehicle-detail__row">
+					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.MAKE' | translate }}</span>
+					<span>{{ vehicle.make }}</span>
+				</div>
+				<div class="vehicle-detail__row">
+					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.MODEL' | translate }}</span>
+					<span>{{ vehicle.model }}</span>
+				</div>
+				<div class="vehicle-detail__row" *ngIf="vehicle.trim">
+					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.TRIM' | translate }}</span>
+					<span>{{ vehicle.trim }}</span>
+				</div>
+				<div class="vehicle-detail__row" *ngIf="vehicle.bodyStyle">
+					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.BODY_STYLE' | translate }}</span>
+					<span>{{ vehicle.bodyStyle }}</span>
+				</div>
+				<div class="vehicle-detail__row" *ngIf="vehicle.plate">
+					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.PLATE' | translate }}</span>
+					<span>{{ vehicle.plate }}</span>
+				</div>
+				<div class="vehicle-detail__row" *ngIf="vehicle.plateJurisdiction">
+					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.PLATE_JURISDICTION' | translate }}</span>
+					<span>{{ vehicle.plateJurisdiction }}</span>
+				</div>
+				<div class="vehicle-detail__row" *ngIf="vehicle.color">
+					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.COLOR' | translate }}</span>
+					<span>{{ vehicle.color }}</span>
+				</div>
+				<div class="vehicle-detail__row" *ngIf="vehicle.currentMileage !== undefined && vehicle.currentMileage !== null">
+					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.CURRENT_MILEAGE' | translate }}</span>
+					<span>{{ vehicle.currentMileage }}</span>
+				</div>
+				<div class="vehicle-detail__row">
+					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.CUSTOMER' | translate }}</span>
+					<span>{{ vehicle['customer']?.name }}</span>
+				</div>
+			</div>
+
+			<div class="vehicle-detail__history">
+				<h5>{{ 'VEHICLES_PAGE.HISTORY.TITLE' | translate }}</h5>
+
+				<div *ngIf="historyLoading" class="vehicle-detail__loading">
+					<nb-spinner></nb-spinner>
+				</div>
+
+				<ng-template [ngIf]="!historyLoading">
+					<ng-template [ngIf]="serviceHistory.length" [ngIfElse]="noHistory">
+						<table class="table vehicle-detail__history-table">
+							<thead>
+								<tr>
+									<th>{{ 'VEHICLES_PAGE.HISTORY.RO_NUMBER' | translate }}</th>
+									<th>{{ 'VEHICLES_PAGE.HISTORY.STATUS' | translate }}</th>
+									<th>{{ 'VEHICLES_PAGE.HISTORY.ARRIVED' | translate }}</th>
+									<th>{{ 'VEHICLES_PAGE.HISTORY.CONCERN' | translate }}</th>
+									<th>{{ 'VEHICLES_PAGE.HISTORY.INVOICE' | translate }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr *ngFor="let record of serviceHistory">
+									<td>{{ record.repairOrderNumber }}</td>
+									<td>
+										<nb-badge [text]="record.status" [status]="historyBadgeStatus(record.status)"></nb-badge>
+									</td>
+									<td>{{ record.arrivedAt | date: 'short' }}</td>
+									<td>{{ record.concern }}</td>
+									<td>
+										<ng-container *ngIf="record.invoice">
+											{{ record.invoice.invoiceNumber }} — {{ record.invoice.totalValue }}
+										</ng-container>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</ng-template>
+					<ng-template #noHistory>
+						<div class="vehicle-detail__history-empty">
+							{{ 'VEHICLES_PAGE.HISTORY.EMPTY' | translate }}
+						</div>
+					</ng-template>
+				</ng-template>
+			</div>
+		</ng-container>
+	</nb-card-body>
+</nb-card>

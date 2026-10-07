@@ -1,0 +1,42 @@
+<nb-card class="ro-arrival">
+	<nb-card-header>{{ 'REPAIR_ORDERS_PAGE.ARRIVAL.TITLE' | translate }}</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="ro-arrival__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+		<ng-container *ngIf="!loading">
+			<div class="form-group">
+				<label for="appointment">{{ 'REPAIR_ORDERS_PAGE.ARRIVAL.APPOINTMENT' | translate }}</label>
+				<nb-select
+					id="appointment"
+					fullWidth
+					[placeholder]="'REPAIR_ORDERS_PAGE.ARRIVAL.APPOINTMENT_PLACEHOLDER' | translate"
+					[(ngModel)]="selectedAppointmentId"
+				>
+					<nb-option *ngFor="let appointment of appointments" [value]="appointment.id">
+						{{ appointmentLabel(appointment) }}
+					</nb-option>
+				</nb-select>
+			</div>
+			<div class="form-group">
+				<label for="odometer">{{ 'REPAIR_ORDERS_PAGE.ARRIVAL.ODOMETER' | translate }}</label>
+				<input
+					id="odometer"
+					nbInput
+					type="number"
+					fullWidth
+					[placeholder]="'REPAIR_ORDERS_PAGE.ARRIVAL.ODOMETER_PLACEHOLDER' | translate"
+					[(ngModel)]="arrivalOdometer"
+				/>
+			</div>
+		</ng-container>
+	</nb-card-body>
+	<nb-card-footer class="ro-arrival__footer">
+		<button nbButton status="basic" (click)="close()" [disabled]="submitting">
+			{{ 'REPAIR_ORDERS_PAGE.ARRIVAL.CANCEL' | translate }}
+		</button>
+		<button nbButton status="primary" (click)="submit()" [disabled]="submitting || !selectedAppointmentId">
+			{{ 'REPAIR_ORDERS_PAGE.ARRIVAL.CHECK_IN' | translate }}
+		</button>
+	</nb-card-footer>
+</nb-card>

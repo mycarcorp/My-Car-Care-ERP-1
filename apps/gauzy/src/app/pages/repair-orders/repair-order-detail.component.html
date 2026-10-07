@@ -1,0 +1,79 @@
+<nb-card class="ro-detail">
+	<nb-card-header class="ro-detail__header">
+		<button nbButton size="small" status="basic" (click)="back()">
+			{{ 'REPAIR_ORDERS_PAGE.DETAIL.BACK' | translate }}
+		</button>
+		<h4 *ngIf="repairOrder">{{ repairOrder.repairOrderNumber }}</h4>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="ro-detail__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<div *ngIf="!loading && notFound" class="ro-detail__not-found">
+			{{ 'REPAIR_ORDERS_PAGE.DETAIL.NOT_FOUND' | translate }}
+		</div>
+
+		<ng-container *ngIf="!loading && repairOrder">
+			<div class="ro-detail__summary">
+				<div class="ro-detail__row">
+					<span class="ro-detail__label">{{ 'REPAIR_ORDERS_PAGE.DETAIL.STATUS' | translate }}</span>
+					<nb-badge [text]="repairOrder.status" [status]="statusBadgeStatus"></nb-badge>
+				</div>
+				<div class="ro-detail__row">
+					<span class="ro-detail__label">{{ 'REPAIR_ORDERS_PAGE.DETAIL.CUSTOMER' | translate }}</span>
+					<span>{{ repairOrder['customer']?.name }}</span>
+				</div>
+				<div class="ro-detail__row">
+					<span class="ro-detail__label">{{ 'REPAIR_ORDERS_PAGE.DETAIL.VEHICLE' | translate }}</span>
+					<span>{{ vehicleLabel }}</span>
+				</div>
+				<div class="ro-detail__row">
+					<span class="ro-detail__label">{{ 'REPAIR_ORDERS_PAGE.DETAIL.ARRIVED' | translate }}</span>
+					<span>{{ repairOrder.arrivedAt | date: 'short' }}</span>
+				</div>
+				<div class="ro-detail__row" *ngIf="repairOrder.arrivalOdometer !== undefined && repairOrder.arrivalOdometer !== null">
+					<span class="ro-detail__label">{{ 'REPAIR_ORDERS_PAGE.DETAIL.ODOMETER' | translate }}</span>
+					<span>{{ repairOrder.arrivalOdometer }}</span>
+				</div>
+				<div class="ro-detail__row" *ngIf="repairOrder.originalConcern">
+					<span class="ro-detail__label">{{ 'REPAIR_ORDERS_PAGE.DETAIL.CONCERN' | translate }}</span>
+					<span>{{ repairOrder.originalConcern }}</span>
+				</div>
+			</div>
+
+			<div class="ro-detail__actions">
+				<button nbButton status="primary" (click)="openJobBoard()">
+					{{ 'REPAIR_ORDERS_PAGE.DETAIL.OPEN_JOB_BOARD' | translate }}
+				</button>
+				<button
+					*ngIf="canGenerateInvoice()"
+					nbButton
+					status="info"
+					(click)="generateInvoice()"
+					[disabled]="!canGenerateInvoice()"
+				>
+					{{ 'REPAIR_ORDERS_PAGE.DETAIL.GENERATE_INVOICE' | translate }}
+				</button>
+				<button
+					*ngIf="canClose()"
+					nbButton
+					status="success"
+					(click)="close()"
+					[disabled]="!canClose()"
+				>
+					{{ 'REPAIR_ORDERS_PAGE.DETAIL.CLOSE' | translate }}
+				</button>
+				<button
+					*ngIf="canCancel()"
+					nbButton
+					status="danger"
+					(click)="cancel()"
+					[disabled]="!canCancel()"
+				>
+					{{ 'REPAIR_ORDERS_PAGE.DETAIL.CANCEL' | translate }}
+				</button>
+			</div>
+		</ng-container>
+	</nb-card-body>
+</nb-card>
