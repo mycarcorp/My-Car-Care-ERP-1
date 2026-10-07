@@ -40,10 +40,59 @@ export class DiagnosticService extends TenantAwareCrudService<Diagnostic> {
 
 	async update(id: string, input: Partial<IDiagnosticCreateInput>) {
 		const existing = await this.findOneByIdString(id);
+		// A completed diagnostic is immutable: no further edits are permitted.
+		this.assertNotCompleted(existing);
 		const inspectionId = input.inspectionId ?? existing.inspectionId;
 		const technicianEmployeeId = input.technicianEmployeeId ?? existing.technicianEmployeeId;
 		await this.validateScope(inspectionId, technicianEmployeeId);
 		return super.update(id, input);
+	}
+
+	/**
+	 * Starts a diagnostic: DRAFT → IN_PROGRESS. Any other current status is rejected.
+	 */
+	async start(id: string): Promise<Diagnostic> {
+		return await this.transitionStatus(id, DiagnosticStatusEnum.DRAFT, DiagnosticStatusEnum.IN_PROGRESS);
+	}
+
+	/**
+	 * Completes a diagnostic: IN_PROGRESS → COMPLETED and stamps `completedAt`.
+	 * COMPLETED is terminal — no lifecycle path changes it again.
+	 */
+	async complete(id: string): Promise<Diagnostic> {
+		const diagnostic = await this.findOneByIdString(id);
+		if (diagnostic.status !== DiagnosticStatusEnum.IN_PROGRESS) {
+			throw new BadRequestException(`Cannot move a diagnostic from ${diagnostic.status} to ${DiagnosticStatusEnum.COMPLETED}.`);
+		}
+		diagnostic.status = DiagnosticStatusEnum.COMPLETED;
+		diagnostic.completedAt = new Date();
+		return await this.typeOrmRepository.save(diagnostic);
+	}
+
+	/**
+	 * Applies the DRAFT → IN_PROGRESS start transition with tenant/org-safe lookup.
+	 * Findings and the linked inspection/repair order are untouched.
+	 */
+	private async transitionStatus(
+		id: string,
+		from: DiagnosticStatusEnum,
+		to: DiagnosticStatusEnum
+	): Promise<Diagnostic> {
+		const diagnostic = await this.findOneByIdString(id);
+		if (diagnostic.status !== from) {
+			throw new BadRequestException(`Cannot move a diagnostic from ${diagnostic.status} to ${to}.`);
+		}
+		diagnostic.status = to;
+		return await this.typeOrmRepository.save(diagnostic);
+	}
+
+	/**
+	 * Rejects any mutation targeting an already completed diagnostic.
+	 */
+	private assertNotCompleted(diagnostic: Diagnostic): void {
+		if (diagnostic.status === DiagnosticStatusEnum.COMPLETED) {
+			throw new BadRequestException('A completed diagnostic cannot be modified.');
+		}
 	}
 
 	private async validateScope(inspectionId: string, technicianEmployeeId: string) {
@@ -66,6 +115,8 @@ export class DiagnosticService extends TenantAwareCrudService<Diagnostic> {
 
 	async addFinding(diagnosticId: string, input: IDiagnosticFindingCreateInput) {
 		const diagnostic = await this.findOneByIdString(diagnosticId);
+		// A completed diagnostic is immutable: no new findings may be added.
+		this.assertNotCompleted(diagnostic);
 		const finding = {
 			...input,
 			diagnosticId: diagnostic.id,

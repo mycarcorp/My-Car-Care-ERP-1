@@ -18,6 +18,20 @@ describe('DiagnosticService', () => {
 	let inspections: { findOneByIdString: jest.Mock };
 	let employees: { findOneByIdString: jest.Mock };
 	let findings: { create: jest.Mock; save: jest.Mock };
+	let repository: InMemoryTenantRepository<Diagnostic>;
+
+	// Seeds a diagnostic row directly (includes entity-required fields) for lifecycle tests.
+	const seedDiagnostic = (overrides: Partial<Diagnostic> = {}): Diagnostic =>
+		repository.seed({
+			inspectionId: INSPECTION_ID,
+			technicianEmployeeId: TECHNICIAN_ID,
+			symptom: 'Engine misfire',
+			diagnosedAt: new Date('2026-10-01T09:00:00.000Z'),
+			status: DiagnosticStatusEnum.DRAFT,
+			tenantId: tenant.tenantId,
+			organizationId: tenant.organizationId,
+			...overrides
+		} as Diagnostic);
 
 	beforeEach(() => {
 		tenant = createTenantFixture();
@@ -38,8 +52,8 @@ describe('DiagnosticService', () => {
 			}))
 		};
 		findings = { create: jest.fn((input) => input), save: jest.fn(async (input) => input) };
-		const repository = new InMemoryTenantRepository<Diagnostic>(
-			new Set(['id', 'tenantId', 'organizationId', 'inspectionId', 'technicianEmployeeId'])
+		repository = new InMemoryTenantRepository<Diagnostic>(
+			new Set(['id', 'tenantId', 'organizationId', 'inspectionId', 'technicianEmployeeId', 'status'])
 		);
 		service = new DiagnosticService(
 			repository as any,
@@ -150,5 +164,58 @@ describe('DiagnosticService', () => {
 				description: 'Noise under load'
 			})
 		).resolves.toMatchObject({ diagnosticId: diagnostic.id });
+	});
+
+	it('starts a draft diagnostic (DRAFT → IN_PROGRESS)', async () => {
+		const existing = seedDiagnostic({ status: DiagnosticStatusEnum.DRAFT });
+		const updated = await service.start(existing.id);
+		expect(updated.status).toBe(DiagnosticStatusEnum.IN_PROGRESS);
+	});
+
+	it('completes an in-progress diagnostic (IN_PROGRESS → COMPLETED) and stamps completedAt', async () => {
+		const existing = seedDiagnostic({ status: DiagnosticStatusEnum.IN_PROGRESS });
+		const updated = await service.complete(existing.id);
+		expect(updated.status).toBe(DiagnosticStatusEnum.COMPLETED);
+		expect(updated.completedAt).toBeInstanceOf(Date);
+	});
+
+	it('rejects completing a draft diagnostic (DRAFT → COMPLETED)', async () => {
+		const existing = seedDiagnostic({ status: DiagnosticStatusEnum.DRAFT });
+		await expect(service.complete(existing.id)).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('rejects starting an in-progress diagnostic (IN_PROGRESS → IN_PROGRESS)', async () => {
+		const existing = seedDiagnostic({ status: DiagnosticStatusEnum.IN_PROGRESS });
+		await expect(service.start(existing.id)).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('rejects starting a completed diagnostic (COMPLETED → IN_PROGRESS)', async () => {
+		const existing = seedDiagnostic({ status: DiagnosticStatusEnum.COMPLETED });
+		await expect(service.start(existing.id)).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('rejects completing a completed diagnostic (COMPLETED → COMPLETED)', async () => {
+		const existing = seedDiagnostic({ status: DiagnosticStatusEnum.COMPLETED });
+		await expect(service.complete(existing.id)).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('rejects updating a completed diagnostic', async () => {
+		const existing = seedDiagnostic({ status: DiagnosticStatusEnum.COMPLETED });
+		await expect(service.update(existing.id, { summary: 'updated' })).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('rejects adding a finding to a completed diagnostic', async () => {
+		const existing = seedDiagnostic({ status: DiagnosticStatusEnum.COMPLETED });
+		await expect(
+			service.addFinding(existing.id, { kind: DiagnosticFindingKindEnum.OBSERVATION, description: 'Late note' })
+		).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('enforces tenant isolation on lifecycle transitions', async () => {
+		const foreign = seedDiagnostic({
+			tenantId: 'c0a2c3f6-6c3b-4c66-9b9b-0f0a2b3c4d5e',
+			status: DiagnosticStatusEnum.DRAFT
+		});
+		await expect(service.start(foreign.id)).rejects.toBeInstanceOf(NotFoundException);
 	});
 });
