@@ -8,11 +8,13 @@ import {
 	IEmployeeAppointmentCreateInput,
 	IEmployeeAppointmentUpdateInput,
 	IEmployeeAppointment,
-	IPagination
+	IPagination,
+	PermissionsEnum
 } from '@gauzy/contracts';
 import { CrudController, BaseQueryDTO } from './../core/crud';
 import { RelationsQueryDTO } from '../shared/dto';
-import { TenantPermissionGuard } from './../shared/guards';
+import { Permissions } from './../shared/decorators';
+import { PermissionGuard, TenantPermissionGuard } from './../shared/guards';
 import { ParseJsonPipe, UUIDValidationPipe, UseValidationPipe } from './../shared/pipes';
 import { EmployeeAppointmentService } from './employee-appointment.service';
 import { EmployeeAppointmentCreateCommand, EmployeeAppointmentUpdateCommand } from './commands';
@@ -79,6 +81,8 @@ export class EmployeeAppointmentController extends CrudController<EmployeeAppoin
 	 * @returns
 	 */
 	@Get('/pagination')
+	@UseGuards(PermissionGuard)
+	@Permissions(PermissionsEnum.ORG_APPOINTMENT_VIEW)
 	@UseValidationPipe({ transform: true })
 	async pagination(@Query() filter: BaseQueryDTO<EmployeeAppointment>): Promise<IPagination<IEmployeeAppointment>> {
 		return this.employeeAppointmentService.paginate(filter);
@@ -103,6 +107,8 @@ export class EmployeeAppointmentController extends CrudController<EmployeeAppoin
 		description: 'Record not found'
 	})
 	@Get('/')
+	@UseGuards(PermissionGuard)
+	@Permissions(PermissionsEnum.ORG_APPOINTMENT_VIEW)
 	async findAll(@Query('data', ParseJsonPipe) data: any): Promise<IPagination<IEmployeeAppointment>> {
 		const { relations, findInput } = data;
 		return this.employeeAppointmentService.findAll({
@@ -128,6 +134,8 @@ export class EmployeeAppointmentController extends CrudController<EmployeeAppoin
 		description: 'Record not found'
 	})
 	@Get('/:id')
+	@UseGuards(PermissionGuard)
+	@Permissions(PermissionsEnum.ORG_APPOINTMENT_VIEW)
 	async findById(
 		@Param('id', UUIDValidationPipe) id: ID,
 		@Query() query: RelationsQueryDTO
@@ -152,6 +160,8 @@ export class EmployeeAppointmentController extends CrudController<EmployeeAppoin
 		description: 'Invalid input, The response body may contain clues as to what went wrong'
 	})
 	@Post('/')
+	@UseGuards(PermissionGuard)
+	@Permissions(PermissionsEnum.ORG_APPOINTMENT_CREATE)
 	async create(
 		@Body() entity: IEmployeeAppointmentCreateInput,
 		@I18nLang() languageCode: LanguagesEnum
@@ -181,6 +191,8 @@ export class EmployeeAppointmentController extends CrudController<EmployeeAppoin
 	})
 	@HttpCode(HttpStatus.ACCEPTED)
 	@Put('/:id')
+	@UseGuards(PermissionGuard)
+	@Permissions(PermissionsEnum.ORG_APPOINTMENT_EDIT)
 	async update(
 		@Param('id', UUIDValidationPipe) id: ID,
 		@Body() entity: IEmployeeAppointmentUpdateInput

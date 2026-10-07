@@ -1,7 +1,7 @@
 import '../core/entities/internal';
 
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { AutomotiveJobStatusEnum, RepairOrderStatusEnum } from '@gauzy/contracts';
+import { AutomotiveJobStatusEnum, EmployeeAppointmentStatus, RepairOrderStatusEnum } from '@gauzy/contracts';
 import { getMetadataArgsStorage } from 'typeorm';
 import { CrudService } from '../core/crud/crud.service';
 import { RequestContext } from '../core/context';
@@ -26,19 +26,27 @@ describe('RepairOrderService vehicle arrival', () => {
 	let appointmentService: { findOneByIdString: jest.Mock };
 	let customerService: { findOneByIdString: jest.Mock };
 	let vehicleService: { findOneByIdString: jest.Mock };
+	let managerUpdateSpy: jest.Mock;
+	let transactionUsed: boolean;
+
+	// Builds the arrival appointment fixture; `status` is SCHEDULED by default and
+	// can be overridden to exercise the CANCELLED / COMPLETED rejection paths.
+	const appointmentFixture = (overrides: Record<string, any> = {}): Record<string, any> => ({
+		id: APPOINTMENT_ID,
+		tenantId: tenant.tenantId,
+		organizationId: tenant.organizationId,
+		customerId: CUSTOMER_ID,
+		vehicleId: VEHICLE_ID,
+		employeeId: ADVISOR_ID,
+		originalConcern: 'Brake noise while stopping',
+		status: EmployeeAppointmentStatus.SCHEDULED,
+		...overrides
+	});
 
 	beforeEach(() => {
 		tenant = createTenantFixture();
 		appointmentService = {
-			findOneByIdString: jest.fn(async () => ({
-				id: APPOINTMENT_ID,
-				tenantId: tenant.tenantId,
-				organizationId: tenant.organizationId,
-				customerId: CUSTOMER_ID,
-				vehicleId: VEHICLE_ID,
-				employeeId: ADVISOR_ID,
-				originalConcern: 'Brake noise while stopping'
-			}))
+			findOneByIdString: jest.fn(async () => appointmentFixture())
 		};
 		customerService = {
 			findOneByIdString: jest.fn(async () => ({
@@ -58,6 +66,21 @@ describe('RepairOrderService vehicle arrival', () => {
 		const repository = new InMemoryTenantRepository<RepairOrder>(
 			new Set(['id', 'tenantId', 'organizationId', 'appointmentId', 'customerId', 'vehicleId'])
 		);
+		// The arrival path now runs the RO save + appointment status update inside
+		// `typeOrmRepairOrderRepository.manager.transaction(...)`. Provide a faithful in-memory
+		// stand-in: getRepository(RepairOrder) returns the same in-memory repository so the real
+		// create/save logic executes, and `manager.update` is captured for assertions.
+		managerUpdateSpy = jest.fn(async () => ({ affected: 1, raw: [], generatedMaps: [] }));
+		transactionUsed = false;
+		(repository as any).manager = {
+			transaction: async (work: (manager: any) => Promise<any>) => {
+				transactionUsed = true;
+				return await work({
+					getRepository: () => repository,
+					update: managerUpdateSpy
+				});
+			}
+		};
 		service = new RepairOrderService(
 			repository as any,
 			{} as any,
@@ -101,10 +124,41 @@ describe('RepairOrderService vehicle arrival', () => {
 		expect(repairOrder.repairOrderNumber).toMatch(/^RO-[A-F0-9]{12}$/);
 	});
 
+	it('runs the RO creation and appointment completion inside a single transaction', async () => {
+		const repairOrder = await service.arrive({ appointmentId: APPOINTMENT_ID });
+
+		expect(transactionUsed).toBe(true);
+		expect(repairOrder.status).toBe(RepairOrderStatusEnum.OPEN);
+		expect(managerUpdateSpy).toHaveBeenCalledWith(
+			expect.anything(),
+			{ id: APPOINTMENT_ID },
+			{ status: EmployeeAppointmentStatus.COMPLETED }
+		);
+	});
+
+	it('rejects arrival for a cancelled appointment', async () => {
+		appointmentService.findOneByIdString.mockResolvedValue(
+			appointmentFixture({ status: EmployeeAppointmentStatus.CANCELLED })
+		);
+
+		await expect(service.arrive({ appointmentId: APPOINTMENT_ID })).rejects.toBeInstanceOf(BadRequestException);
+		expect(managerUpdateSpy).not.toHaveBeenCalled();
+	});
+
+	it('rejects arrival for an already-checked-in (completed) appointment', async () => {
+		appointmentService.findOneByIdString.mockResolvedValue(
+			appointmentFixture({ status: EmployeeAppointmentStatus.COMPLETED })
+		);
+
+		await expect(service.arrive({ appointmentId: APPOINTMENT_ID })).rejects.toBeInstanceOf(BadRequestException);
+		expect(managerUpdateSpy).not.toHaveBeenCalled();
+	});
+
 	it('rejects a duplicate repair order for the same service visit', async () => {
 		jest.spyOn(service, 'findAll').mockResolvedValue({ items: [{ id: 'existing-ro' }], total: 1 } as any);
 
 		await expect(service.arrive({ appointmentId: APPOINTMENT_ID })).rejects.toBeInstanceOf(BadRequestException);
+		expect(managerUpdateSpy).not.toHaveBeenCalled();
 	});
 
 	it('rejects an appointment without its My Car Care customer and vehicle linkage', async () => {

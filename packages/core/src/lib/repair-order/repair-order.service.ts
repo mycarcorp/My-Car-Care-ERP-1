@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { In, Repository } from 'typeorm';
 import {
 	AutomotiveJobStatusEnum,
+	EmployeeAppointmentStatus,
 	ID,
 	IRepairOrderArrivalInput,
 	IRepairOrderCancelInput,
@@ -16,6 +17,7 @@ import { AutomotiveJob } from '../automotive-job/automotive-job.entity';
 import { AutomotiveJobLabor } from '../automotive-job-labor/automotive-job-labor.entity';
 import { AutomotiveJobQcService } from '../automotive-job-qc/automotive-job-qc.service';
 import { TimeLog } from '../time-tracking/time-log/time-log.entity';
+import { EmployeeAppointment } from '../employee-appointment/employee-appointment.entity';
 import { EmployeeAppointmentService } from '../employee-appointment/employee-appointment.service';
 import { OrganizationContactService } from '../organization-contact/organization-contact.service';
 import { VehicleService } from '../vehicle/vehicle.service';
@@ -52,6 +54,12 @@ export class RepairOrderService extends TenantAwareCrudService<RepairOrder> {
 		if (!appointment.customerId || !appointment.vehicleId) {
 			throw new BadRequestException('A My Car Care appointment must have a customer and vehicle before arrival.');
 		}
+		if (appointment.status === EmployeeAppointmentStatus.CANCELLED) {
+			throw new BadRequestException('A cancelled appointment cannot be used for arrival.');
+		}
+		if (appointment.status === EmployeeAppointmentStatus.COMPLETED) {
+			throw new BadRequestException('This appointment has already been checked in.');
+		}
 
 		const [customer, vehicle, existingRepairOrders] = await Promise.all([
 			this.organizationContactService.findOneByIdString(appointment.customerId),
@@ -81,17 +89,26 @@ export class RepairOrderService extends TenantAwareCrudService<RepairOrder> {
 			throw new BadRequestException('A repair order already exists for this appointment.');
 		}
 
-		return super.create({
-			appointmentId: appointment.id,
-			customerId: customer.id,
-			vehicleId: vehicle.id,
-			serviceAdvisorEmployeeId: appointment.employeeId,
-			originalConcern: appointment.originalConcern,
-			arrivalOdometer: input.arrivalOdometer,
-			arrivedAt: new Date(),
-			status: RepairOrderStatusEnum.OPEN,
-			repairOrderNumber: `RO-${randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`,
-			organizationId: appointment.organizationId
+		// Create the Repair Order and mark the appointment COMPLETED atomically so the
+		// appointment status only changes when the RO is actually persisted.
+		return await this.typeOrmRepairOrderRepository.manager.transaction(async (manager) => {
+			const repairOrderRepository = manager.getRepository(RepairOrder);
+			const repairOrder = repairOrderRepository.create({
+				appointmentId: appointment.id,
+				customerId: customer.id,
+				vehicleId: vehicle.id,
+				serviceAdvisorEmployeeId: appointment.employeeId,
+				originalConcern: appointment.originalConcern,
+				arrivalOdometer: input.arrivalOdometer,
+				arrivedAt: new Date(),
+				status: RepairOrderStatusEnum.OPEN,
+				repairOrderNumber: `RO-${randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`,
+				tenantId: appointment.tenantId,
+				organizationId: appointment.organizationId
+			});
+			const saved = await repairOrderRepository.save(repairOrder);
+			await manager.update(EmployeeAppointment, { id: appointment.id }, { status: EmployeeAppointmentStatus.COMPLETED });
+			return saved;
 		});
 	}
 

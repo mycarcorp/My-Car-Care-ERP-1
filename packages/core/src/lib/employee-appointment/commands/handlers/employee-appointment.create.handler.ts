@@ -2,7 +2,7 @@ import { ICommandHandler, CommandHandler } from '@nestjs/cqrs';
 import { EmployeeAppointmentService } from '../../employee-appointment.service';
 import { EmployeeAppointmentCreateCommand } from '../employee-appointment.create.command';
 import { EmployeeAppointment } from '../../employee-appointment.entity';
-import { LanguagesEnum } from '@gauzy/contracts';
+import { EmployeeAppointmentStatus, LanguagesEnum } from '@gauzy/contracts';
 import { EmailService } from './../../../email-send/email.service';
 import { EmployeeService } from '../../../employee/employee.service';
 import { OrganizationService } from '../../../organization/organization.service';
@@ -43,6 +43,8 @@ export class EmployeeAppointmentCreateHandler implements ICommandHandler<Employe
 		appointment.endDateTime = employeeAppointmentInput.endDateTime;
 		appointment.location = employeeAppointmentInput.location;
 		appointment.tenantId = RequestContext.currentTenantId();
+		// Default a new appointment to SCHEDULED unless a valid status was explicitly supplied.
+		appointment.status = employeeAppointmentInput.status ?? EmployeeAppointmentStatus.SCHEDULED;
 
 		const createdAppointment = await this.employeeAppointmentService.create(appointment);
 

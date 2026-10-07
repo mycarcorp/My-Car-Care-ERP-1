@@ -62,6 +62,7 @@ export interface IEmployeeAppointmentCreateInput extends IBasePerTenantAndOrgani
 	breakTimeInMins?: Number;
 	breakStartTime?: Date;
 	emails?: string;
+	status?: EmployeeAppointmentStatus;
 	invitees?: IAppointmentEmployee[];
 }
 

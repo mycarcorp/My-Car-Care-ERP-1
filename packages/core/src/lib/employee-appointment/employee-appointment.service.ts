@@ -1,6 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { UpdateResult } from 'typeorm';
-import { ID, IEmployeeAppointment, IEmployeeAppointmentCreateInput } from '@gauzy/contracts';
+import {
+	EmployeeAppointmentStatus,
+	ID,
+	IEmployeeAppointment,
+	IEmployeeAppointmentCreateInput,
+	PermissionsEnum
+} from '@gauzy/contracts';
 import { TenantAwareCrudService } from './../core/crud';
 import { RequestContext } from '../core/context';
 import { signPurposeToken, TokenPurposeEnum, verifyPurposeToken } from '../auth/purpose-token';
@@ -44,13 +50,48 @@ export class EmployeeAppointmentService extends TenantAwareCrudService<EmployeeA
 
 	async create(entity: Partial<EmployeeAppointment>): Promise<EmployeeAppointment> {
 		await this.validateMyCarCareAppointment(entity);
+		// Default a new appointment to SCHEDULED unless a valid status was explicitly supplied.
+		if (!entity.status) {
+			entity.status = EmployeeAppointmentStatus.SCHEDULED;
+		}
 		return super.create(entity);
 	}
 
 	async update(id: ID, entity: Partial<EmployeeAppointment>): Promise<UpdateResult | EmployeeAppointment> {
 		const existing = await this.findOneByIdString(id);
 		await this.validateMyCarCareAppointment({ ...existing, ...entity });
+		this.assertValidStatusTransition(existing.status, entity.status);
+		// A transition to CANCELLED requires the dedicated cancel permission (admin-level),
+		// on top of the controller's ORG_APPOINTMENT_EDIT gate. Tenant/org scoping is
+		// enforced by the findOneByIdString lookup above and the TenantAwareCrudService update.
+		if (entity.status === EmployeeAppointmentStatus.CANCELLED && existing.status !== EmployeeAppointmentStatus.CANCELLED) {
+			if (!RequestContext.hasPermission(PermissionsEnum.ORG_APPOINTMENT_CANCEL)) {
+				throw new BadRequestException('You do not have permission to cancel an appointment.');
+			}
+		}
 		return super.update(id, entity);
+	}
+
+	/**
+	 * Guards against nonsensical status transitions. A terminal appointment
+	 * (COMPLETED or CANCELLED) may not move back to SCHEDULED. All other transitions
+	 * remain allowed to preserve existing generic Gauzy appointment behavior.
+	 */
+	private assertValidStatusTransition(
+		currentStatus: EmployeeAppointmentStatus,
+		nextStatus: EmployeeAppointmentStatus
+	): void {
+		if (!nextStatus || nextStatus === currentStatus) {
+			return;
+		}
+		const isTerminal =
+			currentStatus === EmployeeAppointmentStatus.COMPLETED ||
+			currentStatus === EmployeeAppointmentStatus.CANCELLED;
+		if (isTerminal && nextStatus === EmployeeAppointmentStatus.SCHEDULED) {
+			throw new BadRequestException(
+				`Cannot transition an appointment from ${currentStatus} back to ${EmployeeAppointmentStatus.SCHEDULED}.`
+			);
+		}
 	}
 
 	private async validateMyCarCareAppointment(entity: Partial<EmployeeAppointment>): Promise<void> {

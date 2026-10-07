@@ -1,6 +1,7 @@
 import '../core/entities/internal';
 
 import { BadRequestException } from '@nestjs/common';
+import { EmployeeAppointmentStatus } from '@gauzy/contracts';
 import { CrudService } from '../core/crud/crud.service';
 import { RequestContext } from '../core/context';
 import { InMemoryTenantRepository } from '../core/testing/tenant-isolation/in-memory-tenant-repository';
@@ -21,6 +22,7 @@ describe('EmployeeAppointmentService My Car Care integration', () => {
 	let tenant: ReturnType<typeof createTenantFixture>;
 	let customerService: { findOneByIdString: jest.Mock };
 	let vehicleService: { findOneByIdString: jest.Mock };
+	let repository: InMemoryTenantRepository<EmployeeAppointment>;
 
 	const appointmentInput = (overrides: Partial<EmployeeAppointment> = {}): Partial<EmployeeAppointment> => ({
 		agenda: 'Oil change appointment',
@@ -29,6 +31,19 @@ describe('EmployeeAppointmentService My Car Care integration', () => {
 		organizationId: tenant.organizationId,
 		...overrides
 	});
+
+	// Seeds an existing appointment row directly (includes the entity-required fields
+	// so it satisfies the repository's EmployeeAppointment type).
+	const seedAppointment = (overrides: Partial<EmployeeAppointment>): EmployeeAppointment =>
+		repository.seed({
+			agenda: 'Existing appointment',
+			startDateTime: new Date('2026-10-01T09:00:00.000Z'),
+			endDateTime: new Date('2026-10-01T10:00:00.000Z'),
+			tenantId: tenant.tenantId,
+			organizationId: tenant.organizationId,
+			status: EmployeeAppointmentStatus.SCHEDULED,
+			...overrides
+		} as EmployeeAppointment);
 
 	beforeEach(() => {
 		tenant = createTenantFixture();
@@ -47,8 +62,8 @@ describe('EmployeeAppointmentService My Car Care integration', () => {
 				customerId: CUSTOMER_ID
 			}))
 		};
-		const repository = new InMemoryTenantRepository<EmployeeAppointment>(
-			new Set(['id', 'tenantId', 'organizationId', 'employeeId', 'customerId', 'vehicleId'])
+		repository = new InMemoryTenantRepository<EmployeeAppointment>(
+			new Set(['id', 'tenantId', 'organizationId', 'employeeId', 'customerId', 'vehicleId', 'status'])
 		);
 		service = new EmployeeAppointmentService(
 			repository as any,
@@ -136,5 +151,43 @@ describe('EmployeeAppointmentService My Car Care integration', () => {
 				appointmentInput({ customerId: CUSTOMER_ID, vehicleId: VEHICLE_ID, originalConcern: 'Engine noise' })
 			)
 		).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('defaults a new appointment to SCHEDULED when no status is supplied', async () => {
+		const appointment = await service.create(appointmentInput());
+		expect(appointment.status).toBe(EmployeeAppointmentStatus.SCHEDULED);
+	});
+
+	it('preserves an explicitly supplied valid status on create', async () => {
+		const appointment = await service.create(appointmentInput({ status: EmployeeAppointmentStatus.COMPLETED }));
+		expect(appointment.status).toBe(EmployeeAppointmentStatus.COMPLETED);
+	});
+
+	it.each<[string, EmployeeAppointmentStatus]>([
+		['completed', EmployeeAppointmentStatus.COMPLETED],
+		['cancelled', EmployeeAppointmentStatus.CANCELLED]
+	])('rejects a %s appointment moving back to SCHEDULED', async (_label, terminalStatus) => {
+		const existing = seedAppointment({ status: terminalStatus });
+
+		await expect(
+			service.update(existing.id, { status: EmployeeAppointmentStatus.SCHEDULED })
+		).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('rejects cancellation without the cancel permission', async () => {
+		const existing = seedAppointment({ status: EmployeeAppointmentStatus.SCHEDULED });
+		// RequestContext.hasPermission is already mocked to false in beforeEach.
+		await expect(
+			service.update(existing.id, { status: EmployeeAppointmentStatus.CANCELLED })
+		).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('allows cancellation when the cancel permission is present', async () => {
+		const existing = seedAppointment({ status: EmployeeAppointmentStatus.SCHEDULED });
+		jest.spyOn(RequestContext, 'hasPermission').mockReturnValue(true);
+
+		await expect(
+			service.update(existing.id, { status: EmployeeAppointmentStatus.CANCELLED })
+		).resolves.not.toThrow();
 	});
 });
