@@ -1,9 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { JoinColumn, RelationId } from 'typeorm';
 import { IsDate, IsEnum, IsOptional, IsUUID } from 'class-validator';
-import { ID, IEmployee, IInspection, IRepairOrder, IVehicle, InspectionStatusEnum } from '@gauzy/contracts';
+import { ID, IEmployee, IInspection, IInspectionFinding, IRepairOrder, IVehicle, InspectionStatusEnum } from '@gauzy/contracts';
 import { Employee, RepairOrder, TenantOrganizationBaseEntity, Vehicle } from '../core/entities/internal';
-import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToOne } from '../core/decorators/entity';
+import { InspectionFinding } from './inspection-finding.entity';
+import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToOne, MultiORMOneToMany } from '../core/decorators/entity';
 import { MikroOrmInspectionRepository } from './repository/mikro-orm-inspection.repository';
 
 @MultiORMEntity('inspection', { mikroOrmRepository: () => MikroOrmInspectionRepository })
@@ -54,4 +55,18 @@ export class Inspection extends TenantOrganizationBaseEntity implements IInspect
 	@ColumnIndex()
 	@MultiORMColumn({ relationId: true })
 	technicianEmployeeId: ID;
+
+	/*
+	|--------------------------------------------------------------------------
+	| @OneToMany
+	|--------------------------------------------------------------------------
+	*/
+	/**
+	 * Inspection findings belonging to this inspection.
+	 */
+	@MultiORMOneToMany(() => InspectionFinding, (entity) => entity.inspection, {
+		onDelete: 'SET NULL'
+	})
+	@JoinColumn()
+	findings?: IInspectionFinding[];
 }

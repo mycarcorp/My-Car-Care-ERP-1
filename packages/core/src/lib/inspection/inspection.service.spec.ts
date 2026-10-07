@@ -1,6 +1,6 @@
 import '../core/entities/internal';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { InspectionFindingResultEnum } from '@gauzy/contracts';
+import { InspectionFindingResultEnum, InspectionStatusEnum } from '@gauzy/contracts';
 import { CrudService } from '../core/crud/crud.service';
 import { RequestContext } from '../core/context';
 import { InMemoryTenantRepository } from '../core/testing/tenant-isolation/in-memory-tenant-repository';
@@ -20,6 +20,21 @@ describe('InspectionService', () => {
 	let vehicles: { findOneByIdString: jest.Mock };
 	let employees: { findOneByIdString: jest.Mock };
 	let findingRepository: { create: jest.Mock; save: jest.Mock };
+	let repository: InMemoryTenantRepository<Inspection>;
+
+	// Seeds an inspection row directly (includes the entity-required fields so it
+	// satisfies the repository's Inspection type) for read/lifecycle tests.
+	const seedInspection = (overrides: Partial<Inspection> = {}): Inspection =>
+		repository.seed({
+			repairOrderId: RO_ID,
+			vehicleId: VEHICLE_ID,
+			technicianEmployeeId: TECHNICIAN_ID,
+			inspectedAt: new Date('2026-10-01T09:00:00.000Z'),
+			status: InspectionStatusEnum.DRAFT,
+			tenantId: tenant.tenantId,
+			organizationId: tenant.organizationId,
+			...overrides
+		} as Inspection);
 
 	beforeEach(() => {
 		tenant = createTenantFixture();
@@ -46,8 +61,8 @@ describe('InspectionService', () => {
 			}))
 		};
 		findingRepository = { create: jest.fn((input) => input), save: jest.fn(async (input) => input) };
-		const repository = new InMemoryTenantRepository<Inspection>(
-			new Set(['id', 'tenantId', 'organizationId', 'repairOrderId', 'vehicleId', 'technicianEmployeeId'])
+		repository = new InMemoryTenantRepository<Inspection>(
+			new Set(['id', 'tenantId', 'organizationId', 'repairOrderId', 'vehicleId', 'technicianEmployeeId', 'status'])
 		);
 		service = new InspectionService(
 			repository as any,
@@ -144,5 +159,68 @@ describe('InspectionService', () => {
 				technicianEmployeeId: TECHNICIAN_ID
 			})
 		).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('finds an inspection by id', async () => {
+		const existing = seedInspection();
+		const found = await service.findByIdWithFindings(existing.id);
+		expect(found.id).toBe(existing.id);
+	});
+
+	it('finds the inspection for a repair order', async () => {
+		const existing = seedInspection();
+		const found = await service.findByRepairOrderWithFindings(RO_ID);
+		expect(found.id).toBe(existing.id);
+	});
+
+	it('cannot read an inspection belonging to another tenant', async () => {
+		const foreign = seedInspection({ tenantId: 'f6c2a1a4-9c3f-4a4f-9d21-9c2f0f8a1a01' });
+		await expect(service.findByIdWithFindings(foreign.id)).rejects.toBeInstanceOf(NotFoundException);
+	});
+
+	it('cannot read an inspection via a repair order from another tenant', async () => {
+		seedInspection();
+		repairOrders.findOneByIdString.mockRejectedValue(new NotFoundException());
+		await expect(service.findByRepairOrderWithFindings(RO_ID)).rejects.toBeInstanceOf(NotFoundException);
+	});
+
+	it('starts a draft inspection (DRAFT → IN_PROGRESS)', async () => {
+		const existing = seedInspection({ status: InspectionStatusEnum.DRAFT });
+		const updated = await service.start(existing.id);
+		expect(updated.status).toBe(InspectionStatusEnum.IN_PROGRESS);
+	});
+
+	it('completes an in-progress inspection (IN_PROGRESS → COMPLETED)', async () => {
+		const existing = seedInspection({ status: InspectionStatusEnum.IN_PROGRESS });
+		const updated = await service.complete(existing.id);
+		expect(updated.status).toBe(InspectionStatusEnum.COMPLETED);
+	});
+
+	it('rejects completing a draft inspection (DRAFT → COMPLETED)', async () => {
+		const existing = seedInspection({ status: InspectionStatusEnum.DRAFT });
+		await expect(service.complete(existing.id)).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('rejects starting an already in-progress inspection (IN_PROGRESS → IN_PROGRESS)', async () => {
+		const existing = seedInspection({ status: InspectionStatusEnum.IN_PROGRESS });
+		await expect(service.start(existing.id)).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('rejects starting a completed inspection (COMPLETED → IN_PROGRESS)', async () => {
+		const existing = seedInspection({ status: InspectionStatusEnum.COMPLETED });
+		await expect(service.start(existing.id)).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('rejects completing an already completed inspection (COMPLETED → COMPLETED)', async () => {
+		const existing = seedInspection({ status: InspectionStatusEnum.COMPLETED });
+		await expect(service.complete(existing.id)).rejects.toBeInstanceOf(BadRequestException);
+	});
+
+	it('enforces tenant isolation on lifecycle transitions', async () => {
+		const foreign = seedInspection({
+			tenantId: 'f6c2a1a4-9c3f-4a4f-9d21-9c2f0f8a1a01',
+			status: InspectionStatusEnum.DRAFT
+		});
+		await expect(service.start(foreign.id)).rejects.toBeInstanceOf(NotFoundException);
 	});
 });

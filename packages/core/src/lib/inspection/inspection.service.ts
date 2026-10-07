@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { IInspectionCreateInput, InspectionStatusEnum } from '@gauzy/contracts';
+import { ID, IInspectionCreateInput, InspectionStatusEnum } from '@gauzy/contracts';
 import { RequestContext } from '../core/context';
 import { TenantAwareCrudService } from '../core/crud';
 import { EmployeeService } from '../employee/employee.service';
@@ -67,5 +67,64 @@ export class InspectionService extends TenantAwareCrudService<Inspection> {
 			);
 		}
 		return inspection;
+	}
+
+	/**
+	 * Finds a single inspection by id within the current tenant scope, including its findings.
+	 *
+	 * @param id - The inspection id.
+	 * @returns The inspection with its findings.
+	 */
+	async findByIdWithFindings(id: ID): Promise<Inspection> {
+		return await this.findOneByIdString(id, { relations: ['findings'] } as any);
+	}
+
+	/**
+	 * Finds the inspection for a repair order within the current tenant scope, including its findings.
+	 * The repair order is resolved first so an out-of-scope repair order surfaces its own
+	 * not-found behavior rather than leaking an inspection. A repair order with no inspection
+	 * yields the repository's standard not-found result.
+	 *
+	 * @param repairOrderId - The repair order id.
+	 * @returns The inspection with its findings.
+	 */
+	async findByRepairOrderWithFindings(repairOrderId: ID): Promise<Inspection> {
+		await this.repairOrderService.findOneByIdString(repairOrderId);
+		return await this.findOneByOptions({
+			where: { repairOrderId },
+			relations: ['findings']
+		} as any);
+	}
+
+	/**
+	 * Starts an inspection: DRAFT → IN_PROGRESS. Any other current status is rejected.
+	 */
+	async start(id: ID): Promise<Inspection> {
+		return await this.transitionStatus(id, InspectionStatusEnum.DRAFT, InspectionStatusEnum.IN_PROGRESS);
+	}
+
+	/**
+	 * Completes an inspection: IN_PROGRESS → COMPLETED. Any other current status is rejected.
+	 * COMPLETED is terminal — no lifecycle path changes it again.
+	 */
+	async complete(id: ID): Promise<Inspection> {
+		return await this.transitionStatus(id, InspectionStatusEnum.IN_PROGRESS, InspectionStatusEnum.COMPLETED);
+	}
+
+	/**
+	 * Applies a single-status lifecycle transition with tenant/org-safe lookup. Only the
+	 * declared `from → to` transition is permitted; findings and the repair order are untouched.
+	 */
+	private async transitionStatus(
+		id: ID,
+		from: InspectionStatusEnum,
+		to: InspectionStatusEnum
+	): Promise<Inspection> {
+		const inspection = await this.findOneByIdString(id);
+		if (inspection.status !== from) {
+			throw new BadRequestException(`Cannot move an inspection from ${inspection.status} to ${to}.`);
+		}
+		inspection.status = to;
+		return await this.typeOrmRepository.save(inspection);
 	}
 }
