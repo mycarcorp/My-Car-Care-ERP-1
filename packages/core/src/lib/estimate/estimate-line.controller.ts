@@ -7,11 +7,11 @@ import { EstimateLineDTO } from './dto';
 import { EstimateService } from './estimate.service';
 
 @UseGuards(TenantPermissionGuard, PermissionGuard)
-@Permissions(PermissionsEnum.ALL_ORG_EDIT)
 @Controller('/estimate-lines')
 export class EstimateLineController {
 	constructor(private readonly service: EstimateService) {}
 	@Put(':id')
+	@Permissions(PermissionsEnum.ORG_ESTIMATE_EDIT)
 	update(@Param('id', UUIDValidationPipe) id: ID, @Body() line: EstimateLineDTO) {
 		return this.service.updateLine(id, line);
 	}

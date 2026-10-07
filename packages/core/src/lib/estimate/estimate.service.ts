@@ -136,6 +136,46 @@ export class EstimateService extends TenantAwareCrudService<Estimate> {
 			throw new BadRequestException('Historical estimates require a new revision.');
 		return super.update(id, input);
 	}
+
+	/**
+	 * Finalizes an estimate: DRAFT → FINALIZED. Any other current status is rejected.
+	 * Tenant/org scoped via `findOneByIdString`. The resulting FINALIZED estimate is no
+	 * longer editable through the existing DRAFT-only mutation rules. No revision is
+	 * created and no lines or approval requests are modified.
+	 */
+	async finalize(id: ID): Promise<Estimate> {
+		return await this.transitionStatus(id, EstimateStatusEnum.DRAFT, EstimateStatusEnum.FINALIZED);
+	}
+
+	/**
+	 * Sends an estimate: FINALIZED → SENT. Any other current status is rejected.
+	 * Tenant/org scoped via `findOneByIdString`. Lifecycle-state only — no revision,
+	 * no line changes, no approval changes, and no notification delivery in this slice.
+	 */
+	async send(id: ID): Promise<Estimate> {
+		return await this.transitionStatus(id, EstimateStatusEnum.FINALIZED, EstimateStatusEnum.SENT);
+	}
+
+	/**
+	 * Applies a single controlled status transition. Only the declared `from → to`
+	 * transition is permitted; every other current status is rejected. Tenant/org scoping
+	 * is enforced by the `findOneByIdString` lookup. The status write goes directly through
+	 * the repository so it is not blocked by the DRAFT-only edit rule (which governs content
+	 * edits, not the controlled lifecycle transitions).
+	 */
+	private async transitionStatus(
+		id: ID,
+		from: EstimateStatusEnum,
+		to: EstimateStatusEnum
+	): Promise<Estimate> {
+		const estimate = await this.findOneByIdString(id);
+		if (estimate.status !== from) {
+			throw new BadRequestException(`Cannot move an estimate from ${estimate.status} to ${to}.`);
+		}
+		await this.typeOrmRepository.update({ id: estimate.id }, { status: to });
+		estimate.status = to;
+		return estimate;
+	}
 	async addLine(id: ID, line: IEstimateLineInput) {
 		const e = await this.findOneByIdString(id);
 		if (e.status !== EstimateStatusEnum.DRAFT)
