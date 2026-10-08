@@ -112,6 +112,24 @@
 						{{ 'ESTIMATES_PAGE.DETAIL.SEND' | translate }}
 					</button>
 				</ng-container>
+				<ng-container *ngxPermissionsOnly="['ORG_CUSTOMER_WORK_APPROVAL_CREATE']">
+					<button
+						*ngIf="canSendForApproval()"
+						nbButton
+						status="success"
+						(click)="sendForApproval()"
+						[disabled]="approvalSending"
+					>
+						{{ 'ESTIMATES_PAGE.DETAIL.SEND_FOR_APPROVAL' | translate }}
+					</button>
+				</ng-container>
+			</div>
+
+			<div *ngIf="approvalLink" class="estimate-detail__approval-link">
+				<span class="estimate-detail__label">
+					{{ 'ESTIMATES_PAGE.DETAIL.APPROVAL_LINK' | translate }}
+				</span>
+				<code class="estimate-detail__link">{{ approvalLink }}</code>
 			</div>
 		</ng-container>
 	</nb-card-body>

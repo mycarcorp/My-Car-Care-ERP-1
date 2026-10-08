@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import {
 	ID,
+	ICustomerWorkApprovalRequestCreateResponse,
 	IEstimate,
 	IEstimateCreateInput,
 	IEstimateLine,
@@ -70,5 +71,19 @@ export class EstimateApiService {
 	/** Sends a FINALIZED estimate (`POST /estimates/:id/send`). */
 	send(id: ID): Promise<IEstimate> {
 		return firstValueFrom(this.http.post<IEstimate>(`${this.baseUrl}/estimates/${id}/send`, {}));
+	}
+
+	/**
+	 * Creates a secure customer approval request for an estimate (`POST /customer-work-approval-requests`).
+	 * The response carries the raw secure `token` exactly once (it is never persisted or
+	 * returned again); the caller surfaces it to the employee for manual sharing in this slice.
+	 */
+	createApprovalRequest(estimateId: ID): Promise<ICustomerWorkApprovalRequestCreateResponse> {
+		return firstValueFrom(
+			this.http.post<ICustomerWorkApprovalRequestCreateResponse>(
+				`${this.baseUrl}/customer-work-approval-requests`,
+				{ estimateId }
+			)
+		);
 	}
 }

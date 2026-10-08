@@ -47,4 +47,18 @@
 		gap: 0.5rem;
 		margin-top: 1rem;
 	}
+
+	&__approval-link {
+		margin-top: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	&__link {
+		word-break: break-all;
+		white-space: pre-wrap;
+		display: block;
+		padding: 0.5rem;
+	}
 }

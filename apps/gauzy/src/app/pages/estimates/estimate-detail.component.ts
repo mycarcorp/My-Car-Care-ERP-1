@@ -19,6 +19,8 @@ export class EstimateDetailComponent extends TranslationBaseComponent implements
 	public estimate: IEstimate;
 	public loading = false;
 	public notFound = false;
+	public approvalSending = false;
+	public approvalLink: string;
 	public readonly statuses = EstimateStatusEnum;
 
 	constructor(
@@ -114,6 +116,45 @@ export class EstimateDetailComponent extends TranslationBaseComponent implements
 	/** Send is only allowed from FINALIZED. */
 	canSend(): boolean {
 		return this.estimate?.status === EstimateStatusEnum.FINALIZED;
+	}
+
+	/**
+	 * "Send for Approval" is available only for a customer-facing estimate revision — the
+	 * backend `createRequest` accepts FINALIZED / SENT / VIEWED.
+	 */
+	canSendForApproval(): boolean {
+		return [
+			EstimateStatusEnum.FINALIZED,
+			EstimateStatusEnum.SENT,
+			EstimateStatusEnum.VIEWED
+		].includes(this.estimate?.status);
+	}
+
+	/**
+	 * Creates a secure customer approval request for this estimate via the authoritative
+	 * backend endpoint (`POST /customer-work-approval-requests`). The raw secure token is
+	 * returned exactly once and surfaced here for manual sharing; it is not persisted.
+	 */
+	async sendForApproval(): Promise<void> {
+		if (!this.canSendForApproval() || this.approvalSending) {
+			return;
+		}
+		this.approvalSending = true;
+		try {
+			const request = await this.api.createApprovalRequest(this.estimate.id);
+			this.approvalLink = request.token;
+			this.toastrService.success(
+				this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_CREATED'),
+				this.getTranslation('TOASTR.TITLE.SUCCESS')
+			);
+		} catch (error) {
+			this.toastrService.danger(
+				error?.error?.message || error?.message || this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_FAILED'),
+				this.getTranslation('TOASTR.TITLE.ERROR')
+			);
+		} finally {
+			this.approvalSending = false;
+		}
 	}
 
 	/** The estimate's line items (loaded via the `lines` relation). */
