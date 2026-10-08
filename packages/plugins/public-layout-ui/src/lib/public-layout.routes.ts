@@ -11,6 +11,7 @@ import {
 	OrganizationComponent,
 	PickEmployeeComponent,
 	PublicAppointmentComponent,
+	PublicCustomerWorkApprovalComponent,
 	PublicLayoutComponent
 } from './components';
 import { PublicEmployeeResolver } from './resolvers/public-employee.resolver';
@@ -119,6 +120,10 @@ export const createPublicLayoutRoutes = (_pageRouteRegistryService: PageRouteReg
 							)
 					}
 				]
+			},
+			{
+				path: 'customer-work-approval/:requestId',
+				component: PublicCustomerWorkApprovalComponent
 			},
 			{
 				path: ':type/:id/:token',

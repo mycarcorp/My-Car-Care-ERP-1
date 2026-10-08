@@ -7,6 +7,7 @@ import { InvoiceEstimateViewComponent } from './invoice-estimate/invoice-estimat
 import { OrganizationComponent } from './organization/organization.component';
 import { PickEmployeeComponent } from './pick-employee/pick-employee.component';
 import { PublicAppointmentComponent } from './public-appointment/public-appointment.component';
+import { PublicCustomerWorkApprovalComponent } from './customer-work-approval/public-customer-work-approval.component';
 import { PublicLayoutComponent } from './public-layout.component';
 import { PublicPageEmployeeMutationComponent } from './mutation/public-page-employee-mutation/public-page-employee-mutation.component';
 import { PublicPageOrganizationMutationComponent } from './mutation/public-page-organization-mutation/public-page-organization-mutation.component';
@@ -20,6 +21,7 @@ export * from './invoice-estimate/invoice-estimate-view.component';
 export * from './organization/organization.component';
 export * from './pick-employee/pick-employee.component';
 export * from './public-appointment/public-appointment.component';
+export * from './customer-work-approval/public-customer-work-approval.component';
 export * from './public-layout.component';
 export * from './mutation/public-page-employee-mutation/public-page-employee-mutation.component';
 export * from './mutation/public-page-organization-mutation/public-page-organization-mutation.component';
@@ -34,6 +36,7 @@ export const COMPONENTS = [
 	OrganizationComponent,
 	PickEmployeeComponent,
 	PublicAppointmentComponent,
+	PublicCustomerWorkApprovalComponent,
 	PublicLayoutComponent,
 	PublicPageEmployeeMutationComponent,
 	PublicPageOrganizationMutationComponent

@@ -1,0 +1,111 @@
+<div class="public-approval">
+	<!-- Loading -->
+	<div *ngIf="state === 'loading'" class="public-approval__loading">
+		<nb-spinner></nb-spinner>
+	</div>
+
+	<!-- Terminal error states -->
+	<nb-card *ngIf="state === 'error'" class="public-approval__card">
+		<nb-card-body class="public-approval__message">
+			<p>{{ errorMessage }}</p>
+		</nb-card-body>
+	</nb-card>
+
+	<!-- Approval form (active request) -->
+	<nb-card *ngIf="state === 'ready'" class="public-approval__card">
+		<nb-card-header class="public-approval__header">
+			<h4>{{ 'PUBLIC_APPROVAL.TITLE' | translate }}</h4>
+			<p class="public-approval__subtitle">
+				{{ 'PUBLIC_APPROVAL.ESTIMATE' | translate }} #{{ estimate?.estimateNumber }}
+				<span *ngIf="revisionNumber"> · {{ 'PUBLIC_APPROVAL.REVISION' | translate }} {{ revisionNumber }}</span>
+			</p>
+		</nb-card-header>
+		<nb-card-body>
+			<div class="public-approval__context" *ngIf="vehicleLabel">
+				<span class="public-approval__label">{{ 'PUBLIC_APPROVAL.VEHICLE' | translate }}</span>
+				<span>{{ vehicleLabel }}</span>
+			</div>
+
+			<h6 class="public-approval__section">{{ 'PUBLIC_APPROVAL.WORK_TO_APPROVE' | translate }}</h6>
+			<div class="public-approval__lines">
+				<div class="public-approval__line" *ngFor="let line of lines">
+					<label class="public-approval__line-select">
+						<input
+							type="checkbox"
+							[checked]="isSelected(line.id)"
+							(change)="toggle(line.id, $any($event.target).checked)"
+						/>
+						<span class="public-approval__line-desc">{{ line.description }}</span>
+					</label>
+					<div class="public-approval__line-meta">
+						<span *ngIf="line.reason" class="public-approval__reason">{{ line.reason }}</span>
+						<nb-badge [text]="line.priority" [status]="line.priority === priorities.MUST_FIX ? 'danger' : 'info'"></nb-badge>
+					</div>
+					<div class="public-approval__line-numbers">
+						<span>{{ 'PUBLIC_APPROVAL.QTY' | translate }}: {{ line.quantity }}</span>
+						<span>{{ 'PUBLIC_APPROVAL.UNIT_PRICE' | translate }}: {{ line.unitPrice }}</span>
+						<span>{{ 'PUBLIC_APPROVAL.TAX' | translate }}: {{ line.taxAmount }}</span>
+						<span *ngIf="line.discountAmount">{{ 'PUBLIC_APPROVAL.DISCOUNT' | translate }}: {{ line.discountAmount }}</span>
+						<span class="public-approval__line-total">{{ line.lineTotal }} {{ currency }}</span>
+					</div>
+				</div>
+			</div>
+
+			<div class="public-approval__total">
+				<span class="public-approval__label">{{ 'PUBLIC_APPROVAL.SELECTED_TOTAL' | translate }}</span>
+				<span class="public-approval__grand">{{ selectedTotal }} {{ currency }}</span>
+			</div>
+		</nb-card-body>
+		<nb-card-footer class="public-approval__footer">
+			<button
+				nbButton
+				status="success"
+				fullWidth
+				(click)="approve()"
+				[disabled]="submitting || !hasSelection"
+			>
+				{{ 'PUBLIC_APPROVAL.APPROVE' | translate }}
+			</button>
+		</nb-card-footer>
+	</nb-card>
+
+	<!-- Confirmation (submitted) -->
+	<nb-card *ngIf="state === 'submitted'" class="public-approval__card">
+		<nb-card-header class="public-approval__header">
+			<h4>{{ 'PUBLIC_APPROVAL.CONFIRM_TITLE' | translate }}</h4>
+		</nb-card-header>
+		<nb-card-body>
+			<div class="public-approval__confirm-summary">
+				<div class="public-approval__context">
+					<span class="public-approval__label">{{ 'PUBLIC_APPROVAL.STATUS' | translate }}</span>
+					<nb-badge [text]="confirmation?.submissionState" status="success"></nb-badge>
+				</div>
+				<div class="public-approval__context" *ngIf="confirmation?.estimateRevisionNumber">
+					<span class="public-approval__label">{{ 'PUBLIC_APPROVAL.REVISION' | translate }}</span>
+					<span>{{ confirmation.estimateRevisionNumber }}</span>
+				</div>
+				<div class="public-approval__context" *ngIf="confirmation?.submittedAt">
+					<span class="public-approval__label">{{ 'PUBLIC_APPROVAL.SUBMITTED_AT' | translate }}</span>
+					<span>{{ confirmation.submittedAt | date: 'short' }}</span>
+				</div>
+				<div class="public-approval__context">
+					<span class="public-approval__label">{{ 'PUBLIC_APPROVAL.APPROVED_TOTAL' | translate }}</span>
+					<span class="public-approval__grand">{{ confirmation?.approvedTotal }} {{ currency }}</span>
+				</div>
+			</div>
+
+			<h6 class="public-approval__section">{{ 'PUBLIC_APPROVAL.APPROVED_WORK' | translate }}</h6>
+			<div class="public-approval__lines">
+				<div class="public-approval__line" *ngFor="let line of confirmationLines">
+					<div class="public-approval__line-meta">
+						<span class="public-approval__line-desc">{{ line.description }}</span>
+						<nb-badge [text]="line.selected ? ('PUBLIC_APPROVAL.APPROVED' | translate) : ('PUBLIC_APPROVAL.DECLINED' | translate)" [status]="line.selected ? 'success' : 'basic'"></nb-badge>
+					</div>
+					<div class="public-approval__line-numbers" *ngIf="line.selected">
+						<span>{{ line.lineTotal }} {{ currency }}</span>
+					</div>
+				</div>
+			</div>
+		</nb-card-body>
+	</nb-card>
+</div>

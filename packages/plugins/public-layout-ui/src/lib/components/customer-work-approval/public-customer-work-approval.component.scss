@@ -1,0 +1,104 @@
+.public-approval {
+	display: flex;
+	justify-content: center;
+	padding: 1rem;
+
+	&__loading {
+		display: flex;
+		justify-content: center;
+		padding: 3rem;
+	}
+
+	&__card {
+		width: 100%;
+		max-width: 44rem;
+	}
+
+	&__header h4 {
+		margin: 0;
+	}
+
+	&__subtitle {
+		margin: 0.25rem 0 0;
+		opacity: 0.8;
+	}
+
+	&__message {
+		padding: 2rem;
+		text-align: center;
+	}
+
+	&__context {
+		display: flex;
+		gap: 0.5rem;
+		padding: 0.25rem 0;
+	}
+
+	&__label {
+		font-weight: 600;
+	}
+
+	&__section {
+		margin: 1rem 0 0.5rem;
+	}
+
+	&__line {
+		border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+		padding: 0.75rem 0;
+	}
+
+	&__line-select {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		cursor: pointer;
+		font-weight: 600;
+	}
+
+	&__line-desc {
+		flex: 1;
+	}
+
+	&__reason {
+		opacity: 0.75;
+		margin-right: 0.5rem;
+	}
+
+	&__line-meta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-top: 0.25rem;
+	}
+
+	&__line-numbers {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-top: 0.25rem;
+		opacity: 0.85;
+	}
+
+	&__line-total {
+		font-weight: 700;
+	}
+
+	&__total {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-top: 1rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid rgba(0, 0, 0, 0.08);
+	}
+
+	&__grand {
+		font-weight: 700;
+		font-size: 1.1rem;
+	}
+
+	&__footer {
+		display: block;
+	}
+}
