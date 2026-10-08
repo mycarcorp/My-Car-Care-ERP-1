@@ -12,6 +12,7 @@
 					fullWidth
 					[placeholder]="'ESTIMATES_PAGE.MUTATION.RO_PLACEHOLDER' | translate"
 					[(ngModel)]="repairOrderId"
+					[disabled]="isContextLocked"
 				>
 					<nb-option *ngFor="let ro of repairOrders" [value]="ro.id">
 						{{ repairOrderLabel(ro) }}

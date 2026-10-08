@@ -28,6 +28,13 @@ import { EstimateApiService } from './estimate-api.service';
 export class EstimateMutationComponent implements OnInit {
 	public repairOrders: IRepairOrder[] = [];
 	public repairOrderId: string;
+	/**
+	 * Optional Diagnostic/Inspection linkage supplied when the dialog is launched from the
+	 * Diagnostic detail page. When present, the Repair Order is locked to the diagnostic's
+	 * RO and the IDs are included in the create payload. Absent in the normal list flow.
+	 */
+	public diagnosticId?: string;
+	public inspectionId?: string;
 	public currency = 'USD';
 	public lineDescription = '';
 	public lineReason = '';
@@ -50,6 +57,11 @@ export class EstimateMutationComponent implements OnInit {
 
 	getTranslation(key: string): string {
 		return this.translate.instant(key);
+	}
+
+	/** True when launched from a Diagnostic — the Repair Order is locked to that context. */
+	get isContextLocked(): boolean {
+		return !!this.diagnosticId;
 	}
 
 	ngOnInit(): void {
@@ -97,7 +109,12 @@ export class EstimateMutationComponent implements OnInit {
 			);
 			return;
 		}
-		const ro = this.repairOrders.find((r) => r.id === this.repairOrderId);
+		let ro = this.repairOrders.find((r) => r.id === this.repairOrderId);
+		// When context-locked (Diagnostic-launched), the RO may not be in the loaded list;
+		// fetch it directly so customer/vehicle are derived from the authoritative RO.
+		if (!ro && this.isContextLocked && this.repairOrderId) {
+			ro = await this.repairOrderApi.getById(this.repairOrderId);
+		}
 		if (!ro) {
 			return;
 		}
@@ -116,12 +133,16 @@ export class EstimateMutationComponent implements OnInit {
 		};
 		// tenant/organization are applied server-side from the request context; the
 		// backend validates the RO→customer/vehicle chain, so the body carries the
-		// RO-derived customer/vehicle and the estimate lines only.
+		// RO-derived customer/vehicle and the estimate lines only. The optional
+		// inspection/diagnostic linkage is included only when supplied by the
+		// Diagnostic-launched flow (absent in the normal Estimate list flow).
 		const body: IEstimateCreateInput = {
 			repairOrderId: ro.id,
 			customerId: ro.customerId,
 			vehicleId: ro.vehicleId,
 			currency: this.currency,
+			...(this.inspectionId ? { inspectionId: this.inspectionId } : {}),
+			...(this.diagnosticId ? { diagnosticId: this.diagnosticId } : {}),
 			lines: [line]
 		};
 		this.submitting = true;

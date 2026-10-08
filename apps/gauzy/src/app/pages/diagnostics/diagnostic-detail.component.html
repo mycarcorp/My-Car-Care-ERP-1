@@ -89,6 +89,11 @@
 			</ng-container>
 
 			<div class="diagnostic-detail__actions">
+				<ng-container *ngxPermissionsOnly="['ORG_ESTIMATE_CREATE']">
+					<button nbButton status="info" (click)="createEstimate()">
+						{{ 'DIAGNOSTICS_PAGE.DETAIL.CREATE_ESTIMATE' | translate }}
+					</button>
+				</ng-container>
 				<ng-container *ngxPermissionsOnly="['ORG_DIAGNOSTIC_EDIT']">
 					<button *ngIf="canStart()" nbButton status="primary" (click)="start()">
 						{{ 'DIAGNOSTICS_PAGE.DETAIL.START' | translate }}

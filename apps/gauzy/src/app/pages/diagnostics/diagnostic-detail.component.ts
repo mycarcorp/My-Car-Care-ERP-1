@@ -1,18 +1,22 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { NbToastrService } from '@nebular/theme';
+import { NbDialogService, NbToastrService } from '@nebular/theme';
 import { TranslateService } from '@ngx-translate/core';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { firstValueFrom } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import {
 	DiagnosticFindingKindEnum,
 	DiagnosticStatusEnum,
 	ID,
 	IDiagnostic,
-	IDiagnosticFindingCreateInput
+	IDiagnosticFindingCreateInput,
+	IEstimate
 } from '@gauzy/contracts';
 import { TranslationBaseComponent } from '@gauzy/ui-core/i18n';
+import { RepairOrderApiService } from '../repair-orders/repair-order-api.service';
 import { DiagnosticApiService } from './diagnostic-api.service';
+import { EstimateMutationComponent } from '../estimates/estimate-mutation.component';
 
 @UntilDestroy({ checkProperties: true })
 @Component({
@@ -30,6 +34,9 @@ export class DiagnosticDetailComponent extends TranslationBaseComponent implemen
 	public newFindingDescription = '';
 	public readonly statuses = DiagnosticStatusEnum;
 	public readonly kinds = Object.values(DiagnosticFindingKindEnum);
+
+	private readonly dialogService = inject(NbDialogService);
+	private readonly repairOrderApi = inject(RepairOrderApiService);
 
 	constructor(
 		public readonly translateService: TranslateService,
@@ -157,6 +164,46 @@ export class DiagnosticDetailComponent extends TranslationBaseComponent implemen
 	/** The diagnostic's findings. */
 	get findings() {
 		return this.diagnostic?.['findings'] ?? [];
+	}
+
+	/**
+	 * Opens the existing Estimate creation dialog for this diagnostic. Resolves the Repair
+	 * Order from the diagnostic's inspection (`inspection.repairOrderId`), reads the RO for
+	 * the authoritative customerId/vehicleId, and passes the diagnostic/inspection linkage
+	 * so the created Estimate carries `diagnosticId` + `inspectionId`. The RO is locked in the
+	 * dialog (context is authoritative). On success, navigates to the new Estimate.
+	 */
+	async createEstimate(): Promise<void> {
+		if (!this.diagnostic?.id) {
+			return;
+		}
+		const repairOrderId = this.diagnostic?.['inspection']?.repairOrderId;
+		if (!repairOrderId) {
+			this.toastrService.danger(
+				this.getTranslation('DIAGNOSTICS_PAGE.DETAIL.ESTIMATE_NO_RO'),
+				this.getTranslation('TOASTR.TITLE.ERROR')
+			);
+			return;
+		}
+		try {
+			const ro = await this.repairOrderApi.getById(repairOrderId);
+			const dialogRef = this.dialogService.open(EstimateMutationComponent, {
+				context: {
+					repairOrderId: ro.id,
+					diagnosticId: this.diagnostic.id,
+					inspectionId: this.diagnostic.inspectionId
+				}
+			});
+			const estimate: IEstimate = await firstValueFrom(dialogRef.onClose);
+			if (estimate?.id) {
+				this.router.navigate(['/pages/estimates', estimate.id]);
+			}
+		} catch (error) {
+			this.toastrService.danger(
+				error?.error?.message || error?.message || this.getTranslation('DIAGNOSTICS_PAGE.DETAIL.ESTIMATE_FAILED'),
+				this.getTranslation('TOASTR.TITLE.ERROR')
+			);
+		}
 	}
 
 	/** Technician display label from the related employee record. */
