@@ -1,0 +1,118 @@
+<nb-card class="estimate-detail">
+	<nb-card-header class="estimate-detail__header">
+		<button nbButton size="small" status="basic" (click)="back()">
+			{{ 'ESTIMATES_PAGE.DETAIL.BACK' | translate }}
+		</button>
+		<h4 *ngIf="estimate">
+			{{ 'ESTIMATES_PAGE.DETAIL.TITLE' | translate }} #{{ estimate.estimateNumber }}
+		</h4>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="estimate-detail__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<div *ngIf="!loading && notFound" class="estimate-detail__not-found">
+			{{ 'ESTIMATES_PAGE.DETAIL.NOT_FOUND' | translate }}
+		</div>
+
+		<ng-container *ngIf="!loading && estimate">
+			<div class="estimate-detail__summary">
+				<div class="estimate-detail__row">
+					<span class="estimate-detail__label">{{ 'ESTIMATES_PAGE.DETAIL.STATUS' | translate }}</span>
+					<nb-badge [text]="estimate.status" [status]="statusBadgeStatus"></nb-badge>
+				</div>
+				<div class="estimate-detail__row">
+					<span class="estimate-detail__label">{{ 'ESTIMATES_PAGE.DETAIL.REVISION' | translate }}</span>
+					<span>{{ estimate.revisionNumber }}</span>
+				</div>
+				<div class="estimate-detail__row">
+					<span class="estimate-detail__label">{{ 'ESTIMATES_PAGE.DETAIL.CUSTOMER' | translate }}</span>
+					<span>{{ estimate['repairOrder']?.['customer']?.name }}</span>
+				</div>
+				<div class="estimate-detail__row">
+					<span class="estimate-detail__label">{{ 'ESTIMATES_PAGE.DETAIL.VEHICLE' | translate }}</span>
+					<span>{{ vehicleLabel }}</span>
+				</div>
+				<div class="estimate-detail__row">
+					<span class="estimate-detail__label">{{ 'ESTIMATES_PAGE.DETAIL.REPAIR_ORDER' | translate }}</span>
+					<span>{{ estimate['repairOrder']?.repairOrderNumber }}</span>
+				</div>
+				<div class="estimate-detail__row">
+					<span class="estimate-detail__label">{{ 'ESTIMATES_PAGE.DETAIL.CURRENCY' | translate }}</span>
+					<span>{{ estimate.currency }}</span>
+				</div>
+			</div>
+
+			<table class="table estimate-detail__lines" *ngIf="lines.length">
+				<thead>
+					<tr>
+						<th>{{ 'ESTIMATES_PAGE.DETAIL.DESCRIPTION' | translate }}</th>
+						<th>{{ 'ESTIMATES_PAGE.DETAIL.PRIORITY' | translate }}</th>
+						<th>{{ 'ESTIMATES_PAGE.DETAIL.QTY' | translate }}</th>
+						<th>{{ 'ESTIMATES_PAGE.DETAIL.UNIT_PRICE' | translate }}</th>
+						<th>{{ 'ESTIMATES_PAGE.DETAIL.TAX' | translate }}</th>
+						<th>{{ 'ESTIMATES_PAGE.DETAIL.DISCOUNT' | translate }}</th>
+						<th>{{ 'ESTIMATES_PAGE.DETAIL.LINE_TOTAL' | translate }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngFor="let line of lines">
+						<td>{{ line.description }}</td>
+						<td>{{ line.priority }}</td>
+						<td>{{ line.quantity }}</td>
+						<td>{{ line.unitPrice }}</td>
+						<td>{{ line.taxAmount }}</td>
+						<td>{{ line.discountAmount ?? 0 }}</td>
+						<td>{{ line.lineTotal }}</td>
+					</tr>
+				</tbody>
+			</table>
+			<div *ngIf="!lines.length" class="estimate-detail__empty-lines">
+				{{ 'ESTIMATES_PAGE.DETAIL.NO_LINES' | translate }}
+			</div>
+
+			<div class="estimate-detail__totals">
+				<div class="estimate-detail__row">
+					<span class="estimate-detail__label">{{ 'ESTIMATES_PAGE.DETAIL.SUBTOTAL' | translate }}</span>
+					<span>{{ estimate.subtotal }} {{ estimate.currency }}</span>
+				</div>
+				<div class="estimate-detail__row">
+					<span class="estimate-detail__label">{{ 'ESTIMATES_PAGE.DETAIL.TAX_TOTAL' | translate }}</span>
+					<span>{{ estimate.taxTotal }} {{ estimate.currency }}</span>
+				</div>
+				<div class="estimate-detail__row">
+					<span class="estimate-detail__label">{{ 'ESTIMATES_PAGE.DETAIL.DISCOUNT_TOTAL' | translate }}</span>
+					<span>{{ estimate.discountTotal }} {{ estimate.currency }}</span>
+				</div>
+				<div class="estimate-detail__row estimate-detail__grand">
+					<span class="estimate-detail__label">{{ 'ESTIMATES_PAGE.DETAIL.TOTAL' | translate }}</span>
+					<span>{{ estimate.total }} {{ estimate.currency }}</span>
+				</div>
+			</div>
+
+			<div class="estimate-detail__actions">
+				<ng-container *ngxPermissionsOnly="['ORG_ESTIMATE_EDIT']">
+					<button
+						*ngIf="canFinalize()"
+						nbButton
+						status="primary"
+						(click)="finalize()"
+					>
+						{{ 'ESTIMATES_PAGE.DETAIL.FINALIZE' | translate }}
+					</button>
+				</ng-container>
+				<ng-container *ngxPermissionsOnly="['ORG_ESTIMATE_SEND']">
+					<button
+						*ngIf="canSend()"
+						nbButton
+						status="info"
+						(click)="send()"
+					>
+						{{ 'ESTIMATES_PAGE.DETAIL.SEND' | translate }}
+					</button>
+				</ng-container>
+			</div>
+		</ng-container>
+	</nb-card-body>
+</nb-card>

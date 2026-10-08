@@ -35,6 +35,7 @@ export const getPagesRoutes = (_pageRouteRegistryService: PageRouteRegistryServi
 		...getAutomotiveJobsRoute(),
 		...getRepairOrdersRoute(),
 		...getVehiclesRoute(),
+		...getEstimatesRoute(),
 		...getSalesRoutes(_pageRouteRegistryService),
 		...getEmployeesRoutes(_pageRouteRegistryService),
 		...getOrganizationRoutes(_pageRouteRegistryService),
@@ -195,6 +196,20 @@ function getVehiclesRoute(): Route[] {
 		{
 			path: 'vehicles',
 			loadChildren: () => import('./vehicles/vehicles.module').then((m) => m.VehiclesModule)
+		}
+	];
+}
+
+/**
+ * Gets the estimates route.
+ *
+ * @returns Route[]
+ */
+function getEstimatesRoute(): Route[] {
+	return [
+		{
+			path: 'estimates',
+			loadChildren: () => import('./estimates/estimates.module').then((m) => m.EstimatesModule)
 		}
 	];
 }

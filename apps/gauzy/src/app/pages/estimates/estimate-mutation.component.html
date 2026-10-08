@@ -1,0 +1,67 @@
+<nb-card class="estimate-mutation">
+	<nb-card-header>{{ 'ESTIMATES_PAGE.MUTATION.TITLE' | translate }}</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="estimate-mutation__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+		<ng-container *ngIf="!loading">
+			<div class="form-group">
+				<label for="ro">{{ 'ESTIMATES_PAGE.REPAIR_ORDER' | translate }} *</label>
+				<nb-select
+					id="ro"
+					fullWidth
+					[placeholder]="'ESTIMATES_PAGE.MUTATION.RO_PLACEHOLDER' | translate"
+					[(ngModel)]="repairOrderId"
+				>
+					<nb-option *ngFor="let ro of repairOrders" [value]="ro.id">
+						{{ repairOrderLabel(ro) }}
+					</nb-option>
+				</nb-select>
+			</div>
+			<div class="form-group">
+				<label for="currency">{{ 'ESTIMATES_PAGE.DETAIL.CURRENCY' | translate }} *</label>
+				<input id="currency" nbInput type="text" fullWidth [(ngModel)]="currency" />
+			</div>
+
+			<h6>{{ 'ESTIMATES_PAGE.MUTATION.LINE' | translate }}</h6>
+			<div class="form-group">
+				<label for="desc">{{ 'ESTIMATES_PAGE.DETAIL.DESCRIPTION' | translate }} *</label>
+				<input id="desc" nbInput type="text" fullWidth [(ngModel)]="lineDescription" />
+			</div>
+			<div class="form-group">
+				<label for="reason">{{ 'ESTIMATES_PAGE.MUTATION.REASON' | translate }} *</label>
+				<input id="reason" nbInput type="text" fullWidth [(ngModel)]="lineReason" />
+			</div>
+			<div class="form-group">
+				<label for="priority">{{ 'ESTIMATES_PAGE.DETAIL.PRIORITY' | translate }}</label>
+				<nb-select id="priority" fullWidth [(ngModel)]="linePriority">
+					<nb-option *ngFor="let p of priorities" [value]="p">{{ p }}</nb-option>
+				</nb-select>
+			</div>
+			<div class="form-group">
+				<label for="qty">{{ 'ESTIMATES_PAGE.DETAIL.QTY' | translate }}</label>
+				<input id="qty" nbInput type="number" fullWidth [(ngModel)]="lineQuantity" />
+			</div>
+			<div class="form-group">
+				<label for="price">{{ 'ESTIMATES_PAGE.DETAIL.UNIT_PRICE' | translate }}</label>
+				<input id="price" nbInput type="number" fullWidth [(ngModel)]="lineUnitPrice" />
+			</div>
+			<div class="form-group">
+				<label for="tax">{{ 'ESTIMATES_PAGE.DETAIL.TAX' | translate }}</label>
+				<input id="tax" nbInput type="number" fullWidth [(ngModel)]="lineTaxAmount" />
+			</div>
+			<div class="form-group">
+				<label for="discount">{{ 'ESTIMATES_PAGE.DETAIL.DISCOUNT' | translate }}</label>
+				<input id="discount" nbInput type="number" fullWidth [(ngModel)]="lineDiscountAmount" />
+			</div>
+		</ng-container>
+	</nb-card-body>
+	<nb-card-footer class="estimate-mutation__footer">
+		<button nbButton status="basic" (click)="close()" [disabled]="submitting">
+			{{ 'ESTIMATES_PAGE.MUTATION.CANCEL' | translate }}
+		</button>
+		<button nbButton status="primary" (click)="submit()" [disabled]="submitting">
+			{{ 'ESTIMATES_PAGE.MUTATION.CREATE' | translate }}
+		</button>
+	</nb-card-footer>
+</nb-card>

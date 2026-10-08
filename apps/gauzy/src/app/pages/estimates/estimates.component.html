@@ -1,0 +1,65 @@
+<nb-card class="estimates">
+	<nb-card-header class="estimates__header">
+		<h4>{{ 'ESTIMATES_PAGE.TITLE' | translate }}</h4>
+		<button
+			*ngxPermissionsOnly="['ORG_ESTIMATE_CREATE']"
+			nbButton
+			status="primary"
+			(click)="createEstimate()"
+		>
+			{{ 'ESTIMATES_PAGE.NEW' | translate }}
+		</button>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="estimates__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<ng-template [ngIf]="!loading">
+			<ng-template [ngIf]="estimates.length" [ngIfElse]="noEstimates">
+				<table class="table estimates__table">
+					<thead>
+						<tr>
+							<th>{{ 'ESTIMATES_PAGE.NUMBER' | translate }}</th>
+							<th>{{ 'ESTIMATES_PAGE.CUSTOMER' | translate }}</th>
+							<th>{{ 'ESTIMATES_PAGE.VEHICLE' | translate }}</th>
+							<th>{{ 'ESTIMATES_PAGE.REPAIR_ORDER' | translate }}</th>
+							<th>{{ 'ESTIMATES_PAGE.STATUS' | translate }}</th>
+							<th>{{ 'ESTIMATES_PAGE.REVISION' | translate }}</th>
+							<th>{{ 'ESTIMATES_PAGE.TOTAL' | translate }}</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr *ngFor="let estimate of estimates">
+							<td>{{ estimate.estimateNumber }}</td>
+							<td>{{ estimate['repairOrder']?.['customer']?.name }}</td>
+							<td>{{ vehicleLabel(estimate) }}</td>
+							<td>{{ estimate['repairOrder']?.repairOrderNumber }}</td>
+							<td>
+								<nb-badge [text]="estimate.status" [status]="badgeStatus(estimate.status)"></nb-badge>
+							</td>
+							<td>{{ estimate.revisionNumber }}</td>
+							<td>{{ estimate.total }} {{ estimate.currency }}</td>
+							<td>
+								<button nbButton size="small" status="basic" (click)="view(estimate)">
+									{{ 'ESTIMATES_PAGE.VIEW' | translate }}
+								</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<ga-pagination
+					*ngIf="smartTableSource"
+					[source]="smartTableSource"
+					(totalItemsChange)="onPageChange($event)"
+				></ga-pagination>
+			</ng-template>
+			<ng-template #noEstimates>
+				<div class="estimates__empty">
+					{{ 'ESTIMATES_PAGE.EMPTY' | translate }}
+				</div>
+			</ng-template>
+		</ng-template>
+	</nb-card-body>
+</nb-card>

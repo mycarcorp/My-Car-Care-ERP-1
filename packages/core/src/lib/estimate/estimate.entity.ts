@@ -1,8 +1,9 @@
 import { JoinColumn, RelationId } from 'typeorm';
 import { IsEnum, IsNumber, IsUUID } from 'class-validator';
-import { EstimateStatusEnum, ID, IEstimate } from '@gauzy/contracts';
+import { EstimateStatusEnum, ID, IEstimate, IEstimateLine } from '@gauzy/contracts';
 import { RepairOrder, TenantOrganizationBaseEntity } from '../core/entities/internal';
-import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToOne } from '../core/decorators/entity';
+import { EstimateLine } from './estimate-line.entity';
+import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToOne, MultiORMOneToMany } from '../core/decorators/entity';
 import { ColumnNumericTransformerPipe } from '../shared/pipes';
 import { MikroOrmEstimateRepository } from './repository/mikro-orm-estimate.repository';
 @ColumnIndex('IDX_estimate_root_revision_unique', ['rootEstimateId', 'revisionNumber'], { unique: true })
@@ -36,4 +37,19 @@ export class Estimate extends TenantOrganizationBaseEntity implements IEstimate 
 	@IsNumber() @MultiORMColumn({ type: 'numeric', transformer: new ColumnNumericTransformerPipe(2) }) total: number;
 	@IsUUID() @MultiORMColumn({ nullable: true }) inspectionId?: ID;
 	@IsUUID() @MultiORMColumn({ nullable: true }) diagnosticId?: ID;
+
+	/*
+	|--------------------------------------------------------------------------
+	| @OneToMany
+	|--------------------------------------------------------------------------
+	*/
+	/**
+	 * Estimate lines belonging to this estimate. Metadata-only inverse relation so
+	 * the detail query can load `relations: ['lines']`; the FK lives on EstimateLine.
+	 */
+	@MultiORMOneToMany(() => EstimateLine, (entity) => entity.estimate, {
+		onDelete: 'SET NULL'
+	})
+	@JoinColumn()
+	lines?: IEstimateLine[];
 }

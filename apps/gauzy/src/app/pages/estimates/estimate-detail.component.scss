@@ -1,0 +1,50 @@
+.estimate-detail {
+	&__header {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	&__loading,
+	&__not-found {
+		display: flex;
+		justify-content: center;
+		padding: 2rem;
+	}
+
+	&__summary,
+	&__totals {
+		margin-bottom: 1rem;
+	}
+
+	&__row {
+		display: flex;
+		gap: 0.5rem;
+		padding: 0.25rem 0;
+	}
+
+	&__label {
+		font-weight: 600;
+		min-width: 8rem;
+	}
+
+	&__lines {
+		width: 100%;
+		margin-bottom: 1rem;
+	}
+
+	&__empty-lines {
+		padding: 1rem 0;
+		font-style: italic;
+	}
+
+	&__grand {
+		font-weight: 700;
+	}
+
+	&__actions {
+		display: flex;
+		gap: 0.5rem;
+		margin-top: 1rem;
+	}
+}
