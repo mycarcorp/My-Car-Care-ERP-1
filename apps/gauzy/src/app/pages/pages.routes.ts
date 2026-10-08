@@ -39,6 +39,7 @@ export const getPagesRoutes = (_pageRouteRegistryService: PageRouteRegistryServi
 		...getInspectionsRoute(),
 		...getDiagnosticsRoute(),
 		...getAppointmentsRoute(),
+		...getServiceCenterDashboardRoute(),
 		...getSalesRoutes(_pageRouteRegistryService),
 		...getEmployeesRoutes(_pageRouteRegistryService),
 		...getOrganizationRoutes(_pageRouteRegistryService),
@@ -255,6 +256,23 @@ function getAppointmentsRoute(): Route[] {
 		{
 			path: 'appointments',
 			loadChildren: () => import('./appointments/appointments.module').then((m) => m.AppointmentsModule)
+		}
+	];
+}
+
+/**
+ * Gets the service-center dashboard route.
+ *
+ * @returns Route[]
+ */
+function getServiceCenterDashboardRoute(): Route[] {
+	return [
+		{
+			path: 'service-center-dashboard',
+			loadChildren: () =>
+				import('./service-center-dashboard/service-center-dashboard.module').then(
+					(m) => m.ServiceCenterDashboardModule
+				)
 		}
 	];
 }

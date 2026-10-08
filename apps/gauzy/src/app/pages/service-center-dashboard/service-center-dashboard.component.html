@@ -1,0 +1,81 @@
+<nb-card class="sc-dashboard">
+	<nb-card-header class="sc-dashboard__header">
+		<h4>{{ 'SERVICE_CENTER_DASHBOARD.TITLE' | translate }}</h4>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="sc-dashboard__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<ng-container *ngIf="!loading && kpis">
+			<!-- Top KPI cards -->
+			<div class="sc-dashboard__kpis">
+				<nb-card class="sc-dashboard__kpi"><nb-card-body>
+					<div class="sc-dashboard__kpi-value">{{ kpis.todaysAppointments }}</div>
+					<div class="sc-dashboard__kpi-label">{{ 'SERVICE_CENTER_DASHBOARD.TODAYS_APPOINTMENTS' | translate }}</div>
+				</nb-card-body></nb-card>
+				<nb-card class="sc-dashboard__kpi"><nb-card-body>
+					<div class="sc-dashboard__kpi-value">{{ kpis.openRepairOrders }}</div>
+					<div class="sc-dashboard__kpi-label">{{ 'SERVICE_CENTER_DASHBOARD.OPEN_ROS' | translate }}</div>
+				</nb-card-body></nb-card>
+				<nb-card class="sc-dashboard__kpi"><nb-card-body>
+					<div class="sc-dashboard__kpi-value">{{ kpis.inProgressRepairOrders }}</div>
+					<div class="sc-dashboard__kpi-label">{{ 'SERVICE_CENTER_DASHBOARD.IN_PROGRESS' | translate }}</div>
+				</nb-card-body></nb-card>
+				<nb-card class="sc-dashboard__kpi"><nb-card-body>
+					<div class="sc-dashboard__kpi-value">{{ kpis.readyForPickup }}</div>
+					<div class="sc-dashboard__kpi-label">{{ 'SERVICE_CENTER_DASHBOARD.READY_FOR_PICKUP' | translate }}</div>
+				</nb-card-body></nb-card>
+				<nb-card class="sc-dashboard__kpi"><nb-card-body>
+					<div class="sc-dashboard__kpi-value">{{ kpis.awaitingCustomerApproval }}</div>
+					<div class="sc-dashboard__kpi-label">{{ 'SERVICE_CENTER_DASHBOARD.AWAITING_APPROVAL' | translate }}</div>
+				</nb-card-body></nb-card>
+				<nb-card class="sc-dashboard__kpi"><nb-card-body>
+					<div class="sc-dashboard__kpi-value">{{ kpis.outstandingAmount }}</div>
+					<div class="sc-dashboard__kpi-label">{{ 'SERVICE_CENTER_DASHBOARD.OUTSTANDING' | translate }}</div>
+				</nb-card-body></nb-card>
+			</div>
+
+			<!-- Work in progress -->
+			<h6 class="sc-dashboard__section">{{ 'SERVICE_CENTER_DASHBOARD.WORK_IN_PROGRESS' | translate }}</h6>
+			<div class="sc-dashboard__row">
+				<span class="sc-dashboard__label">{{ 'SERVICE_CENTER_DASHBOARD.JOBS_IN_PROGRESS' | translate }}</span>
+				<nb-badge [text]="kpis.jobsInProgress" status="info"></nb-badge>
+			</div>
+
+			<!-- Bottlenecks -->
+			<h6 class="sc-dashboard__section">{{ 'SERVICE_CENTER_DASHBOARD.BOTTLENECKS' | translate }}</h6>
+			<div class="sc-dashboard__row">
+				<span class="sc-dashboard__label">{{ 'SERVICE_CENTER_DASHBOARD.AWAITING_APPROVAL' | translate }}</span>
+				<nb-badge [text]="kpis.awaitingCustomerApproval" status="warning"></nb-badge>
+			</div>
+			<div class="sc-dashboard__row">
+				<span class="sc-dashboard__label">{{ 'SERVICE_CENTER_DASHBOARD.AWAITING_QC' | translate }}</span>
+				<nb-badge [text]="kpis.awaitingQc" status="warning"></nb-badge>
+			</div>
+
+			<!-- Financial snapshot -->
+			<h6 class="sc-dashboard__section">{{ 'SERVICE_CENTER_DASHBOARD.FINANCIAL' | translate }}</h6>
+			<div class="sc-dashboard__row">
+				<span class="sc-dashboard__label">{{ 'SERVICE_CENTER_DASHBOARD.ESTIMATES_AWAITING_APPROVAL' | translate }}</span>
+				<span>{{ kpis.estimatesAwaitingApproval }}</span>
+			</div>
+			<div class="sc-dashboard__row">
+				<span class="sc-dashboard__label">{{ 'SERVICE_CENTER_DASHBOARD.INVOICES_GENERATED' | translate }}</span>
+				<span>{{ kpis.invoicesGenerated }}</span>
+			</div>
+			<div class="sc-dashboard__row">
+				<span class="sc-dashboard__label">{{ 'SERVICE_CENTER_DASHBOARD.PAYMENTS_RECEIVED' | translate }}</span>
+				<span>{{ kpis.paymentsReceived }}</span>
+			</div>
+			<div class="sc-dashboard__row">
+				<span class="sc-dashboard__label">{{ 'SERVICE_CENTER_DASHBOARD.REVENUE' | translate }}</span>
+				<span>{{ kpis.revenue }}</span>
+			</div>
+		</ng-container>
+
+		<div *ngIf="!loading && !kpis" class="sc-dashboard__empty">
+			{{ 'SERVICE_CENTER_DASHBOARD.EMPTY' | translate }}
+		</div>
+	</nb-card-body>
+</nb-card>

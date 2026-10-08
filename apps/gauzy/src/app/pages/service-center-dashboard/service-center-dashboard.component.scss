@@ -1,0 +1,51 @@
+.sc-dashboard {
+	&__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	&__loading {
+		display: flex;
+		justify-content: center;
+		padding: 2rem;
+	}
+
+	&__kpis {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+		gap: 1rem;
+		margin-bottom: 1.5rem;
+	}
+
+	&__kpi-value {
+		font-size: 1.75rem;
+		font-weight: 700;
+	}
+
+	&__kpi-label {
+		opacity: 0.75;
+		margin-top: 0.25rem;
+	}
+
+	&__section {
+		margin: 1.25rem 0 0.5rem;
+	}
+
+	&__row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.25rem 0;
+	}
+
+	&__label {
+		font-weight: 600;
+		min-width: 14rem;
+	}
+
+	&__empty {
+		padding: 2rem;
+		text-align: center;
+	}
+}
