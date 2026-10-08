@@ -1,0 +1,89 @@
+<nb-card class="appointment-mutation">
+	<nb-card-header>{{ 'APPOINTMENTS_PAGE.MUTATION.TITLE' | translate }}</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="appointment-mutation__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+		<ng-container *ngIf="!loading">
+			<div class="form-group">
+				<label for="customer">{{ 'APPOINTMENTS_PAGE.CUSTOMER' | translate }} *</label>
+				<nb-select
+					id="customer"
+					fullWidth
+					[placeholder]="'APPOINTMENTS_PAGE.MUTATION.CUSTOMER_PLACEHOLDER' | translate"
+					[(ngModel)]="customerId"
+					(selectedChange)="onCustomerChange()"
+				>
+					<nb-option *ngFor="let customer of customers" [value]="customer.id">
+						{{ customer.name }}
+					</nb-option>
+				</nb-select>
+			</div>
+			<div class="form-group">
+				<label for="vehicle">{{ 'APPOINTMENTS_PAGE.VEHICLE' | translate }} *</label>
+				<nb-select
+					id="vehicle"
+					fullWidth
+					[placeholder]="'APPOINTMENTS_PAGE.MUTATION.VEHICLE_PLACEHOLDER' | translate"
+					[(ngModel)]="vehicleId"
+					[disabled]="!customerId"
+				>
+					<nb-option *ngFor="let vehicle of customerVehicles" [value]="vehicle.id">
+						{{ vehicleLabel(vehicle) }}
+					</nb-option>
+				</nb-select>
+			</div>
+			<div class="form-group">
+				<label for="concern">{{ 'APPOINTMENTS_PAGE.CONCERN' | translate }} *</label>
+				<input
+					id="concern"
+					nbInput
+					type="text"
+					fullWidth
+					[placeholder]="'APPOINTMENTS_PAGE.MUTATION.CONCERN_PLACEHOLDER' | translate"
+					[(ngModel)]="originalConcern"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="agenda">{{ 'APPOINTMENTS_PAGE.SERVICE' | translate }} *</label>
+				<input
+					id="agenda"
+					nbInput
+					type="text"
+					fullWidth
+					[placeholder]="'APPOINTMENTS_PAGE.MUTATION.SERVICE_PLACEHOLDER' | translate"
+					[(ngModel)]="agenda"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="start">{{ 'APPOINTMENTS_PAGE.MUTATION.START' | translate }} *</label>
+				<input id="start" nbInput type="datetime-local" fullWidth [(ngModel)]="startDateTime" />
+			</div>
+			<div class="form-group">
+				<label for="end">{{ 'APPOINTMENTS_PAGE.MUTATION.END' | translate }} *</label>
+				<input id="end" nbInput type="datetime-local" fullWidth [(ngModel)]="endDateTime" />
+			</div>
+			<div class="form-group">
+				<label for="advisor">{{ 'APPOINTMENTS_PAGE.ADVISOR' | translate }}</label>
+				<nb-select
+					id="advisor"
+					fullWidth
+					[placeholder]="'APPOINTMENTS_PAGE.MUTATION.ADVISOR_PLACEHOLDER' | translate"
+					[(ngModel)]="employeeId"
+				>
+					<nb-option *ngFor="let advisor of advisors" [value]="advisor.id">
+						{{ advisorLabel(advisor) }}
+					</nb-option>
+				</nb-select>
+			</div>
+		</ng-container>
+	</nb-card-body>
+	<nb-card-footer class="appointment-mutation__footer">
+		<button nbButton status="basic" (click)="close()" [disabled]="submitting">
+			{{ 'APPOINTMENTS_PAGE.MUTATION.CANCEL' | translate }}
+		</button>
+		<button nbButton status="primary" (click)="submit()" [disabled]="submitting">
+			{{ 'APPOINTMENTS_PAGE.MUTATION.CREATE' | translate }}
+		</button>
+	</nb-card-footer>
+</nb-card>

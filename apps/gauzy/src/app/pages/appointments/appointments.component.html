@@ -1,0 +1,54 @@
+<nb-card class="appointments">
+	<nb-card-header class="appointments__header">
+		<h4>{{ 'APPOINTMENTS_PAGE.TITLE' | translate }}</h4>
+		<button
+			*ngxPermissionsOnly="['ORG_APPOINTMENT_CREATE']"
+			nbButton
+			status="primary"
+			(click)="createAppointment()"
+		>
+			{{ 'APPOINTMENTS_PAGE.NEW' | translate }}
+		</button>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="appointments__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<ng-template [ngIf]="!loading">
+			<ng-template [ngIf]="appointments.length" [ngIfElse]="noAppointments">
+				<table class="table appointments__table">
+					<thead>
+						<tr>
+							<th>{{ 'APPOINTMENTS_PAGE.WHEN' | translate }}</th>
+							<th>{{ 'APPOINTMENTS_PAGE.CUSTOMER' | translate }}</th>
+							<th>{{ 'APPOINTMENTS_PAGE.VEHICLE' | translate }}</th>
+							<th>{{ 'APPOINTMENTS_PAGE.SERVICE' | translate }}</th>
+							<th>{{ 'APPOINTMENTS_PAGE.ADVISOR' | translate }}</th>
+							<th>{{ 'APPOINTMENTS_PAGE.CONCERN' | translate }}</th>
+							<th>{{ 'APPOINTMENTS_PAGE.STATUS' | translate }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr *ngFor="let appointment of appointments">
+							<td>{{ appointment.startDateTime | date: 'short' }}</td>
+							<td>{{ appointment['customer']?.name }}</td>
+							<td>{{ vehicleLabel(appointment) }}</td>
+							<td>{{ appointment.agenda }}</td>
+							<td>{{ advisorLabel(appointment) }}</td>
+							<td>{{ appointment.originalConcern }}</td>
+							<td>
+								<nb-badge [text]="appointment.status" [status]="badgeStatus(appointment.status)"></nb-badge>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</ng-template>
+			<ng-template #noAppointments>
+				<div class="appointments__empty">
+					{{ 'APPOINTMENTS_PAGE.EMPTY' | translate }}
+				</div>
+			</ng-template>
+		</ng-template>
+	</nb-card-body>
+</nb-card>
