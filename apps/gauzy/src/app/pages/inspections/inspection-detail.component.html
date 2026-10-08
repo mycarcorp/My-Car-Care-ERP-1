@@ -1,0 +1,76 @@
+<nb-card class="inspection-detail">
+	<nb-card-header class="inspection-detail__header">
+		<button nbButton size="small" status="basic" (click)="back()">
+			{{ 'INSPECTIONS_PAGE.DETAIL.BACK' | translate }}
+		</button>
+		<h4 *ngIf="inspection">{{ 'INSPECTIONS_PAGE.DETAIL.TITLE' | translate }}</h4>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="inspection-detail__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<div *ngIf="!loading && notFound" class="inspection-detail__not-found">
+			{{ 'INSPECTIONS_PAGE.DETAIL.NOT_FOUND' | translate }}
+		</div>
+
+		<ng-container *ngIf="!loading && inspection">
+			<div class="inspection-detail__summary">
+				<div class="inspection-detail__row">
+					<span class="inspection-detail__label">{{ 'INSPECTIONS_PAGE.DETAIL.STATUS' | translate }}</span>
+					<nb-badge [text]="inspection.status" [status]="statusBadgeStatus"></nb-badge>
+				</div>
+				<div class="inspection-detail__row" *ngIf="inspection['repairOrder']">
+					<span class="inspection-detail__label">{{ 'INSPECTIONS_PAGE.DETAIL.REPAIR_ORDER' | translate }}</span>
+					<span>{{ inspection['repairOrder']?.repairOrderNumber }}</span>
+				</div>
+				<div class="inspection-detail__row" *ngIf="vehicleLabel">
+					<span class="inspection-detail__label">{{ 'INSPECTIONS_PAGE.DETAIL.VEHICLE' | translate }}</span>
+					<span>{{ vehicleLabel }}</span>
+				</div>
+				<div class="inspection-detail__row" *ngIf="technicianLabel">
+					<span class="inspection-detail__label">{{ 'INSPECTIONS_PAGE.DETAIL.TECHNICIAN' | translate }}</span>
+					<span>{{ technicianLabel }}</span>
+				</div>
+				<div class="inspection-detail__row" *ngIf="inspection.inspectedAt">
+					<span class="inspection-detail__label">{{ 'INSPECTIONS_PAGE.DETAIL.INSPECTED_AT' | translate }}</span>
+					<span>{{ inspection.inspectedAt | date: 'short' }}</span>
+				</div>
+			</div>
+
+			<h6 class="inspection-detail__section">{{ 'INSPECTIONS_PAGE.DETAIL.FINDINGS' | translate }}</h6>
+			<table class="table inspection-detail__findings" *ngIf="findings.length">
+				<thead>
+					<tr>
+						<th>{{ 'INSPECTIONS_PAGE.DETAIL.DESCRIPTION' | translate }}</th>
+						<th>{{ 'INSPECTIONS_PAGE.DETAIL.RESULT' | translate }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngFor="let finding of findings">
+						<td>{{ finding.description }}</td>
+						<td>
+							<nb-badge [text]="finding.result" [status]="findingBadgeStatus(finding.result)"></nb-badge>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<div *ngIf="!findings.length" class="inspection-detail__empty">
+				{{ 'INSPECTIONS_PAGE.DETAIL.NO_FINDINGS' | translate }}
+			</div>
+
+			<div class="inspection-detail__actions">
+				<ng-container *ngxPermissionsOnly="['ORG_INSPECTION_EDIT']">
+					<button *ngIf="canStart()" nbButton status="primary" (click)="start()">
+						{{ 'INSPECTIONS_PAGE.DETAIL.START' | translate }}
+					</button>
+				</ng-container>
+				<ng-container *ngxPermissionsOnly="['ORG_INSPECTION_COMPLETE']">
+					<button *ngIf="canComplete()" nbButton status="success" (click)="complete()">
+						{{ 'INSPECTIONS_PAGE.DETAIL.COMPLETE' | translate }}
+					</button>
+				</ng-container>
+			</div>
+		</ng-container>
+	</nb-card-body>
+</nb-card>

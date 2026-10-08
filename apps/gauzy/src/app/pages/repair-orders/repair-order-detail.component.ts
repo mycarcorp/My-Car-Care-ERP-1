@@ -1,12 +1,15 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { NbToastrService } from '@nebular/theme';
+import { NbDialogService, NbToastrService } from '@nebular/theme';
 import { TranslateService } from '@ngx-translate/core';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { firstValueFrom } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
-import { ID, IRepairOrder, RepairOrderStatusEnum } from '@gauzy/contracts';
+import { ID, IInspection, IRepairOrder, RepairOrderStatusEnum } from '@gauzy/contracts';
 import { TranslationBaseComponent } from '@gauzy/ui-core/i18n';
 import { RepairOrderApiService } from './repair-order-api.service';
+import { InspectionApiService } from '../inspections/inspection-api.service';
+import { InspectionMutationComponent } from '../inspections/inspection-mutation.component';
 
 @UntilDestroy({ checkProperties: true })
 @Component({
@@ -20,6 +23,9 @@ export class RepairOrderDetailComponent extends TranslationBaseComponent impleme
 	public loading = false;
 	public notFound = false;
 	public readonly statuses = RepairOrderStatusEnum;
+
+	private readonly dialogService = inject(NbDialogService);
+	private readonly inspectionApi = inject(InspectionApiService);
 
 	constructor(
 		public readonly translateService: TranslateService,
@@ -160,6 +166,44 @@ export class RepairOrderDetailComponent extends TranslationBaseComponent impleme
 	/** Navigates to the existing Job Board for this repair order. */
 	openJobBoard(): void {
 		this.router.navigate(['/pages/automotive-jobs', this.repairOrder.id]);
+	}
+
+	/**
+	 * Opens the Inspection for this repair order: navigates to the existing inspection if one
+	 * exists, otherwise opens the creation dialog pre-filled with the RO context. Does not
+	 * create a duplicate inspection.
+	 */
+	async openInspection(): Promise<void> {
+		if (!this.repairOrder?.id) {
+			return;
+		}
+		try {
+			const existing = await this.inspectionApi.getByRepairOrder(this.repairOrder.id);
+			if (existing?.id) {
+				this.router.navigate(['/pages/inspections', existing.id]);
+				return;
+			}
+		} catch (error) {
+			// 404 / not-found simply means no inspection exists yet — fall through to create.
+			if (error?.status && error.status !== 404) {
+				this.toastrService.danger(
+					error?.error?.message || this.getTranslation('INSPECTIONS_PAGE.LOAD_FAILED'),
+					this.getTranslation('TOASTR.TITLE.ERROR')
+				);
+				return;
+			}
+		}
+		const dialogRef = this.dialogService.open(InspectionMutationComponent, {
+			context: {
+				repairOrderId: this.repairOrder.id,
+				vehicleId: this.repairOrder.vehicleId,
+				technicianEmployeeId: this.repairOrder.serviceAdvisorEmployeeId
+			}
+		});
+		const inspection: IInspection = await firstValueFrom(dialogRef.onClose);
+		if (inspection?.id) {
+			this.router.navigate(['/pages/inspections', inspection.id]);
+		}
 	}
 
 	/** Returns to the repair order list. */

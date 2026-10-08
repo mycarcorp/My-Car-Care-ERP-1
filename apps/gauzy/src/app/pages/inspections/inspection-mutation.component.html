@@ -1,0 +1,42 @@
+<nb-card class="inspection-mutation">
+	<nb-card-header>{{ 'INSPECTIONS_PAGE.MUTATION.TITLE' | translate }}</nb-card-header>
+	<nb-card-body>
+		<p class="inspection-mutation__hint">{{ 'INSPECTIONS_PAGE.MUTATION.HINT' | translate }}</p>
+
+		<div class="inspection-mutation__finding" *ngFor="let finding of findings; let i = index">
+			<div class="form-group inspection-mutation__finding-row">
+				<input
+					nbInput
+					type="text"
+					fullWidth
+					[placeholder]="'INSPECTIONS_PAGE.MUTATION.FINDING_PLACEHOLDER' | translate"
+					[(ngModel)]="finding.description"
+				/>
+				<nb-select [(ngModel)]="finding.result">
+					<nb-option *ngFor="let r of results" [value]="r">{{ r }}</nb-option>
+				</nb-select>
+				<button
+					nbButton
+					size="small"
+					status="danger"
+					(click)="removeFinding(i)"
+					[disabled]="findings.length <= 1"
+				>
+					{{ 'INSPECTIONS_PAGE.MUTATION.REMOVE' | translate }}
+				</button>
+			</div>
+		</div>
+
+		<button nbButton size="small" status="basic" (click)="addFinding()">
+			{{ 'INSPECTIONS_PAGE.MUTATION.ADD_FINDING' | translate }}
+		</button>
+	</nb-card-body>
+	<nb-card-footer class="inspection-mutation__footer">
+		<button nbButton status="basic" (click)="close()" [disabled]="submitting">
+			{{ 'INSPECTIONS_PAGE.MUTATION.CANCEL' | translate }}
+		</button>
+		<button nbButton status="primary" (click)="submit()" [disabled]="submitting">
+			{{ 'INSPECTIONS_PAGE.MUTATION.CREATE' | translate }}
+		</button>
+	</nb-card-footer>
+</nb-card>

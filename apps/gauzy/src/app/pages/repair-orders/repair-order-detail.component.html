@@ -47,6 +47,14 @@
 					{{ 'REPAIR_ORDERS_PAGE.DETAIL.OPEN_JOB_BOARD' | translate }}
 				</button>
 				<button
+					*ngxPermissionsOnly="['ORG_INSPECTION_VIEW']"
+					nbButton
+					status="info"
+					(click)="openInspection()"
+				>
+					{{ 'REPAIR_ORDERS_PAGE.DETAIL.INSPECTION' | translate }}
+				</button>
+				<button
 					*ngIf="canGenerateInvoice()"
 					nbButton
 					status="info"
