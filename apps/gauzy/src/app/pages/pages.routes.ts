@@ -37,6 +37,7 @@ export const getPagesRoutes = (_pageRouteRegistryService: PageRouteRegistryServi
 		...getVehiclesRoute(),
 		...getEstimatesRoute(),
 		...getInspectionsRoute(),
+		...getDiagnosticsRoute(),
 		...getSalesRoutes(_pageRouteRegistryService),
 		...getEmployeesRoutes(_pageRouteRegistryService),
 		...getOrganizationRoutes(_pageRouteRegistryService),
@@ -225,6 +226,20 @@ function getInspectionsRoute(): Route[] {
 		{
 			path: 'inspections',
 			loadChildren: () => import('./inspections/inspections.module').then((m) => m.InspectionsModule)
+		}
+	];
+}
+
+/**
+ * Gets the diagnostics route.
+ *
+ * @returns Route[]
+ */
+function getDiagnosticsRoute(): Route[] {
+	return [
+		{
+			path: 'diagnostics',
+			loadChildren: () => import('./diagnostics/diagnostics.module').then((m) => m.DiagnosticsModule)
 		}
 	];
 }

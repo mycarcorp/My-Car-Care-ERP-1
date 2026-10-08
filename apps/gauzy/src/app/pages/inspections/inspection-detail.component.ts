@@ -1,12 +1,15 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { NbToastrService } from '@nebular/theme';
+import { NbDialogService, NbToastrService } from '@nebular/theme';
 import { TranslateService } from '@ngx-translate/core';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { firstValueFrom } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
-import { ID, IInspection, InspectionFindingResultEnum, InspectionStatusEnum } from '@gauzy/contracts';
+import { ID, IDiagnostic, IInspection, InspectionFindingResultEnum, InspectionStatusEnum } from '@gauzy/contracts';
 import { TranslationBaseComponent } from '@gauzy/ui-core/i18n';
 import { InspectionApiService } from './inspection-api.service';
+import { DiagnosticApiService } from '../diagnostics/diagnostic-api.service';
+import { DiagnosticMutationComponent } from '../diagnostics/diagnostic-mutation.component';
 
 @UntilDestroy({ checkProperties: true })
 @Component({
@@ -21,6 +24,9 @@ export class InspectionDetailComponent extends TranslationBaseComponent implemen
 	public notFound = false;
 	public readonly statuses = InspectionStatusEnum;
 	public readonly results = InspectionFindingResultEnum;
+
+	private readonly dialogService = inject(NbDialogService);
+	private readonly diagnosticApi = inject(DiagnosticApiService);
 
 	constructor(
 		public readonly translateService: TranslateService,
@@ -106,6 +112,47 @@ export class InspectionDetailComponent extends TranslationBaseComponent implemen
 	/** The inspection's findings (read-only after creation). */
 	get findings() {
 		return this.inspection?.['findings'] ?? [];
+	}
+
+	/**
+	 * Opens the Diagnostics for this inspection: navigates to an existing diagnostic if one is
+	 * found via the filtered list (`GET /diagnostics?where[inspectionId]=…`); otherwise opens the
+	 * creation dialog pre-filled with the inspection's id and technician (derived from the
+	 * inspection's `technicianEmployeeId`, never from the RO's service advisor).
+	 */
+	async openDiagnostics(): Promise<void> {
+		if (!this.inspection?.id) {
+			return;
+		}
+		try {
+			const { items } = await this.diagnosticApi.listByInspection(this.inspection.id);
+			const existing = (items ?? []).filter(Boolean);
+			if (existing.length === 1) {
+				this.router.navigate(['/pages/diagnostics', existing[0].id]);
+				return;
+			}
+			if (existing.length > 1) {
+				// Multiple diagnostics for one inspection: do not create another — open the first.
+				this.router.navigate(['/pages/diagnostics', existing[0].id]);
+				return;
+			}
+		} catch (error) {
+			this.toastrService.danger(
+				error?.error?.message || this.getTranslation('DIAGNOSTICS_PAGE.LOAD_FAILED'),
+				this.getTranslation('TOASTR.TITLE.ERROR')
+			);
+			return;
+		}
+		const dialogRef = this.dialogService.open(DiagnosticMutationComponent, {
+			context: {
+				inspectionId: this.inspection.id,
+				technicianEmployeeId: this.inspection.technicianEmployeeId
+			}
+		});
+		const diagnostic: IDiagnostic = await firstValueFrom(dialogRef.onClose);
+		if (diagnostic?.id) {
+			this.router.navigate(['/pages/diagnostics', diagnostic.id]);
+		}
 	}
 
 	/** Technician display label from the related employee record. */

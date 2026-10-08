@@ -60,6 +60,11 @@
 			</div>
 
 			<div class="inspection-detail__actions">
+				<ng-container *ngxPermissionsOnly="['ORG_DIAGNOSTIC_VIEW']">
+					<button nbButton status="info" (click)="openDiagnostics()">
+						{{ 'INSPECTIONS_PAGE.DETAIL.DIAGNOSTICS' | translate }}
+					</button>
+				</ng-container>
 				<ng-container *ngxPermissionsOnly="['ORG_INSPECTION_EDIT']">
 					<button *ngIf="canStart()" nbButton status="primary" (click)="start()">
 						{{ 'INSPECTIONS_PAGE.DETAIL.START' | translate }}

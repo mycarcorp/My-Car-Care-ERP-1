@@ -1,0 +1,47 @@
+<nb-card class="diagnostic-mutation">
+	<nb-card-header>{{ 'DIAGNOSTICS_PAGE.MUTATION.TITLE' | translate }}</nb-card-header>
+	<nb-card-body>
+		<div class="form-group">
+			<label for="symptom">{{ 'DIAGNOSTICS_PAGE.DETAIL.SYMPTOM' | translate }} *</label>
+			<input id="symptom" nbInput type="text" fullWidth [(ngModel)]="symptom" />
+		</div>
+		<div class="form-group">
+			<label for="summary">{{ 'DIAGNOSTICS_PAGE.DETAIL.SUMMARY' | translate }}</label>
+			<input id="summary" nbInput type="text" fullWidth [(ngModel)]="summary" />
+		</div>
+		<div class="form-group">
+			<label for="note">{{ 'DIAGNOSTICS_PAGE.DETAIL.INTERNAL_NOTE' | translate }}</label>
+			<input id="note" nbInput type="text" fullWidth [(ngModel)]="internalNote" />
+		</div>
+
+		<h6>{{ 'DIAGNOSTICS_PAGE.DETAIL.FINDINGS' | translate }}</h6>
+		<div class="diagnostic-mutation__finding" *ngFor="let finding of findings; let i = index">
+			<div class="form-group diagnostic-mutation__finding-row">
+				<nb-select [(ngModel)]="finding.kind">
+					<nb-option *ngFor="let k of kinds" [value]="k">{{ k }}</nb-option>
+				</nb-select>
+				<input
+					nbInput
+					type="text"
+					fullWidth
+					[placeholder]="'DIAGNOSTICS_PAGE.MUTATION.FINDING_PLACEHOLDER' | translate"
+					[(ngModel)]="finding.description"
+				/>
+				<button nbButton size="small" status="danger" (click)="removeFinding(i)">
+					{{ 'DIAGNOSTICS_PAGE.MUTATION.REMOVE' | translate }}
+				</button>
+			</div>
+		</div>
+		<button nbButton size="small" status="basic" (click)="addFinding()">
+			{{ 'DIAGNOSTICS_PAGE.MUTATION.ADD_FINDING' | translate }}
+		</button>
+	</nb-card-body>
+	<nb-card-footer class="diagnostic-mutation__footer">
+		<button nbButton status="basic" (click)="close()" [disabled]="submitting">
+			{{ 'DIAGNOSTICS_PAGE.MUTATION.CANCEL' | translate }}
+		</button>
+		<button nbButton status="primary" (click)="submit()" [disabled]="submitting || !symptom.trim()">
+			{{ 'DIAGNOSTICS_PAGE.MUTATION.CREATE' | translate }}
+		</button>
+	</nb-card-footer>
+</nb-card>

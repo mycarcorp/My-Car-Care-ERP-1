@@ -1,0 +1,105 @@
+<nb-card class="diagnostic-detail">
+	<nb-card-header class="diagnostic-detail__header">
+		<button nbButton size="small" status="basic" (click)="back()">
+			{{ 'DIAGNOSTICS_PAGE.DETAIL.BACK' | translate }}
+		</button>
+		<h4 *ngIf="diagnostic">{{ 'DIAGNOSTICS_PAGE.DETAIL.TITLE' | translate }}</h4>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="diagnostic-detail__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<div *ngIf="!loading && notFound" class="diagnostic-detail__not-found">
+			{{ 'DIAGNOSTICS_PAGE.DETAIL.NOT_FOUND' | translate }}
+		</div>
+
+		<ng-container *ngIf="!loading && diagnostic">
+			<div class="diagnostic-detail__summary">
+				<div class="diagnostic-detail__row">
+					<span class="diagnostic-detail__label">{{ 'DIAGNOSTICS_PAGE.DETAIL.STATUS' | translate }}</span>
+					<nb-badge [text]="diagnostic.status" [status]="statusBadgeStatus"></nb-badge>
+				</div>
+				<div class="diagnostic-detail__row">
+					<span class="diagnostic-detail__label">{{ 'DIAGNOSTICS_PAGE.DETAIL.SYMPTOM' | translate }}</span>
+					<span>{{ diagnostic.symptom }}</span>
+				</div>
+				<div class="diagnostic-detail__row" *ngIf="technicianLabel">
+					<span class="diagnostic-detail__label">{{ 'DIAGNOSTICS_PAGE.DETAIL.TECHNICIAN' | translate }}</span>
+					<span>{{ technicianLabel }}</span>
+				</div>
+				<div class="diagnostic-detail__row" *ngIf="diagnostic.summary">
+					<span class="diagnostic-detail__label">{{ 'DIAGNOSTICS_PAGE.DETAIL.SUMMARY' | translate }}</span>
+					<span>{{ diagnostic.summary }}</span>
+				</div>
+				<div class="diagnostic-detail__row" *ngIf="diagnostic.internalNote">
+					<span class="diagnostic-detail__label">{{ 'DIAGNOSTICS_PAGE.DETAIL.INTERNAL_NOTE' | translate }}</span>
+					<span>{{ diagnostic.internalNote }}</span>
+				</div>
+				<div class="diagnostic-detail__row" *ngIf="diagnostic.diagnosedAt">
+					<span class="diagnostic-detail__label">{{ 'DIAGNOSTICS_PAGE.DETAIL.DIAGNOSED_AT' | translate }}</span>
+					<span>{{ diagnostic.diagnosedAt | date: 'short' }}</span>
+				</div>
+			</div>
+
+			<h6 class="diagnostic-detail__section">{{ 'DIAGNOSTICS_PAGE.DETAIL.FINDINGS' | translate }}</h6>
+			<table class="table diagnostic-detail__findings" *ngIf="findings.length">
+				<thead>
+					<tr>
+						<th>{{ 'DIAGNOSTICS_PAGE.DETAIL.KIND' | translate }}</th>
+						<th>{{ 'DIAGNOSTICS_PAGE.DETAIL.DESCRIPTION' | translate }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngFor="let finding of findings">
+						<td><nb-badge [text]="finding.kind" status="info"></nb-badge></td>
+						<td>{{ finding.description }}</td>
+					</tr>
+				</tbody>
+			</table>
+			<div *ngIf="!findings.length" class="diagnostic-detail__empty">
+				{{ 'DIAGNOSTICS_PAGE.DETAIL.NO_FINDINGS' | translate }}
+			</div>
+
+			<ng-container *ngxPermissionsOnly="['ORG_DIAGNOSTIC_EDIT']">
+				<div class="diagnostic-detail__add-finding" *ngIf="canAddFinding()">
+					<h6 class="diagnostic-detail__section">{{ 'DIAGNOSTICS_PAGE.DETAIL.ADD_FINDING' | translate }}</h6>
+					<div class="diagnostic-detail__add-finding-row">
+						<nb-select [(ngModel)]="newFindingKind">
+							<nb-option *ngFor="let k of kinds" [value]="k">{{ k }}</nb-option>
+						</nb-select>
+						<input
+							nbInput
+							type="text"
+							fullWidth
+							[placeholder]="'DIAGNOSTICS_PAGE.DETAIL.FINDING_PLACEHOLDER' | translate"
+							[(ngModel)]="newFindingDescription"
+						/>
+						<button
+							nbButton
+							size="small"
+							status="primary"
+							(click)="addFinding()"
+							[disabled]="addingFinding || !newFindingDescription.trim()"
+						>
+							{{ 'DIAGNOSTICS_PAGE.DETAIL.ADD' | translate }}
+						</button>
+					</div>
+				</div>
+			</ng-container>
+
+			<div class="diagnostic-detail__actions">
+				<ng-container *ngxPermissionsOnly="['ORG_DIAGNOSTIC_EDIT']">
+					<button *ngIf="canStart()" nbButton status="primary" (click)="start()">
+						{{ 'DIAGNOSTICS_PAGE.DETAIL.START' | translate }}
+					</button>
+				</ng-container>
+				<ng-container *ngxPermissionsOnly="['ORG_DIAGNOSTIC_COMPLETE']">
+					<button *ngIf="canComplete()" nbButton status="success" (click)="complete()">
+						{{ 'DIAGNOSTICS_PAGE.DETAIL.COMPLETE' | translate }}
+					</button>
+				</ng-container>
+			</div>
+		</ng-container>
+	</nb-card-body>
+</nb-card>
