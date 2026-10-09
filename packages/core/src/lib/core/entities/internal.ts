@@ -53,6 +53,7 @@ export * from '../../equipment-sharing/equipment-sharing.entity';
 export * from '../../equipment/equipment.entity';
 export * from '../../estimate-email/estimate-email.entity';
 export * from '../../estimate/estimate.entity';
+export * from '../../financing/financing-application.entity';
 export * from '../../estimate/estimate-line.entity';
 export * from '../../customer-work-approval/customer-work-approval-request.entity';
 export * from '../../customer-work-approval/customer-work-approval.entity';

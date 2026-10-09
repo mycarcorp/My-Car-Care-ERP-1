@@ -69,6 +69,7 @@ export * from './lib/equipment-sharing.model';
 export * from './lib/equipment.model';
 export * from './lib/estimate-email.model';
 export * from './lib/estimate.model';
+export * from './lib/financing-application.model';
 export * from './lib/customer-work-approval.model';
 export * from './lib/automotive-part.model';
 export * from './lib/automotive-job.model';

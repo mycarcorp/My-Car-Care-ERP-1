@@ -98,6 +98,7 @@ import { resolveServeStaticPath } from '../helper';
 import { ImageAssetModule } from '../image-asset/image-asset.module';
 import { IncomeModule } from '../income/income.module';
 import { InspectionModule } from '../inspection/inspection.module';
+import { FinancingApplicationModule } from '../financing/financing-application.module';
 import { ServiceCenterDashboardModule } from '../service-center-dashboard/service-center-dashboard.module';
 import { IntegrationEntitySettingTiedModule } from '../integration-entity-setting-tied/integration-entity-setting-tied.module';
 import { IntegrationEntitySettingModule } from '../integration-entity-setting/integration-entity-setting.module';
@@ -456,6 +457,7 @@ if (environment.THROTTLE_ENABLED) {
 		VehicleModule,
 		RepairOrderModule,
 		InspectionModule,
+		FinancingApplicationModule,
 		ServiceCenterDashboardModule,
 		OrganizationAwardModule,
 		OrganizationLanguageModule,
