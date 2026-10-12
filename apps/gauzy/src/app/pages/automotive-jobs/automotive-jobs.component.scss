@@ -93,6 +93,64 @@
   min-width: 12rem;
 }
 
+.parts-section {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gauzy-border-color-1);
+}
+
+.parts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.parts-header h6 {
+  margin: 0;
+}
+
+.parts-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.part-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--gauzy-border-color-1);
+  border-radius: var(--border-radius);
+}
+
+.part-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.part-reverse {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.part-reverse input {
+  min-width: 12rem;
+}
+
+.part-consume {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  max-width: 28rem;
+}
+
 .labor-header h6 {
   margin: 0;
 }

@@ -17,6 +17,9 @@ import {
 	IAutomotiveJobAssignInput,
 	IAutomotiveJobCreateInput,
 	IAutomotiveJobUpdateInput,
+	IAutomotivePartProfile,
+	IPartStockMovement,
+	IWarehouseProductVariant,
 	ICustomerWorkApprovalLine
 } from '@gauzy/contracts';
 import { API_PREFIX } from '@gauzy/ui-core/common';
@@ -137,5 +140,53 @@ export class AutomotiveJobApiService {
 
 	failQc(qcId: string, body: IAutomotiveJobQcFailInput): Promise<IAutomotiveJobQcAttempt> {
 		return firstValueFrom(this.http.patch<IAutomotiveJobQcAttempt>(`${this.baseUrl}/automotive-job-qc/${qcId}/fail`, body));
+	}
+
+	/*
+	|--------------------------------------------------------------------------
+	| Parts consumption (per automotive job)
+	|--------------------------------------------------------------------------
+	*/
+
+	/** Lists enabled automotive part profiles (`GET /automotive-parts`). */
+	listParts(): Promise<{ items: IAutomotivePartProfile[]; total: number }> {
+		return firstValueFrom(this.http.get<{ items: IAutomotivePartProfile[]; total: number }>(`${this.baseUrl}/automotive-parts`));
+	}
+
+	/** Fetches stock balances for a part (`GET /automotive-parts/:id/stock`), one row per warehouse variant. */
+	getPartStock(partProfileId: string): Promise<IWarehouseProductVariant[]> {
+		return firstValueFrom(
+			this.http.get<IWarehouseProductVariant[]>(`${this.baseUrl}/automotive-parts/${partProfileId}/stock`)
+		);
+	}
+
+	/** Lists the parts consumed by a job (`GET /automotive-jobs/:jobId/parts/consumptions`). */
+	listPartConsumptions(jobId: string): Promise<IPartStockMovement[]> {
+		return firstValueFrom(
+			this.http.get<IPartStockMovement[]>(`${this.baseUrl}/automotive-jobs/${jobId}/parts/consumptions`)
+		);
+	}
+
+	/** Consumes a part against a job (`POST /automotive-jobs/:jobId/parts/consumptions`). */
+	consumePart(jobId: string, body: {
+		automotivePartProfileId: string;
+		warehouseId: string;
+		warehouseProductVariantId: string;
+		quantity: number;
+		operationKey: string;
+	}): Promise<IPartStockMovement> {
+		return firstValueFrom(
+			this.http.post<IPartStockMovement>(`${this.baseUrl}/automotive-jobs/${jobId}/parts/consumptions`, body)
+		);
+	}
+
+	/** Reverses a previous consumption (`POST /automotive-jobs/:jobId/parts/consumptions/:movementId/reverse`). */
+	reversePartConsumption(jobId: string, movementId: string, reason: string): Promise<IPartStockMovement> {
+		return firstValueFrom(
+			this.http.post<IPartStockMovement>(
+				`${this.baseUrl}/automotive-jobs/${jobId}/parts/consumptions/${movementId}/reverse`,
+				{ reason }
+			)
+		);
 	}
 }

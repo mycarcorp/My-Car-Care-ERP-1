@@ -298,6 +298,95 @@
 									<span class="qc-blocked">Job completion requires passed QC.</span>
 								}
 							</section>
+							<section class="parts-section" [attr.aria-label]="'Parts for ' + job.title">
+								<div class="parts-header">
+									<h6>Parts</h6>
+									<span>{{ consumptionsFor(job).length }} consumed</span>
+								</div>
+								@if (!consumptionsFor(job).length) {
+									<p class="empty-state">No parts consumed.</p>
+								} @else {
+									<div class="parts-history">
+										@for (movement of consumptionsFor(job); track movement.id) {
+											<div class="part-row">
+												<div class="part-copy">
+													<strong>{{ partNameFor(movement) }}</strong>
+													<span
+														>Qty {{ -movement.quantityDelta }} ·
+														{{ movement.costCurrency }} {{ movement.unitCost }} each</span
+													>
+													<nb-badge
+														*ngIf="isReversed(movement)"
+														text="REVERSED"
+														status="warning"
+													></nb-badge>
+												</div>
+												@if (canReverseParts && !isReversed(movement)) {
+													<div class="part-reverse">
+														<input
+															nbInput
+															placeholder="Reversal reason"
+															[value]="partReverseReasonByMovement[movement.id] || ''"
+															(input)="partReverseReasonByMovement[movement.id] = $any($event.target).value"
+														/>
+														<button
+															nbButton
+															size="small"
+															status="warning"
+															[disabled]="!(partReverseReasonByMovement[movement.id] || '').trim()"
+															(click)="reverseConsumption(job, movement)"
+														>
+															Reverse
+														</button>
+													</div>
+												}
+											</div>
+										}
+									</div>
+								}
+								@if (canConsume(job)) {
+									<div class="part-consume">
+										<nb-select
+											fullWidth
+											placeholder="Select part"
+											[ngModel]="selectedPartByJob[job.id]"
+											(ngModelChange)="onPartSelected(job, $event)"
+										>
+											@for (part of parts; track part.id) {
+												<nb-option [value]="part.id">{{ partLabel(part) }}</nb-option>
+											}
+										</nb-select>
+										@if (selectedPartByJob[job.id]) {
+											<nb-select
+												fullWidth
+												placeholder="Select stock / warehouse"
+												[(ngModel)]="selectedStockByJob[job.id]"
+											>
+												@for (stock of partStockByJob[job.id]; track stock.warehouseProductVariantId) {
+													<nb-option [value]="stock.warehouseProductVariantId">{{ stock.label }}</nb-option>
+												}
+											</nb-select>
+										}
+										<input
+											nbInput
+											type="number"
+											min="0.001"
+											step="0.001"
+											placeholder="Quantity"
+											[(ngModel)]="partQuantityByJob[job.id]"
+										/>
+										<button
+											nbButton
+											size="small"
+											status="primary"
+											[disabled]="!canSubmitConsumption(job) || consumingJobId[job.id]"
+											(click)="consumePart(job)"
+										>
+											Consume part
+										</button>
+									</div>
+								}
+							</section>
 						</article>
 					}
 				</div>

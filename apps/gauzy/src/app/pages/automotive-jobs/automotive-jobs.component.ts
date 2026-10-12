@@ -7,6 +7,9 @@ import {
 	IAutomotiveJobLaborView,
 	IAutomotiveJobQcAttempt,
 	AutomotiveJobQcStatusEnum,
+	IAutomotivePartProfile,
+	IPartStockMovement,
+	PartStockMovementTypeEnum,
 	ICustomerWorkApprovalLine,
 	IEmployee,
 	PermissionsEnum
@@ -45,6 +48,20 @@ export class AutomotiveJobsComponent implements OnInit {
 	canFailQc = false;
 	readonly qcByJob: Record<string, IAutomotiveJobQcAttempt[]> = {};
 	readonly qcReasonByAttempt: Record<string, string> = {};
+	// Parts consumption state
+	parts: IAutomotivePartProfile[] = [];
+	readonly partsByJob: Record<string, IPartStockMovement[]> = {};
+	readonly selectedPartByJob: Record<string, string | undefined> = {};
+	readonly partStockByJob: Record<
+		string,
+		{ warehouseId: string; warehouseProductVariantId: string; quantity: number; label: string }[]
+	> = {};
+	readonly selectedStockByJob: Record<string, string | undefined> = {};
+	readonly partQuantityByJob: Record<string, number | null> = {};
+	readonly consumingJobId: Record<string, boolean> = {};
+	readonly partReverseReasonByMovement: Record<string, string> = {};
+	canConsumeParts = false;
+	canReverseParts = false;
 
 	constructor(
 		private readonly route: ActivatedRoute,
@@ -60,6 +77,7 @@ export class AutomotiveJobsComponent implements OnInit {
 		await this.refresh();
 		await this.loadEmployees();
 		await this.loadCategories();
+		await this.loadParts();
 		this.currentEmployeeId = this.store.user?.employee?.id;
 		this.canManageLabor = await this.permissions.hasPermission([
 			PermissionsEnum.ALL_ORG_EDIT,
@@ -72,6 +90,14 @@ export class AutomotiveJobsComponent implements OnInit {
 		this.canStartQc = await this.permissions.hasPermission([PermissionsEnum.ALL_ORG_EDIT, PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_START]);
 		this.canPassQc = await this.permissions.hasPermission([PermissionsEnum.ALL_ORG_EDIT, PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_PASS]);
 		this.canFailQc = await this.permissions.hasPermission([PermissionsEnum.ALL_ORG_EDIT, PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_FAIL]);
+		this.canConsumeParts = await this.permissions.hasPermission([
+			PermissionsEnum.ALL_ORG_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_PART_CONSUME
+		]);
+		this.canReverseParts = await this.permissions.hasPermission([
+			PermissionsEnum.ALL_ORG_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_PART_REVERSE
+		]);
 	}
 
 	async refresh(): Promise<void> {
@@ -84,9 +110,11 @@ export class AutomotiveJobsComponent implements OnInit {
 			for (const job of this.jobs) this.selectedCategoryByJob[job.id] = job.categoryId ?? '';
 			const laborResults = await Promise.all(this.jobs.map((job) => this.api.listLabor(job.id)));
 			const qcResults = await Promise.all(this.jobs.map((job) => this.api.listQc(job.id)));
+			const partsResults = await Promise.all(this.jobs.map((job) => this.api.listPartConsumptions(job.id)));
 			this.jobs.forEach((job, index) => {
 				this.laborByJob[job.id] = laborResults[index];
 				this.qcByJob[job.id] = qcResults[index];
+				this.partsByJob[job.id] = partsResults[index];
 				for (const labor of laborResults[index]) {
 					this.laborTechnicianById[labor.id] = [...(labor.assignedEmployeeIds ?? [])];
 				}
@@ -310,6 +338,138 @@ export class AutomotiveJobsComponent implements OnInit {
 
 	trackById(_index: number, item: { id: string }): string {
 		return item.id;
+	}
+
+	/** Loads the enabled part profiles available for consumption. */
+	async loadParts(): Promise<void> {
+		try {
+			const { items } = await this.api.listParts();
+			this.parts = (items ?? []).filter((part) => part.enabled !== false);
+		} catch {
+			this.toastr.danger('Could not load available parts.');
+		}
+	}
+
+	/** Display label for a part profile (part number + manufacturer/OEM). */
+	partLabel(part: IAutomotivePartProfile): string {
+		const idBits = [part.normalizedPartNumber, part.manufacturer || part.oemPartNumber].filter(Boolean);
+		return idBits.join(' · ') || part.id;
+	}
+
+	/**
+	 * When a part is selected for a job, load its stock balances so the user picks the
+	 * warehouse/variant balance to consume from. Each balance supplies the warehouseId +
+	 * warehouseProductVariantId the backend requires.
+	 */
+	async onPartSelected(job: IAutomotiveJob, partProfileId: string): Promise<void> {
+		this.selectedPartByJob[job.id] = partProfileId || undefined;
+		this.selectedStockByJob[job.id] = undefined;
+		this.partStockByJob[job.id] = [];
+		if (!partProfileId) return;
+		try {
+			const balances = await this.api.getPartStock(partProfileId);
+			this.partStockByJob[job.id] = (balances ?? []).map((balance) => ({
+				warehouseId: balance['warehouseProduct']?.warehouse?.id ?? balance['warehouseProduct']?.warehouseId ?? '',
+				warehouseProductVariantId: balance.id,
+				quantity: Number(balance.quantity ?? 0),
+				label: `${balance['warehouseProduct']?.warehouse?.name ?? 'Warehouse'} — available ${balance.quantity ?? 0}`
+			}));
+		} catch {
+			this.toastr.danger('Could not load stock for this part.');
+		}
+	}
+
+	/** A job can consume parts only while in progress and the user holds the consume permission. */
+	canConsume(job: IAutomotiveJob): boolean {
+		return this.canConsumeParts && job.status === AutomotiveJobStatusEnum.IN_PROGRESS;
+	}
+
+	/** Valid consumption requires a part, a stock balance, and a positive quantity within available stock. */
+	canSubmitConsumption(job: IAutomotiveJob): boolean {
+		const quantity = this.partQuantityByJob[job.id];
+		const stockId = this.selectedStockByJob[job.id];
+		const stock = (this.partStockByJob[job.id] || []).find((s) => s.warehouseProductVariantId === stockId);
+		return (
+			!!this.selectedPartByJob[job.id] &&
+			!!stock &&
+			quantity != null &&
+			Number.isFinite(Number(quantity)) &&
+			Number(quantity) > 0 &&
+			Number(quantity) <= stock.quantity
+		);
+	}
+
+	/**
+	 * Consumes a part against the job. A client-generated `operationKey` (UUID) makes the request
+	 * idempotent — the backend replays the existing movement instead of double-consuming on retry.
+	 */
+	async consumePart(job: IAutomotiveJob): Promise<void> {
+		if (!this.canSubmitConsumption(job) || this.consumingJobId[job.id]) return;
+		const stockId = this.selectedStockByJob[job.id];
+		const stock = (this.partStockByJob[job.id] || []).find((s) => s.warehouseProductVariantId === stockId);
+		this.consumingJobId[job.id] = true;
+		try {
+			await this.api.consumePart(job.id, {
+				automotivePartProfileId: this.selectedPartByJob[job.id],
+				warehouseId: stock.warehouseId,
+				warehouseProductVariantId: stock.warehouseProductVariantId,
+				quantity: Number(this.partQuantityByJob[job.id]),
+				operationKey: this.newOperationKey()
+			});
+			this.toastr.success('Part consumed.');
+			this.selectedPartByJob[job.id] = undefined;
+			this.selectedStockByJob[job.id] = undefined;
+			this.partQuantityByJob[job.id] = null;
+			this.partStockByJob[job.id] = [];
+			await this.refresh();
+		} catch (error) {
+			this.toastr.danger(error?.error?.message || 'Could not consume this part.');
+		} finally {
+			this.consumingJobId[job.id] = false;
+		}
+	}
+
+	/** Reverses a previous consumption with a required reason; blocked if already reversed. */
+	async reverseConsumption(job: IAutomotiveJob, movement: IPartStockMovement): Promise<void> {
+		const reason = this.partReverseReasonByMovement[movement.id]?.trim();
+		if (!reason || this.isReversed(movement)) return;
+		try {
+			await this.api.reversePartConsumption(job.id, movement.id, reason);
+			this.toastr.success('Consumption reversed.');
+			this.partReverseReasonByMovement[movement.id] = '';
+			await this.refresh();
+		} catch (error) {
+			this.toastr.danger(error?.error?.message || 'Could not reverse this consumption.');
+		}
+	}
+
+	/** The job's actual consumption records (outbound movements only). */
+	consumptionsFor(job: IAutomotiveJob): IPartStockMovement[] {
+		return (this.partsByJob[job.id] || []).filter(
+			(movement) => movement.type === PartStockMovementTypeEnum.JOB_CONSUMPTION_OUT
+		);
+	}
+
+	/** A consumption is reversed when a reversal movement references it. */
+	isReversed(movement: IPartStockMovement): boolean {
+		return (this.partsByJob[movement.automotiveJobId] || []).some(
+			(other) =>
+				other.type === PartStockMovementTypeEnum.JOB_CONSUMPTION_REVERSAL_IN &&
+				other.reversesMovementId === movement.id
+		);
+	}
+
+	/** Display label for a consumption's part. */
+	partNameFor(movement: IPartStockMovement): string {
+		const part = this.parts.find((p) => p.id === movement.automotivePartProfileId);
+		return part ? this.partLabel(part) : movement.automotivePartProfileId;
+	}
+
+	/** Generates a client idempotency key for a consumption request. */
+	private newOperationKey(): string {
+		return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+			? crypto.randomUUID()
+			: `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 	}
 
 	setAuthorizedLineTechnician(lineId: string, employeeId: string | string[]): void {
