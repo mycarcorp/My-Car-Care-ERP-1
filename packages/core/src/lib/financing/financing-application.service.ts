@@ -3,13 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
 	CustomerWorkApprovalSubmissionStateEnum,
+	EstimateStatusEnum,
 	FINANCING_ACTIVE_KEY,
 	FinancingApplicationStatusEnum,
 	ID,
 	IFinancingApplicationCreateInput,
 	IFinancingApplicationTransitionInput,
 	IFinancingApplicationUpdateInput,
-	PermissionsEnum
+	PermissionsEnum,
+	RepairOrderStatusEnum
 } from '@gauzy/contracts';
 import { RequestContext } from '../core/context';
 import { TenantAwareCrudService } from '../core/crud';
@@ -108,6 +110,35 @@ export class FinancingApplicationService extends TenantAwareCrudService<Financin
 			throw new BadRequestException(
 				'Financing application repair order, estimate, customer, vehicle, and approval must share one service chain.'
 			);
+		}
+
+		// The repair order must be active (not terminal). CLOSED/CANCELLED repair orders are ineligible.
+		if ([RepairOrderStatusEnum.CLOSED, RepairOrderStatusEnum.CANCELLED].includes(repairOrder.status)) {
+			throw new BadRequestException('Financing is not available for a closed or cancelled repair order.');
+		}
+
+		// The estimate must be a customer-facing revision. A SUBMITTED approval can only exist for a
+		// FINALIZED/SENT/VIEWED estimate (enforced at approval-request creation), so DRAFT/SUPERSEDED/
+		// EXPIRED/CANCELLED estimates are ineligible even if a stale approval references them.
+		if (
+			![EstimateStatusEnum.FINALIZED, EstimateStatusEnum.SENT, EstimateStatusEnum.VIEWED].includes(estimate.status)
+		) {
+			throw new BadRequestException('Financing requires a finalized customer-facing estimate.');
+		}
+
+		// The requested amount must be positive and may not exceed the customer's approved work total.
+		const requestedAmount = Number(input.requestedAmount);
+		if (!Number.isFinite(requestedAmount) || requestedAmount <= 0) {
+			throw new BadRequestException('Requested financing amount must be greater than zero.');
+		}
+		// The approved total must be a valid finite number before it can act as the ceiling. A missing,
+		// non-numeric, or non-finite approved total is rejected rather than silently bypassing the cap.
+		const approvedTotal = Number(approval.approvedTotal);
+		if (!Number.isFinite(approvedTotal)) {
+			throw new BadRequestException('The customer approval has no valid approved total to finance against.');
+		}
+		if (requestedAmount > approvedTotal) {
+			throw new BadRequestException('Requested financing amount cannot exceed the approved total.');
 		}
 
 		// One active application per repair order. The duplicate check excludes terminal rows

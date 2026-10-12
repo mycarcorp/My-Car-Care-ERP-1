@@ -40,7 +40,8 @@ describe('FinancingApplicationService', () => {
 				tenantId: tenant.tenantId,
 				organizationId: tenant.organizationId,
 				customerId: CUSTOMER_ID,
-				vehicleId: VEHICLE_ID
+				vehicleId: VEHICLE_ID,
+				status: 'IN_PROGRESS'
 			}))
 		};
 		estimates = {
@@ -50,7 +51,8 @@ describe('FinancingApplicationService', () => {
 				organizationId: tenant.organizationId,
 				repairOrderId: RO_ID,
 				customerId: CUSTOMER_ID,
-				vehicleId: VEHICLE_ID
+				vehicleId: VEHICLE_ID,
+				status: 'SENT'
 			}))
 		};
 		approvals = {
@@ -62,7 +64,8 @@ describe('FinancingApplicationService', () => {
 				estimateId: ESTIMATE_ID,
 				customerId: CUSTOMER_ID,
 				vehicleId: VEHICLE_ID,
-				submissionState: CustomerWorkApprovalSubmissionStateEnum.SUBMITTED
+				submissionState: CustomerWorkApprovalSubmissionStateEnum.SUBMITTED,
+				approvedTotal: 2000
 			}))
 		};
 		repository = new InMemoryTenantRepository<FinancingApplication>(
@@ -121,7 +124,8 @@ describe('FinancingApplicationService', () => {
 			organizationId: tenant.organizationId,
 			repairOrderId: 'other-ro',
 			customerId: CUSTOMER_ID,
-			vehicleId: VEHICLE_ID
+			vehicleId: VEHICLE_ID,
+			status: 'SENT'
 		});
 		await expect(service.createApplication(validInput())).rejects.toBeInstanceOf(BadRequestException);
 	});
@@ -284,5 +288,75 @@ describe('FinancingApplicationService', () => {
 		});
 		expect(declined.status).toBe(FinancingApplicationStatusEnum.DECLINED);
 		expect(declined.rejectionReason).toBe('Insufficient credit history');
+	});
+
+	describe('eligibility rules', () => {
+		const withRoStatus = (status: string) =>
+			repairOrders.findOneByIdString.mockResolvedValue({
+				id: RO_ID,
+				tenantId: tenant.tenantId,
+				organizationId: tenant.organizationId,
+				customerId: CUSTOMER_ID,
+				vehicleId: VEHICLE_ID,
+				status
+			});
+		const withEstimateStatus = (status: string) =>
+			estimates.findOneByIdString.mockResolvedValue({
+				id: ESTIMATE_ID,
+				tenantId: tenant.tenantId,
+				organizationId: tenant.organizationId,
+				repairOrderId: RO_ID,
+				customerId: CUSTOMER_ID,
+				vehicleId: VEHICLE_ID,
+				status
+			});
+
+		it.each(['CLOSED', 'CANCELLED'])('rejects a terminal repair order (%s)', async (status) => {
+			withRoStatus(status);
+			await expect(service.createApplication(validInput())).rejects.toBeInstanceOf(BadRequestException);
+		});
+
+		it.each(['DRAFT', 'SUPERSEDED', 'EXPIRED', 'CANCELLED'])('rejects an ineligible estimate status (%s)', async (status) => {
+			withEstimateStatus(status);
+			await expect(service.createApplication(validInput())).rejects.toBeInstanceOf(BadRequestException);
+		});
+
+		it.each(['FINALIZED', 'SENT', 'VIEWED'])('accepts a customer-facing estimate status (%s)', async (status) => {
+			withEstimateStatus(status);
+			await expect(service.createApplication(validInput())).resolves.toMatchObject({ repairOrderId: RO_ID });
+		});
+
+		it.each([0, -100])('rejects a non-positive requested amount (%s)', async (requestedAmount) => {
+			await expect(service.createApplication({ ...validInput(), requestedAmount })).rejects.toBeInstanceOf(
+				BadRequestException
+			);
+		});
+
+		it('rejects a requested amount above the approved total', async () => {
+			await expect(
+				service.createApplication({ ...validInput(), requestedAmount: 2000.01 })
+			).rejects.toBeInstanceOf(BadRequestException);
+		});
+
+		it.each([undefined, null, NaN, 'not-a-number'])('rejects a malformed approved total (%s)', async (bad) => {
+			approvals.findOne.mockResolvedValue({
+				id: APPROVAL_ID,
+				tenantId: tenant.tenantId,
+				organizationId: tenant.organizationId,
+				repairOrderId: RO_ID,
+				estimateId: ESTIMATE_ID,
+				customerId: CUSTOMER_ID,
+				vehicleId: VEHICLE_ID,
+				submissionState: CustomerWorkApprovalSubmissionStateEnum.SUBMITTED,
+				approvedTotal: bad
+			});
+			await expect(service.createApplication(validInput())).rejects.toBeInstanceOf(BadRequestException);
+		});
+
+		it('accepts a requested amount exactly equal to the approved total', async () => {
+			await expect(service.createApplication({ ...validInput(), requestedAmount: 2000 })).resolves.toMatchObject({
+				repairOrderId: RO_ID
+			});
+		});
 	});
 });

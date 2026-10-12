@@ -53,9 +53,10 @@ export class FinancingMutationComponent implements OnInit {
 
 	/**
 	 * Resolves the customerWorkApprovalId + estimateId for this repair order. The approval id comes
-	 * from the RO's authorized work lines (`GET /repair-orders/:id/authorized-work`). The estimate id
-	 * is the RO's estimate (`GET /estimates?where[repairOrderId]=…`); the backend enforces that the
-	 * approval, estimate, and RO all match, so a mismatch surfaces as a validation error on submit.
+	 * from the RO's authorized work lines (`GET /repair-orders/:id/authorized-work`). The estimate is
+	 * the RO's customer-facing estimate (`GET /estimates?where[repairOrderId]=…`). To avoid silently
+	 * pairing the wrong records, this only resolves when the authorized work lines reference a single
+	 * approval AND the RO has a single estimate; an ambiguous or missing match is a validation error.
 	 */
 	private async resolveContext(): Promise<void> {
 		if (!this.repairOrderId) {
@@ -68,13 +69,18 @@ export class FinancingMutationComponent implements OnInit {
 				this.automotiveJobApi.listAuthorizedWork(this.repairOrderId),
 				this.estimateApi.listByRepairOrder(this.repairOrderId)
 			]);
-			const approvalLine = (lines ?? []).find((line) => !!line?.customerWorkApprovalId);
-			const estimate = (estimates?.items ?? []).find((item) => !!item?.id);
-			this.customerWorkApprovalId = approvalLine?.customerWorkApprovalId;
-			this.estimateId = estimate?.id;
-			if (!this.customerWorkApprovalId || !this.estimateId) {
+			// All authorized lines must reference the SAME approval (one approved estimate per RO).
+			const approvalIds = new Set(
+				(lines ?? []).map((line) => line?.customerWorkApprovalId).filter(Boolean)
+			);
+			const estimateList = (estimates?.items ?? []).filter((item) => !!item?.id);
+			if (approvalIds.size !== 1 || estimateList.length !== 1) {
+				// Zero = no approved work; more than one = ambiguous, never silently guess.
 				this.contextError = true;
+				return;
 			}
+			this.customerWorkApprovalId = [...approvalIds][0];
+			this.estimateId = estimateList[0].id;
 		} catch (error) {
 			this.contextError = true;
 		} finally {
