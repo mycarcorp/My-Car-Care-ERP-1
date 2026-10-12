@@ -1,58 +1,58 @@
 .diagnostic-detail {
-	&__header {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-	}
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
 
-	&__loading,
-	&__not-found {
-		display: flex;
-		justify-content: center;
-		padding: 2rem;
-	}
+  &__loading,
+  &__not-found {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+  }
 
-	&__summary {
-		margin-bottom: 1rem;
-	}
+  &__summary {
+    margin-bottom: 1rem;
+  }
 
-	&__row {
-		display: flex;
-		gap: 0.5rem;
-		padding: 0.25rem 0;
-	}
+  &__row {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+  }
 
-	&__label {
-		font-weight: 600;
-		min-width: 8rem;
-	}
+  &__label {
+    font-weight: 600;
+    min-width: 8rem;
+  }
 
-	&__section {
-		margin: 1rem 0 0.5rem;
-	}
+  &__section {
+    margin: 1rem 0 0.5rem;
+  }
 
-	&__findings {
-		width: 100%;
-	}
+  &__findings {
+    width: 100%;
+  }
 
-	&__empty {
-		padding: 1rem 0;
-		font-style: italic;
-	}
+  &__empty {
+    padding: 1rem 0;
+    font-style: italic;
+  }
 
-	&__add-finding {
-		margin-top: 1rem;
-	}
+  &__add-finding {
+    margin-top: 1rem;
+  }
 
-	&__add-finding-row {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-	}
+  &__add-finding-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
 
-	&__actions {
-		display: flex;
-		gap: 0.5rem;
-		margin-top: 1rem;
-	}
+  &__actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
 }

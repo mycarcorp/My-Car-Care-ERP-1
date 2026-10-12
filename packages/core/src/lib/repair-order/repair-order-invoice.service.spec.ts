@@ -40,7 +40,11 @@ describe('RepairOrderInvoiceService', () => {
 		...SCOPE
 	});
 
-	const completedJob = () => ({ id: JOB_ID, repairOrderId: REPAIR_ORDER_ID, status: AutomotiveJobStatusEnum.COMPLETED });
+	const completedJob = () => ({
+		id: JOB_ID,
+		repairOrderId: REPAIR_ORDER_ID,
+		status: AutomotiveJobStatusEnum.COMPLETED
+	});
 
 	const completedLabor = () => ({
 		id: LABOR_ID,

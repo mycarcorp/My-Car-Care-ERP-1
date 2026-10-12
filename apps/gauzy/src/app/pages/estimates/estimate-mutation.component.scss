@@ -1,15 +1,15 @@
 .estimate-mutation {
-	min-width: 32rem;
+  min-width: 32rem;
 
-	&__loading {
-		display: flex;
-		justify-content: center;
-		padding: 2rem;
-	}
+  &__loading {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+  }
 
-	&__footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.5rem;
-	}
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
 }

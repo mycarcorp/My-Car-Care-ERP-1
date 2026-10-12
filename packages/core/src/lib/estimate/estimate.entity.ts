@@ -3,7 +3,13 @@ import { IsEnum, IsNumber, IsUUID } from 'class-validator';
 import { EstimateStatusEnum, ID, IEstimate, IEstimateLine } from '@gauzy/contracts';
 import { RepairOrder, TenantOrganizationBaseEntity } from '../core/entities/internal';
 import { EstimateLine } from './estimate-line.entity';
-import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToOne, MultiORMOneToMany } from '../core/decorators/entity';
+import {
+	ColumnIndex,
+	MultiORMColumn,
+	MultiORMEntity,
+	MultiORMManyToOne,
+	MultiORMOneToMany
+} from '../core/decorators/entity';
 import { ColumnNumericTransformerPipe } from '../shared/pipes';
 import { MikroOrmEstimateRepository } from './repository/mikro-orm-estimate.repository';
 @ColumnIndex('IDX_estimate_root_revision_unique', ['rootEstimateId', 'revisionNumber'], { unique: true })

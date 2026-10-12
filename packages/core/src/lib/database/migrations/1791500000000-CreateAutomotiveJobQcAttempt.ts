@@ -16,15 +16,29 @@ export class CreateAutomotiveJobQcAttempt1791500000000 implements MigrationInter
 				name: 'automotive_job_qc_attempt',
 				columns: [
 					{
-						name: 'id', type: idType, length: isPostgres ? undefined : '36', isPrimary: true,
-						isNullable: false, default: isPostgres ? 'gen_random_uuid()' : undefined
+						name: 'id',
+						type: idType,
+						length: isPostgres ? undefined : '36',
+						isPrimary: true,
+						isNullable: false,
+						default: isPostgres ? 'gen_random_uuid()' : undefined
 					},
 					{ name: 'createdAt', type: dateType, isNullable: false, default: 'CURRENT_TIMESTAMP' },
 					{ name: 'updatedAt', type: dateType, isNullable: false, default: 'CURRENT_TIMESTAMP' },
 					{ name: 'deletedAt', type: dateType, isNullable: true },
 					{ name: 'archivedAt', type: dateType, isNullable: true },
-					{ name: 'isActive', type: isMySql ? 'tinyint' : 'boolean', isNullable: true, default: isMySql ? '1' : 'true' },
-					{ name: 'isArchived', type: isMySql ? 'tinyint' : 'boolean', isNullable: true, default: isMySql ? '0' : 'false' },
+					{
+						name: 'isActive',
+						type: isMySql ? 'tinyint' : 'boolean',
+						isNullable: true,
+						default: isMySql ? '1' : 'true'
+					},
+					{
+						name: 'isArchived',
+						type: isMySql ? 'tinyint' : 'boolean',
+						isNullable: true,
+						default: isMySql ? '0' : 'false'
+					},
 					{ name: 'createdByUserId', type: idType, length: idLength, isNullable: true },
 					{ name: 'updatedByUserId', type: idType, length: idLength, isNullable: true },
 					{ name: 'deletedByUserId', type: idType, length: idLength, isNullable: true },
@@ -38,13 +52,25 @@ export class CreateAutomotiveJobQcAttempt1791500000000 implements MigrationInter
 					{ name: 'checkedAt', type: dateType, isNullable: true }
 				],
 				indices: [
-					new TableIndex({ name: 'IDX_automotive_job_qc_attempt_job_history', columnNames: ['tenantId', 'organizationId', 'automotiveJobId', 'createdAt'] }),
-					new TableIndex({ name: 'IDX_automotive_job_qc_attempt_job_status', columnNames: ['automotiveJobId', 'status'] })
+					new TableIndex({
+						name: 'IDX_automotive_job_qc_attempt_job_history',
+						columnNames: ['tenantId', 'organizationId', 'automotiveJobId', 'createdAt']
+					}),
+					new TableIndex({
+						name: 'IDX_automotive_job_qc_attempt_job_status',
+						columnNames: ['automotiveJobId', 'status']
+					})
 				]
 			})
 		);
 		const fk = (name: string, column: string, table: string) =>
-			new TableForeignKey({ name, columnNames: [column], referencedTableName: table, referencedColumnNames: ['id'], onDelete: 'RESTRICT' });
+			new TableForeignKey({
+				name,
+				columnNames: [column],
+				referencedTableName: table,
+				referencedColumnNames: ['id'],
+				onDelete: 'RESTRICT'
+			});
 		await queryRunner.createForeignKeys('automotive_job_qc_attempt', [
 			fk('FK_automotive_job_qc_attempt_job', 'automotiveJobId', 'automotive_job'),
 			fk('FK_automotive_job_qc_attempt_employee', 'checkedByEmployeeId', 'employee')

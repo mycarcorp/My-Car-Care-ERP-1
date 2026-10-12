@@ -41,7 +41,15 @@ describe('EstimateService', () => {
 	beforeEach(() => {
 		tenant = createTenantFixture();
 		repository = new InMemoryTenantRepository<Estimate>(
-			new Set(['id', 'tenantId', 'organizationId', 'status', 'rootEstimateId', 'revisionNumber', 'estimateNumber'])
+			new Set([
+				'id',
+				'tenantId',
+				'organizationId',
+				'status',
+				'rootEstimateId',
+				'revisionNumber',
+				'estimateNumber'
+			])
 		);
 		// TenantAwareCrudService.update() calls the repository's update(); provide a passthrough
 		// that applies the partial so lifecycle writes reflect in the store.
@@ -194,9 +202,9 @@ describe('EstimateService', () => {
 		'rejects updating a %s estimate',
 		async (status) => {
 			const existing = seedEstimate({ status });
-			await expect(service.updateEstimate(existing.id, { status: EstimateStatusEnum.DRAFT })).rejects.toBeInstanceOf(
-				BadRequestException
-			);
+			await expect(
+				service.updateEstimate(existing.id, { status: EstimateStatusEnum.DRAFT })
+			).rejects.toBeInstanceOf(BadRequestException);
 		}
 	);
 	it.each([EstimateStatusEnum.FINALIZED, EstimateStatusEnum.SENT])(
@@ -218,7 +226,10 @@ describe('EstimateService', () => {
 
 	// ---- Scoping ----
 	it('cannot finalize an estimate from another tenant', async () => {
-		const foreign = seedEstimate({ tenantId: 'b7a1f2c4-1a2b-4c3d-8e9f-0a1b2c3d4e5f', status: EstimateStatusEnum.DRAFT });
+		const foreign = seedEstimate({
+			tenantId: 'b7a1f2c4-1a2b-4c3d-8e9f-0a1b2c3d4e5f',
+			status: EstimateStatusEnum.DRAFT
+		});
 		await expect(service.finalize(foreign.id)).rejects.toBeInstanceOf(NotFoundException);
 	});
 	it('cannot send an estimate from another tenant', async () => {

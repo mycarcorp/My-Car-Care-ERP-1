@@ -1,25 +1,25 @@
 .inspection-mutation {
-	min-width: 32rem;
+  min-width: 32rem;
 
-	&__hint {
-		opacity: 0.75;
-		margin-bottom: 1rem;
-	}
+  &__hint {
+    opacity: 0.75;
+    margin-bottom: 1rem;
+  }
 
-	&__finding {
-		margin-bottom: 0.5rem;
-	}
+  &__finding {
+    margin-bottom: 0.5rem;
+  }
 
-	&__finding-row {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
-	}
+  &__finding-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
 
-	&__footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.5rem;
-		margin-top: 1rem;
-	}
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
 }

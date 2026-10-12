@@ -14,8 +14,14 @@ export class JobPartPermissionsReload1791400001000 implements MigrationInterface
 	name = 'JobPartPermissionsReload1791400001000';
 
 	public async up(queryRunner: QueryRunner): Promise<void> {
-		if (![DatabaseTypeEnum.sqlite, DatabaseTypeEnum.betterSqlite3,
-			DatabaseTypeEnum.postgres, DatabaseTypeEnum.mysql].includes(queryRunner.connection.options.type as DatabaseTypeEnum)) {
+		if (
+			![
+				DatabaseTypeEnum.sqlite,
+				DatabaseTypeEnum.betterSqlite3,
+				DatabaseTypeEnum.postgres,
+				DatabaseTypeEnum.mysql
+			].includes(queryRunner.connection.options.type as DatabaseTypeEnum)
+		) {
 			throw new Error(`Unsupported database: ${queryRunner.connection.options.type}`);
 		}
 		const roles: Array<{ id: string; tenantId: string; name: string }> = await queryRunner.manager
@@ -28,7 +34,8 @@ export class JobPartPermissionsReload1791400001000 implements MigrationInterface
 			.getRawMany();
 
 		for (const role of roles) {
-			const defaults = DEFAULT_ROLE_PERMISSIONS.find((entry) => entry.role === role.name)?.defaultEnabledPermissions ?? [];
+			const defaults =
+				DEFAULT_ROLE_PERMISSIONS.find((entry) => entry.role === role.name)?.defaultEnabledPermissions ?? [];
 			const existing: Array<{ permission: PermissionsEnum }> = await queryRunner.manager
 				.createQueryBuilder()
 				.select('rolePermission.permission', 'permission')

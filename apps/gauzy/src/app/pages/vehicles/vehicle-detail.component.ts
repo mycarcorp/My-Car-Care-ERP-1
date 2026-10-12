@@ -112,7 +112,7 @@ export class VehicleDetailComponent extends TranslationBaseComponent implements 
 			return '';
 		}
 		const parts = [this.vehicle.year, this.vehicle.make, this.vehicle.model].filter(Boolean);
-		return parts.length ? parts.join(' ') : this.vehicle.vinNormalized ?? '';
+		return parts.length ? parts.join(' ') : (this.vehicle.vinNormalized ?? '');
 	}
 
 	/** Returns to the vehicle list. */

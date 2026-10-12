@@ -62,7 +62,9 @@ export class DiagnosticService extends TenantAwareCrudService<Diagnostic> {
 	async complete(id: string): Promise<Diagnostic> {
 		const diagnostic = await this.findOneByIdString(id);
 		if (diagnostic.status !== DiagnosticStatusEnum.IN_PROGRESS) {
-			throw new BadRequestException(`Cannot move a diagnostic from ${diagnostic.status} to ${DiagnosticStatusEnum.COMPLETED}.`);
+			throw new BadRequestException(
+				`Cannot move a diagnostic from ${diagnostic.status} to ${DiagnosticStatusEnum.COMPLETED}.`
+			);
 		}
 		diagnostic.status = DiagnosticStatusEnum.COMPLETED;
 		diagnostic.completedAt = new Date();

@@ -163,11 +163,7 @@ export class EstimateService extends TenantAwareCrudService<Estimate> {
 	 * the repository so it is not blocked by the DRAFT-only edit rule (which governs content
 	 * edits, not the controlled lifecycle transitions).
 	 */
-	private async transitionStatus(
-		id: ID,
-		from: EstimateStatusEnum,
-		to: EstimateStatusEnum
-	): Promise<Estimate> {
+	private async transitionStatus(id: ID, from: EstimateStatusEnum, to: EstimateStatusEnum): Promise<Estimate> {
 		const estimate = await this.findOneByIdString(id);
 		if (estimate.status !== from) {
 			throw new BadRequestException(`Cannot move an estimate from ${estimate.status} to ${to}.`);

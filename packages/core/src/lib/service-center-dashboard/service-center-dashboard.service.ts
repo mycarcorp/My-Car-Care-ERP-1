@@ -31,7 +31,8 @@ export class ServiceCenterDashboardService {
 		@InjectRepository(EmployeeAppointment) private readonly appointments: Repository<EmployeeAppointment>,
 		@InjectRepository(RepairOrder) private readonly repairOrders: Repository<RepairOrder>,
 		@InjectRepository(Estimate) private readonly estimates: Repository<Estimate>,
-		@InjectRepository(CustomerWorkApprovalRequest) private readonly approvalRequests: Repository<CustomerWorkApprovalRequest>,
+		@InjectRepository(CustomerWorkApprovalRequest)
+		private readonly approvalRequests: Repository<CustomerWorkApprovalRequest>,
 		@InjectRepository(AutomotiveJob) private readonly jobs: Repository<AutomotiveJob>,
 		@InjectRepository(AutomotiveJobQcAttempt) private readonly qcAttempts: Repository<AutomotiveJobQcAttempt>,
 		@InjectRepository(Invoice) private readonly invoices: Repository<Invoice>,

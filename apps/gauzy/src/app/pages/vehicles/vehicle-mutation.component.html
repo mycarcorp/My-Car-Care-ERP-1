@@ -1,8 +1,6 @@
 <nb-card class="vehicle-mutation">
 	<nb-card-header>
-		{{
-			(isEdit ? 'VEHICLES_PAGE.MUTATION.EDIT_TITLE' : 'VEHICLES_PAGE.MUTATION.REGISTER_TITLE') | translate
-		}}
+		{{ (isEdit ? 'VEHICLES_PAGE.MUTATION.EDIT_TITLE' : 'VEHICLES_PAGE.MUTATION.REGISTER_TITLE') | translate }}
 	</nb-card-header>
 	<nb-card-body>
 		<div *ngIf="loading" class="vehicle-mutation__loading">

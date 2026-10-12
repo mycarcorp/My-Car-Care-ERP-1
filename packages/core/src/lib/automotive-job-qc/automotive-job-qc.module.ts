@@ -23,7 +23,11 @@ const entities = [AutomotiveJobQcAttempt, AutomotiveJob, AutomotiveJobLabor, Tim
 		forwardRef(() => RepairOrderModule)
 	],
 	controllers: [AutomotiveJobQcController],
-	providers: [AutomotiveJobQcService, TypeOrmAutomotiveJobQcAttemptRepository, MikroOrmAutomotiveJobQcAttemptRepository],
+	providers: [
+		AutomotiveJobQcService,
+		TypeOrmAutomotiveJobQcAttemptRepository,
+		MikroOrmAutomotiveJobQcAttemptRepository
+	],
 	exports: [AutomotiveJobQcService]
 })
 export class AutomotiveJobQcModule {}

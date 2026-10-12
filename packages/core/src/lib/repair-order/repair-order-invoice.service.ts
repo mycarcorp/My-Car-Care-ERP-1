@@ -187,7 +187,8 @@ export class RepairOrderInvoiceService {
 	private scope(): { tenantId: ID; organizationId: ID } {
 		const tenantId = RequestContext.currentTenantId();
 		const organizationId = RequestContext.currentOrganizationId();
-		if (!tenantId || !organizationId) throw new BadRequestException('Tenant and organization context are required.');
+		if (!tenantId || !organizationId)
+			throw new BadRequestException('Tenant and organization context are required.');
 		return { tenantId, organizationId };
 	}
 }

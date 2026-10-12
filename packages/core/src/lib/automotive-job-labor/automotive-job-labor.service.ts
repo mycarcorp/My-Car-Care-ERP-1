@@ -46,7 +46,10 @@ export class AutomotiveJobLaborService extends TenantAwareCrudService<Automotive
 	): Promise<AutomotiveJobLabor> {
 		const scope = this.scope();
 		const persistedJob = await this.findJob(job.id, scope);
-		if (approvalLine.id !== persistedJob.customerWorkApprovalLineId || estimateLine.id !== persistedJob.estimateLineId) {
+		if (
+			approvalLine.id !== persistedJob.customerWorkApprovalLineId ||
+			estimateLine.id !== persistedJob.estimateLineId
+		) {
 			throw new BadRequestException('Labor source lines must match the automotive job.');
 		}
 		const sourceLine = await this.validateSourceLines(persistedJob, scope);

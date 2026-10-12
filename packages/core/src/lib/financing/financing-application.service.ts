@@ -29,22 +29,25 @@ import { MikroOrmFinancingApplicationRepository } from './repository/mikro-orm-f
  */
 const FINANCING_TRANSITIONS: Record<FinancingApplicationStatusEnum, FinancingApplicationStatusEnum[]> = {
 	[FinancingApplicationStatusEnum.DRAFT]: [FinancingApplicationStatusEnum.SUBMITTED],
-	[FinancingApplicationStatusEnum.SUBMITTED]: [FinancingApplicationStatusEnum.PENDING, FinancingApplicationStatusEnum.CANCELLED],
+	[FinancingApplicationStatusEnum.SUBMITTED]: [
+		FinancingApplicationStatusEnum.PENDING,
+		FinancingApplicationStatusEnum.CANCELLED
+	],
 	[FinancingApplicationStatusEnum.PENDING]: [
 		FinancingApplicationStatusEnum.APPROVED,
 		FinancingApplicationStatusEnum.DECLINED,
 		FinancingApplicationStatusEnum.CANCELLED
 	],
-	[FinancingApplicationStatusEnum.APPROVED]: [FinancingApplicationStatusEnum.ACCEPTED, FinancingApplicationStatusEnum.CANCELLED],
+	[FinancingApplicationStatusEnum.APPROVED]: [
+		FinancingApplicationStatusEnum.ACCEPTED,
+		FinancingApplicationStatusEnum.CANCELLED
+	],
 	[FinancingApplicationStatusEnum.ACCEPTED]: [],
 	[FinancingApplicationStatusEnum.DECLINED]: [],
 	[FinancingApplicationStatusEnum.CANCELLED]: []
 };
 
-const TERMINAL_STATUSES = [
-	FinancingApplicationStatusEnum.DECLINED,
-	FinancingApplicationStatusEnum.CANCELLED
-];
+const TERMINAL_STATUSES = [FinancingApplicationStatusEnum.DECLINED, FinancingApplicationStatusEnum.CANCELLED];
 
 @Injectable()
 export class FinancingApplicationService extends TenantAwareCrudService<FinancingApplication> {
@@ -93,7 +96,10 @@ export class FinancingApplicationService extends TenantAwareCrudService<Financin
 			approval.estimateId !== estimate.id ||
 			approval.customerId !== repairOrder.customerId ||
 			approval.vehicleId !== repairOrder.vehicleId ||
-			(tenantId && (repairOrder.tenantId !== tenantId || estimate.tenantId !== tenantId || approval.tenantId !== tenantId)) ||
+			(tenantId &&
+				(repairOrder.tenantId !== tenantId ||
+					estimate.tenantId !== tenantId ||
+					approval.tenantId !== tenantId)) ||
 			(organizationId &&
 				(repairOrder.organizationId !== organizationId ||
 					estimate.organizationId !== organizationId ||

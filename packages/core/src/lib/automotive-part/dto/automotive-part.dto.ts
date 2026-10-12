@@ -1,4 +1,15 @@
-import { IsBoolean, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import {
+	IsBoolean,
+	IsEnum,
+	IsIn,
+	IsNotEmpty,
+	IsNumber,
+	IsOptional,
+	IsString,
+	IsUUID,
+	MaxLength,
+	Min
+} from 'class-validator';
 import { PartStockMovementTypeEnum } from '@gauzy/contracts';
 
 export class CreateAutomotivePartDTO {
@@ -42,7 +53,8 @@ export class UpdateAutomotivePartVendorDTO {
 export class CreatePartInventoryAdjustmentDTO {
 	@IsUUID() warehouseId: string;
 	@IsUUID() warehouseProductVariantId: string;
-	@IsIn([PartStockMovementTypeEnum.ADJUSTMENT_IN, PartStockMovementTypeEnum.ADJUSTMENT_OUT]) type: PartStockMovementTypeEnum;
+	@IsIn([PartStockMovementTypeEnum.ADJUSTMENT_IN, PartStockMovementTypeEnum.ADJUSTMENT_OUT])
+	type: PartStockMovementTypeEnum;
 	@IsNumber() @Min(0.001) quantity: number;
 	@IsNotEmpty() @IsString() reason: string;
 	@IsOptional() @IsString() notes?: string;

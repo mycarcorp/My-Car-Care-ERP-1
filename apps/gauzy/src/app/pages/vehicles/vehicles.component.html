@@ -1,12 +1,7 @@
 <nb-card class="vehicles">
 	<nb-card-header class="vehicles__header">
 		<h4>{{ 'VEHICLES_PAGE.TITLE' | translate }}</h4>
-		<button
-			*ngxPermissionsOnly="['ALL_ORG_EDIT']"
-			nbButton
-			status="primary"
-			(click)="registerVehicle()"
-		>
+		<button *ngxPermissionsOnly="['ALL_ORG_EDIT']" nbButton status="primary" (click)="registerVehicle()">
 			{{ 'VEHICLES_PAGE.REGISTER' | translate }}
 		</button>
 	</nb-card-header>

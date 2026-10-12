@@ -43,9 +43,7 @@ export class RepairOrderApiService {
 	}
 
 	getHistory(id: ID): Promise<IServiceHistoryRecord> {
-		return firstValueFrom(
-			this.http.get<IServiceHistoryRecord>(`${this.baseUrl}/repair-orders/${id}/history`)
-		);
+		return firstValueFrom(this.http.get<IServiceHistoryRecord>(`${this.baseUrl}/repair-orders/${id}/history`));
 	}
 
 	/**

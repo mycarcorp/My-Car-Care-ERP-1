@@ -38,7 +38,15 @@ describe('AutomotiveJobQcService', () => {
 		timeLogs = { findOne: jest.fn(async () => null) };
 		employees = { findOneBy: jest.fn(async () => ({ ...employee })) };
 		repairOrderService = { markRework: jest.fn(async () => undefined) };
-		service = new AutomotiveJobQcService(qc as never, {} as never, jobs as never, labors as never, timeLogs as never, employees as never, repairOrderService as never);
+		service = new AutomotiveJobQcService(
+			qc as never,
+			{} as never,
+			jobs as never,
+			labors as never,
+			timeLogs as never,
+			employees as never,
+			repairOrderService as never
+		);
 	});
 
 	afterEach(() => jest.restoreAllMocks());
@@ -55,10 +63,26 @@ describe('AutomotiveJobQcService', () => {
 	});
 
 	it('passes and fails only pending attempts with an authenticated employee', async () => {
-		qc.findOne.mockResolvedValueOnce({ id: 'qc-1', ...scope, automotiveJobId: job.id, status: AutomotiveJobQcStatusEnum.PENDING });
-		await expect(service.passAttempt('qc-1')).resolves.toMatchObject({ status: AutomotiveJobQcStatusEnum.PASSED, checkedByEmployeeId: employee.id });
-		qc.findOne.mockResolvedValueOnce({ id: 'qc-2', ...scope, automotiveJobId: job.id, status: AutomotiveJobQcStatusEnum.PENDING });
-		await expect(service.failAttempt('qc-2', { reason: 'Brake noise remains' })).resolves.toMatchObject({ status: AutomotiveJobQcStatusEnum.FAILED, reason: 'Brake noise remains' });
+		qc.findOne.mockResolvedValueOnce({
+			id: 'qc-1',
+			...scope,
+			automotiveJobId: job.id,
+			status: AutomotiveJobQcStatusEnum.PENDING
+		});
+		await expect(service.passAttempt('qc-1')).resolves.toMatchObject({
+			status: AutomotiveJobQcStatusEnum.PASSED,
+			checkedByEmployeeId: employee.id
+		});
+		qc.findOne.mockResolvedValueOnce({
+			id: 'qc-2',
+			...scope,
+			automotiveJobId: job.id,
+			status: AutomotiveJobQcStatusEnum.PENDING
+		});
+		await expect(service.failAttempt('qc-2', { reason: 'Brake noise remains' })).resolves.toMatchObject({
+			status: AutomotiveJobQcStatusEnum.FAILED,
+			reason: 'Brake noise remains'
+		});
 	});
 
 	it('requires all labor complete, no running log, and latest passed QC to complete', async () => {

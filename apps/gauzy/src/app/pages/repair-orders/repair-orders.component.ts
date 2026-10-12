@@ -105,7 +105,8 @@ export class RepairOrdersComponent extends PaginationFilterBaseComponent impleme
 				vehicleLabel: {
 					title: this.getTranslation('REPAIR_ORDERS_PAGE.VEHICLE'),
 					type: 'string',
-					valuePrepareFunction: (_value: string, cell: Cell) => this.formatVehicle(cell as unknown as IRepairOrder)
+					valuePrepareFunction: (_value: string, cell: Cell) =>
+						this.formatVehicle(cell as unknown as IRepairOrder)
 				},
 				status: {
 					title: this.getTranslation('REPAIR_ORDERS_PAGE.STATUS'),
@@ -134,7 +135,7 @@ export class RepairOrdersComponent extends PaginationFilterBaseComponent impleme
 			return '';
 		}
 		const parts = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean);
-		return parts.length ? parts.join(' ') : vehicle.vinNormalized ?? '';
+		return parts.length ? parts.join(' ') : (vehicle.vinNormalized ?? '');
 	}
 
 	/**

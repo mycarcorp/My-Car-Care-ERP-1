@@ -39,7 +39,11 @@ export class FinancingApplication extends TenantOrganizationBaseEntity implement
 	@ApiProperty({ enum: FinancingApplicationStatusEnum })
 	@IsEnum(FinancingApplicationStatusEnum)
 	@ColumnIndex()
-	@MultiORMColumn({ type: 'simple-enum', enum: FinancingApplicationStatusEnum, default: FinancingApplicationStatusEnum.DRAFT })
+	@MultiORMColumn({
+		type: 'simple-enum',
+		enum: FinancingApplicationStatusEnum,
+		default: FinancingApplicationStatusEnum.DRAFT
+	})
 	status: FinancingApplicationStatusEnum;
 
 	@ApiProperty({ type: () => Number })

@@ -369,9 +369,15 @@ describe('AutomotiveJobService', () => {
 	});
 
 	it('blocks completion when QC or labor gates fail', async () => {
-		jobs.findOneByOrFail.mockResolvedValueOnce({ id: 'job-1', ...scope, status: AutomotiveJobStatusEnum.IN_PROGRESS });
+		jobs.findOneByOrFail.mockResolvedValueOnce({
+			id: 'job-1',
+			...scope,
+			status: AutomotiveJobStatusEnum.IN_PROGRESS
+		});
 		jobQc.assertCanCompleteJob.mockRejectedValueOnce(new BadRequestException('QC is required'));
-		await expect(service.updateStatus('job-1', AutomotiveJobStatusEnum.COMPLETED)).rejects.toBeInstanceOf(BadRequestException);
+		await expect(service.updateStatus('job-1', AutomotiveJobStatusEnum.COMPLETED)).rejects.toBeInstanceOf(
+			BadRequestException
+		);
 		expect(jobs.update).not.toHaveBeenCalled();
 	});
 

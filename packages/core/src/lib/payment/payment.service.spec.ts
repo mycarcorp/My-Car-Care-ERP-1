@@ -30,8 +30,7 @@ describe('PaymentService (payment hardening)', () => {
 	let paymentRows: any[];
 	let paymentSequence: number;
 
-	const matches = (row: any, where: any = {}) =>
-		Object.entries(where).every(([key, value]) => row[key] === value);
+	const matches = (row: any, where: any = {}) => Object.entries(where).every(([key, value]) => row[key] === value);
 
 	const invoiceRow = () => invoiceRows.find((row) => row.id === INVOICE_ID);
 

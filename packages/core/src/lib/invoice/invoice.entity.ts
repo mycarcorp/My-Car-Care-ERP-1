@@ -1,19 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-	JoinColumn,
-	Unique as TypeOrmUnique,
-	RelationId,
-	JoinTable
-} from 'typeorm';
+import { JoinColumn, Unique as TypeOrmUnique, RelationId, JoinTable } from 'typeorm';
 import { Unique as MikroOrmUnique } from '@mikro-orm/core';
-import {
-	IsString,
-	IsNumber,
-	IsBoolean,
-	IsDate,
-	IsOptional,
-	IsEnum
-} from 'class-validator';
+import { IsString, IsNumber, IsBoolean, IsDate, IsOptional, IsEnum } from 'class-validator';
 import {
 	ID,
 	IInvoice,
@@ -40,7 +28,14 @@ import {
 	Tag,
 	TenantOrganizationBaseEntity
 } from '../core/entities/internal';
-import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToMany, MultiORMManyToOne, MultiORMOneToMany } from './../core/decorators/entity';
+import {
+	ColumnIndex,
+	MultiORMColumn,
+	MultiORMEntity,
+	MultiORMManyToMany,
+	MultiORMManyToOne,
+	MultiORMOneToMany
+} from './../core/decorators/entity';
 import { MikroOrmInvoiceRepository } from './repository/mikro-orm-invoice.repository';
 import { ExportRedacted } from '../export-import/export-redact.decorator';
 import { MultiORMEnum, getORMType } from '../core/utils';
@@ -69,7 +64,6 @@ function InvoiceNumberUniquePerTenant(): ClassDecorator {
 @MultiORMEntity('invoice', { mikroOrmRepository: () => MikroOrmInvoiceRepository })
 @InvoiceNumberUniquePerTenant()
 export class Invoice extends TenantOrganizationBaseEntity implements IInvoice {
-
 	@ApiProperty({ type: () => Date })
 	@IsDate()
 	@MultiORMColumn({ nullable: true })
@@ -228,10 +222,9 @@ export class Invoice extends TenantOrganizationBaseEntity implements IInvoice {
 	@IsOptional()
 	@MultiORMColumn({
 		nullable: true,
-		...(isMySQL() ? { type: "text" } : {})
+		...(isMySQL() ? { type: 'text' } : {})
 	})
 	token?: string;
-
 
 	/*
 	|--------------------------------------------------------------------------
@@ -319,7 +312,7 @@ export class Invoice extends TenantOrganizationBaseEntity implements IInvoice {
 		owner: true,
 		pivotTable: 'tag_invoice',
 		joinColumn: 'invoiceId',
-		inverseJoinColumn: 'tagId',
+		inverseJoinColumn: 'tagId'
 	})
 	@JoinTable({
 		name: 'tag_invoice'

@@ -64,7 +64,10 @@ export class EmployeeAppointmentService extends TenantAwareCrudService<EmployeeA
 		// A transition to CANCELLED requires the dedicated cancel permission (admin-level),
 		// on top of the controller's ORG_APPOINTMENT_EDIT gate. Tenant/org scoping is
 		// enforced by the findOneByIdString lookup above and the TenantAwareCrudService update.
-		if (entity.status === EmployeeAppointmentStatus.CANCELLED && existing.status !== EmployeeAppointmentStatus.CANCELLED) {
+		if (
+			entity.status === EmployeeAppointmentStatus.CANCELLED &&
+			existing.status !== EmployeeAppointmentStatus.CANCELLED
+		) {
 			if (!RequestContext.hasPermission(PermissionsEnum.ORG_APPOINTMENT_CANCEL)) {
 				throw new BadRequestException('You do not have permission to cancel an appointment.');
 			}

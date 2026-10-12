@@ -1,39 +1,39 @@
 .ro-detail {
-	&__header {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-	}
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
 
-	&__loading {
-		display: flex;
-		justify-content: center;
-		padding: 2rem;
-	}
+  &__loading {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+  }
 
-	&__not-found {
-		padding: 2rem;
-		text-align: center;
-	}
+  &__not-found {
+    padding: 2rem;
+    text-align: center;
+  }
 
-	&__summary {
-		margin-bottom: 1.5rem;
-	}
+  &__summary {
+    margin-bottom: 1.5rem;
+  }
 
-	&__row {
-		display: flex;
-		gap: 0.5rem;
-		margin-bottom: 0.5rem;
-	}
+  &__row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
 
-	&__label {
-		font-weight: 600;
-		min-width: 12rem;
-	}
+  &__label {
+    font-weight: 600;
+    min-width: 12rem;
+  }
 
-	&__actions {
-		display: flex;
-		gap: 0.5rem;
-		flex-wrap: wrap;
-	}
+  &__actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
 }

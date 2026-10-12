@@ -57,7 +57,11 @@ describe('AutomotiveJobLaborService', () => {
 		employees = { find: jest.fn(async () => [employee, secondEmployee]) };
 		estimateLines = { findOneBy: jest.fn(async () => ({ id: job.estimateLineId, ...scope })) };
 		approvalLines = {
-			findOneBy: jest.fn(async () => ({ id: job.customerWorkApprovalLineId, description: 'Approved work', ...scope }))
+			findOneBy: jest.fn(async () => ({
+				id: job.customerWorkApprovalLineId,
+				description: 'Approved work',
+				...scope
+			}))
 		};
 		timeLogs = { find: jest.fn(async () => []), findOneBy: jest.fn(async () => null) };
 		timeLogService = { stopRunningAutomotiveJobLaborLogs: jest.fn(async () => undefined) };
@@ -144,7 +148,12 @@ describe('AutomotiveJobLaborService', () => {
 
 	it('rejects initial labor when source lines differ from the persisted job', async () => {
 		await expect(
-			service.createInitialForJob(job as never, { id: 'other-line' } as never, { id: job.estimateLineId } as never, [])
+			service.createInitialForJob(
+				job as never,
+				{ id: 'other-line' } as never,
+				{ id: job.estimateLineId } as never,
+				[]
+			)
 		).rejects.toBeInstanceOf(BadRequestException);
 		expect(labors.create).not.toHaveBeenCalled();
 	});

@@ -18,8 +18,13 @@ export class AddAutomotiveJobPartConsumption1791400000000 implements MigrationIn
 			new TableColumn({ name: 'operationKey', type: 'varchar', length: '36', isNullable: true })
 		]);
 		const fk = (name: string, column: string, table: string) =>
-			new TableForeignKey({ name, columnNames: [column], referencedTableName: table,
-				referencedColumnNames: ['id'], onDelete: 'RESTRICT' });
+			new TableForeignKey({
+				name,
+				columnNames: [column],
+				referencedTableName: table,
+				referencedColumnNames: ['id'],
+				onDelete: 'RESTRICT'
+			});
 		await queryRunner.createForeignKeys('part_stock_movement', [
 			fk('FK_part_stock_movement_job', 'automotiveJobId', 'automotive_job'),
 			fk('FK_part_stock_movement_repair_order', 'repairOrderId', 'repair_order'),
@@ -27,14 +32,24 @@ export class AddAutomotiveJobPartConsumption1791400000000 implements MigrationIn
 			fk('FK_part_stock_movement_reversal', 'reversesMovementId', 'part_stock_movement')
 		]);
 		await queryRunner.createIndices('part_stock_movement', [
-			new TableIndex({ name: 'IDX_part_stock_movement_job_history',
-				columnNames: ['tenantId', 'organizationId', 'automotiveJobId', 'createdAt'] }),
-			new TableIndex({ name: 'IDX_part_stock_movement_repair_order_history',
-				columnNames: ['tenantId', 'organizationId', 'repairOrderId', 'createdAt'] }),
-			new TableIndex({ name: 'IDX_part_stock_movement_operation_unique',
-				columnNames: ['tenantId', 'organizationId', 'operationKey'], isUnique: true }),
-			new TableIndex({ name: 'IDX_part_stock_movement_reversal_unique',
-				columnNames: ['reversesMovementId'], isUnique: true })
+			new TableIndex({
+				name: 'IDX_part_stock_movement_job_history',
+				columnNames: ['tenantId', 'organizationId', 'automotiveJobId', 'createdAt']
+			}),
+			new TableIndex({
+				name: 'IDX_part_stock_movement_repair_order_history',
+				columnNames: ['tenantId', 'organizationId', 'repairOrderId', 'createdAt']
+			}),
+			new TableIndex({
+				name: 'IDX_part_stock_movement_operation_unique',
+				columnNames: ['tenantId', 'organizationId', 'operationKey'],
+				isUnique: true
+			}),
+			new TableIndex({
+				name: 'IDX_part_stock_movement_reversal_unique',
+				columnNames: ['reversesMovementId'],
+				isUnique: true
+			})
 		]);
 	}
 
@@ -47,8 +62,15 @@ export class AddAutomotiveJobPartConsumption1791400000000 implements MigrationIn
 		await queryRunner.dropForeignKey('part_stock_movement', 'FK_part_stock_movement_recorded_by');
 		await queryRunner.dropForeignKey('part_stock_movement', 'FK_part_stock_movement_repair_order');
 		await queryRunner.dropForeignKey('part_stock_movement', 'FK_part_stock_movement_job');
-		for (const column of ['operationKey', 'reversesMovementId', 'recordedByUserId', 'costCurrency',
-			'unitCost', 'repairOrderId', 'automotiveJobId']) {
+		for (const column of [
+			'operationKey',
+			'reversesMovementId',
+			'recordedByUserId',
+			'costCurrency',
+			'unitCost',
+			'repairOrderId',
+			'automotiveJobId'
+		]) {
 			await queryRunner.dropColumn('part_stock_movement', column);
 		}
 	}

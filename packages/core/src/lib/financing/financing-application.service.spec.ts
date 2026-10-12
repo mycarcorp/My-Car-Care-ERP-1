@@ -1,10 +1,7 @@
 import '../core/entities/internal';
 
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import {
-	CustomerWorkApprovalSubmissionStateEnum,
-	FinancingApplicationStatusEnum
-} from '@gauzy/contracts';
+import { CustomerWorkApprovalSubmissionStateEnum, FinancingApplicationStatusEnum } from '@gauzy/contracts';
 import { CrudService } from '../core/crud/crud.service';
 import { RequestContext } from '../core/context';
 import { InMemoryTenantRepository } from '../core/testing/tenant-isolation/in-memory-tenant-repository';
@@ -154,7 +151,10 @@ describe('FinancingApplicationService', () => {
 		expect(current.status).toBe(FinancingApplicationStatusEnum.SUBMITTED);
 		current = await service.transition(app.id, { status: FinancingApplicationStatusEnum.PENDING });
 		expect(current.status).toBe(FinancingApplicationStatusEnum.PENDING);
-		current = await service.transition(app.id, { status: FinancingApplicationStatusEnum.APPROVED, approvedAmount: 1000 });
+		current = await service.transition(app.id, {
+			status: FinancingApplicationStatusEnum.APPROVED,
+			approvedAmount: 1000
+		});
 		expect(current.status).toBe(FinancingApplicationStatusEnum.APPROVED);
 		expect(current.approvedAmount).toBe(1000);
 		current = await service.transition(app.id, { status: FinancingApplicationStatusEnum.ACCEPTED });
@@ -164,23 +164,25 @@ describe('FinancingApplicationService', () => {
 	it('rejects an invalid transition (DRAFT → APPROVED)', async () => {
 		hasPermission.mockReturnValue(true);
 		const app = await service.createApplication(validInput());
-		await expect(service.transition(app.id, { status: FinancingApplicationStatusEnum.APPROVED })).rejects.toBeInstanceOf(
-			BadRequestException
-		);
+		await expect(
+			service.transition(app.id, { status: FinancingApplicationStatusEnum.APPROVED })
+		).rejects.toBeInstanceOf(BadRequestException);
 	});
 
 	it('terminal CANCELLED accepts no further transitions', async () => {
 		const app = await service.createApplication(validInput());
 		await service.transition(app.id, { status: FinancingApplicationStatusEnum.SUBMITTED });
 		await service.transition(app.id, { status: FinancingApplicationStatusEnum.CANCELLED });
-		await expect(service.transition(app.id, { status: FinancingApplicationStatusEnum.SUBMITTED })).rejects.toBeInstanceOf(
-			BadRequestException
-		);
+		await expect(
+			service.transition(app.id, { status: FinancingApplicationStatusEnum.SUBMITTED })
+		).rejects.toBeInstanceOf(BadRequestException);
 	});
 
 	it('cannot reach FUNDED through any Phase 1 transition', async () => {
 		const app = await service.createApplication(validInput());
-		await expect(service.transition(app.id, { status: 'FUNDED' as any })).rejects.toBeInstanceOf(BadRequestException);
+		await expect(service.transition(app.id, { status: 'FUNDED' as any })).rejects.toBeInstanceOf(
+			BadRequestException
+		);
 	});
 
 	it('rejects editing a non-DRAFT application', async () => {
@@ -201,9 +203,9 @@ describe('FinancingApplicationService', () => {
 			tenantId: 'b7a1f2c4-1a2b-4c3d-8e9f-0a1b2c3d4e5f',
 			organizationId: tenant.organizationId
 		} as any);
-		await expect(service.transition(foreign.id, { status: FinancingApplicationStatusEnum.SUBMITTED })).rejects.toBeInstanceOf(
-			NotFoundException
-		);
+		await expect(
+			service.transition(foreign.id, { status: FinancingApplicationStatusEnum.SUBMITTED })
+		).rejects.toBeInstanceOf(NotFoundException);
 	});
 
 	it('rejects a third application when a terminal and an active application coexist', async () => {
@@ -245,15 +247,17 @@ describe('FinancingApplicationService', () => {
 	it('enforces organization isolation on transition (same tenant, different org)', async () => {
 		const app = await service.createApplication(validInput());
 		jest.spyOn(RequestContext, 'currentOrganizationId').mockReturnValue('a1b2c3d4-0000-4000-8000-differentorg');
-		await expect(service.transition(app.id, { status: FinancingApplicationStatusEnum.SUBMITTED })).rejects.toBeInstanceOf(
-			ForbiddenException
-		);
+		await expect(
+			service.transition(app.id, { status: FinancingApplicationStatusEnum.SUBMITTED })
+		).rejects.toBeInstanceOf(ForbiddenException);
 	});
 
 	it('enforces organization isolation on update (same tenant, different org)', async () => {
 		const app = await service.createApplication(validInput());
 		jest.spyOn(RequestContext, 'currentOrganizationId').mockReturnValue('a1b2c3d4-0000-4000-8000-differentorg');
-		await expect(service.updateApplication(app.id, { requestedAmount: 500 })).rejects.toBeInstanceOf(ForbiddenException);
+		await expect(service.updateApplication(app.id, { requestedAmount: 500 })).rejects.toBeInstanceOf(
+			ForbiddenException
+		);
 	});
 
 	it('requires ORG_FINANCING_APPROVE for decision transitions', async () => {

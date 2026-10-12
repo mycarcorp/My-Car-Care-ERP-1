@@ -2,8 +2,13 @@ import { BadRequestException, ConflictException, Injectable } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, FindOptionsWhere, Repository } from 'typeorm';
 import {
-	AutomotiveJobStatusEnum, CustomerWorkApprovalRequestStatusEnum, CustomerWorkApprovalSubmissionStateEnum,
-	ID, InventorySourceEnum, PartStockMovementTypeEnum, RepairOrderStatusEnum
+	AutomotiveJobStatusEnum,
+	CustomerWorkApprovalRequestStatusEnum,
+	CustomerWorkApprovalSubmissionStateEnum,
+	ID,
+	InventorySourceEnum,
+	PartStockMovementTypeEnum,
+	RepairOrderStatusEnum
 } from '@gauzy/contracts';
 import { RequestContext } from '../core/context';
 import { TenantAwareCrudService } from '../core/crud';
@@ -119,16 +124,21 @@ export class PartStockMovementService extends TenantAwareCrudService<PartStockMo
 		const replay = (movement: PartStockMovement) => {
 			if (
 				movement.type !== PartStockMovementTypeEnum.JOB_CONSUMPTION_OUT ||
-				movement.automotiveJobId !== jobId || movement.automotivePartProfileId !== input.automotivePartProfileId ||
+				movement.automotiveJobId !== jobId ||
+				movement.automotivePartProfileId !== input.automotivePartProfileId ||
 				movement.warehouseId !== input.warehouseId ||
 				movement.warehouseProductVariantId !== input.warehouseProductVariantId ||
 				Number(movement.quantityDelta) !== -quantity
-			) throw new ConflictException('Operation key already belongs to a different consumption.');
+			)
+				throw new ConflictException('Operation key already belongs to a different consumption.');
 			return movement;
 		};
 		try {
 			return await this.typeOrmRepository.manager.transaction(async (manager: EntityManager) => {
-				const existing = await manager.findOneBy(PartStockMovement, { operationKey: input.operationKey, ...scope });
+				const existing = await manager.findOneBy(PartStockMovement, {
+					operationKey: input.operationKey,
+					...scope
+				});
 				if (existing) return replay(existing);
 				const job = await manager.findOneByOrFail(AutomotiveJob, { id: jobId, ...scope });
 				if (job.status !== AutomotiveJobStatusEnum.IN_PROGRESS) {
@@ -139,40 +149,68 @@ export class PartStockMovementService extends TenantAwareCrudService<PartStockMo
 					throw new BadRequestException('Repair order is not active.');
 				}
 				const approvalLine = await manager.findOneByOrFail(CustomerWorkApprovalLine, {
-					id: job.customerWorkApprovalLineId, customerWorkApprovalId: job.customerWorkApprovalId,
-					estimateLineId: job.estimateLineId, selected: true, ...scope
+					id: job.customerWorkApprovalLineId,
+					customerWorkApprovalId: job.customerWorkApprovalId,
+					estimateLineId: job.estimateLineId,
+					selected: true,
+					...scope
 				});
 				if (Number(approvalLine.approvedQuantity) <= 0) throw new BadRequestException('Work is not approved.');
 				const approval = await manager.findOneByOrFail(CustomerWorkApproval, {
-					id: job.customerWorkApprovalId, repairOrderId: repairOrder.id,
-					estimateId: job.estimateId, estimateRevisionNumber: job.estimateRevisionNumber,
-					customerId: repairOrder.customerId, vehicleId: repairOrder.vehicleId,
-					submissionState: CustomerWorkApprovalSubmissionStateEnum.SUBMITTED, ...scope
+					id: job.customerWorkApprovalId,
+					repairOrderId: repairOrder.id,
+					estimateId: job.estimateId,
+					estimateRevisionNumber: job.estimateRevisionNumber,
+					customerId: repairOrder.customerId,
+					vehicleId: repairOrder.vehicleId,
+					submissionState: CustomerWorkApprovalSubmissionStateEnum.SUBMITTED,
+					...scope
 				});
 				const request = await manager.findOneByOrFail(CustomerWorkApprovalRequest, {
-					id: approval.approvalRequestId, repairOrderId: repairOrder.id,
-					estimateId: job.estimateId, estimateRevisionNumber: job.estimateRevisionNumber,
-					customerId: repairOrder.customerId, vehicleId: repairOrder.vehicleId,
-					status: CustomerWorkApprovalRequestStatusEnum.SUBMITTED, ...scope
+					id: approval.approvalRequestId,
+					repairOrderId: repairOrder.id,
+					estimateId: job.estimateId,
+					estimateRevisionNumber: job.estimateRevisionNumber,
+					customerId: repairOrder.customerId,
+					vehicleId: repairOrder.vehicleId,
+					status: CustomerWorkApprovalRequestStatusEnum.SUBMITTED,
+					...scope
 				});
 				const estimate = await manager.findOneByOrFail(Estimate, {
-					id: job.estimateId, repairOrderId: repairOrder.id, revisionNumber: job.estimateRevisionNumber,
-					customerId: repairOrder.customerId, vehicleId: repairOrder.vehicleId, ...scope
+					id: job.estimateId,
+					repairOrderId: repairOrder.id,
+					revisionNumber: job.estimateRevisionNumber,
+					customerId: repairOrder.customerId,
+					vehicleId: repairOrder.vehicleId,
+					...scope
 				});
 				if ((estimate.rootEstimateId ?? estimate.id) !== request.estimateRootId) {
 					throw new BadRequestException('Approval request does not match the job estimate lineage.');
 				}
-				await manager.findOneByOrFail(EstimateLine, { id: job.estimateLineId, estimateId: job.estimateId, ...scope });
+				await manager.findOneByOrFail(EstimateLine, {
+					id: job.estimateLineId,
+					estimateId: job.estimateId,
+					...scope
+				});
 				const profile = await manager.findOneByOrFail(AutomotivePartProfile, {
-					id: input.automotivePartProfileId, enabled: true, ...scope
+					id: input.automotivePartProfileId,
+					enabled: true,
+					...scope
 				});
 				const variant = await manager.findOne(ProductVariant, {
-					where: { id: profile.productVariantId, ...scope }, relations: { price: true }
+					where: { id: profile.productVariantId, ...scope },
+					relations: { price: true }
 				});
-				if (!variant || variant.enabled === false || !variant.price ||
-					variant.price.tenantId !== scope.tenantId || variant.price.organizationId !== scope.organizationId ||
-					!Number.isFinite(Number(variant.price.unitCost)) || Number(variant.price.unitCost) < 0 ||
-					!variant.price.unitCostCurrency) {
+				if (
+					!variant ||
+					variant.enabled === false ||
+					!variant.price ||
+					variant.price.tenantId !== scope.tenantId ||
+					variant.price.organizationId !== scope.organizationId ||
+					!Number.isFinite(Number(variant.price.unitCost)) ||
+					Number(variant.price.unitCost) < 0 ||
+					!variant.price.unitCostCurrency
+				) {
 					throw new BadRequestException('Part variant must have a scoped, valid current cost and currency.');
 				}
 				const warehouse = await manager.findOneByOrFail(Warehouse, { id: input.warehouseId, ...scope });
@@ -187,12 +225,20 @@ export class PartStockMovementService extends TenantAwareCrudService<PartStockMo
 					throw new BadRequestException('Balance does not match the part and warehouse.');
 				}
 				return this.postMovement(manager, {
-					profile, warehouse, balance, quantityDelta: -quantity,
-					type: PartStockMovementTypeEnum.JOB_CONSUMPTION_OUT, reason: 'Job part consumption',
-					inventorySource: warehouse.inventorySource, ...scope,
-					automotiveJobId: job.id, repairOrderId: repairOrder.id,
-					unitCost: Number(variant.price.unitCost), costCurrency: variant.price.unitCostCurrency,
-					recordedByUserId: actorId, operationKey: input.operationKey
+					profile,
+					warehouse,
+					balance,
+					quantityDelta: -quantity,
+					type: PartStockMovementTypeEnum.JOB_CONSUMPTION_OUT,
+					reason: 'Job part consumption',
+					inventorySource: warehouse.inventorySource,
+					...scope,
+					automotiveJobId: job.id,
+					repairOrderId: repairOrder.id,
+					unitCost: Number(variant.price.unitCost),
+					costCurrency: variant.price.unitCostCurrency,
+					recordedByUserId: actorId,
+					operationKey: input.operationKey
 				});
 			});
 		} catch (error) {
@@ -206,7 +252,8 @@ export class PartStockMovementService extends TenantAwareCrudService<PartStockMo
 		const scope = this.currentScope();
 		await this.typeOrmRepository.manager.findOneByOrFail(AutomotiveJob, { id: jobId, ...scope });
 		return this.typeOrmRepository.find({
-			where: { automotiveJobId: jobId, ...scope }, order: { createdAt: 'DESC' }
+			where: { automotiveJobId: jobId, ...scope },
+			order: { createdAt: 'DESC' }
 		});
 	}
 
@@ -218,18 +265,29 @@ export class PartStockMovementService extends TenantAwareCrudService<PartStockMo
 		try {
 			return await this.typeOrmRepository.manager.transaction(async (manager: EntityManager) => {
 				const original = await manager.findOneByOrFail(PartStockMovement, {
-					id: movementId, automotiveJobId: jobId, type: PartStockMovementTypeEnum.JOB_CONSUMPTION_OUT, ...scope
+					id: movementId,
+					automotiveJobId: jobId,
+					type: PartStockMovementTypeEnum.JOB_CONSUMPTION_OUT,
+					...scope
 				});
-				const job = await manager.findOneByOrFail(AutomotiveJob, { id: jobId, repairOrderId: original.repairOrderId, ...scope });
+				const job = await manager.findOneByOrFail(AutomotiveJob, {
+					id: jobId,
+					repairOrderId: original.repairOrderId,
+					...scope
+				});
 				await manager.findOneByOrFail(RepairOrder, { id: job.repairOrderId, ...scope });
 				if (await manager.findOneBy(PartStockMovement, { reversesMovementId: original.id, ...scope })) {
 					throw new ConflictException('Consumption has already been reversed.');
 				}
 				const profile = await manager.findOneByOrFail(AutomotivePartProfile, {
-					id: original.automotivePartProfileId, productVariantId: original.productVariantId, ...scope
+					id: original.automotivePartProfileId,
+					productVariantId: original.productVariantId,
+					...scope
 				});
 				const warehouse = await manager.findOneByOrFail(Warehouse, {
-					id: original.warehouseId, inventorySource: InventorySourceEnum.SERVICE_CENTER, ...scope
+					id: original.warehouseId,
+					inventorySource: InventorySourceEnum.SERVICE_CENTER,
+					...scope
 				});
 				const balance = await manager.findOne(WarehouseProductVariant, {
 					where: { id: original.warehouseProductVariantId, variantId: original.productVariantId, ...scope },
@@ -239,12 +297,20 @@ export class PartStockMovementService extends TenantAwareCrudService<PartStockMo
 					throw new BadRequestException('Original consumption balance is no longer valid.');
 				}
 				return this.postMovement(manager, {
-					profile, warehouse, balance, quantityDelta: -Number(original.quantityDelta),
+					profile,
+					warehouse,
+					balance,
+					quantityDelta: -Number(original.quantityDelta),
 					type: PartStockMovementTypeEnum.JOB_CONSUMPTION_REVERSAL_IN,
-					reason: reason.trim(), inventorySource: original.inventorySource, ...scope,
-					automotiveJobId: original.automotiveJobId, repairOrderId: original.repairOrderId,
-					unitCost: original.unitCost, costCurrency: original.costCurrency,
-					recordedByUserId: actorId, reversesMovementId: original.id
+					reason: reason.trim(),
+					inventorySource: original.inventorySource,
+					...scope,
+					automotiveJobId: original.automotiveJobId,
+					repairOrderId: original.repairOrderId,
+					unitCost: original.unitCost,
+					costCurrency: original.costCurrency,
+					recordedByUserId: actorId,
+					reversesMovementId: original.id
 				});
 			});
 		} catch (error) {

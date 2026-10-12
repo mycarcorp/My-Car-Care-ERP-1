@@ -24,9 +24,7 @@ export class InspectionController {
 	@ApiOperation({ summary: 'Find the inspection for a repair order (with findings)' })
 	@Get('repair-order/:repairOrderId')
 	@Permissions(PermissionsEnum.ORG_INSPECTION_VIEW)
-	async findByRepairOrder(
-		@Param('repairOrderId', UUIDValidationPipe) repairOrderId: ID
-	): Promise<IInspection> {
+	async findByRepairOrder(@Param('repairOrderId', UUIDValidationPipe) repairOrderId: ID): Promise<IInspection> {
 		return this.inspectionService.findByRepairOrderWithFindings(repairOrderId);
 	}
 

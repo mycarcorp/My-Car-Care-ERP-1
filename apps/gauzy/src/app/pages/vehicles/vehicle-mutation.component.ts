@@ -126,7 +126,11 @@ export class VehicleMutationComponent implements OnInit {
 		if (this.color?.trim()) {
 			body.color = this.color.trim();
 		}
-		if (this.currentMileage !== undefined && this.currentMileage !== null && !Number.isNaN(Number(this.currentMileage))) {
+		if (
+			this.currentMileage !== undefined &&
+			this.currentMileage !== null &&
+			!Number.isNaN(Number(this.currentMileage))
+		) {
 			body.currentMileage = Number(this.currentMileage);
 		}
 		this.submitting = true;

@@ -115,11 +115,7 @@ export class InspectionService extends TenantAwareCrudService<Inspection> {
 	 * Applies a single-status lifecycle transition with tenant/org-safe lookup. Only the
 	 * declared `from → to` transition is permitted; findings and the repair order are untouched.
 	 */
-	private async transitionStatus(
-		id: ID,
-		from: InspectionStatusEnum,
-		to: InspectionStatusEnum
-	): Promise<Inspection> {
+	private async transitionStatus(id: ID, from: InspectionStatusEnum, to: InspectionStatusEnum): Promise<Inspection> {
 		const inspection = await this.findOneByIdString(id);
 		if (inspection.status !== from) {
 			throw new BadRequestException(`Cannot move an inspection from ${inspection.status} to ${to}.`);

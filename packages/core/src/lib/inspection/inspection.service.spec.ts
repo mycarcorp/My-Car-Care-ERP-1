@@ -62,7 +62,15 @@ describe('InspectionService', () => {
 		};
 		findingRepository = { create: jest.fn((input) => input), save: jest.fn(async (input) => input) };
 		repository = new InMemoryTenantRepository<Inspection>(
-			new Set(['id', 'tenantId', 'organizationId', 'repairOrderId', 'vehicleId', 'technicianEmployeeId', 'status'])
+			new Set([
+				'id',
+				'tenantId',
+				'organizationId',
+				'repairOrderId',
+				'vehicleId',
+				'technicianEmployeeId',
+				'status'
+			])
 		);
 		service = new InspectionService(
 			repository as any,

@@ -286,9 +286,7 @@ describe('RepairOrderService lifecycle', () => {
 
 		await service.markInProgressIfOpen(REPAIR_ORDER_ID);
 
-		expect((await repairOrders.findOneBy({ id: REPAIR_ORDER_ID }))?.status).toBe(
-			RepairOrderStatusEnum.IN_PROGRESS
-		);
+		expect((await repairOrders.findOneBy({ id: REPAIR_ORDER_ID }))?.status).toBe(RepairOrderStatusEnum.IN_PROGRESS);
 	});
 
 	it.each([RepairOrderStatusEnum.IN_PROGRESS, RepairOrderStatusEnum.READY])(
@@ -309,9 +307,7 @@ describe('RepairOrderService lifecycle', () => {
 		async (status) => {
 			seedRepairOrder(status);
 
-			await expect(service.markInProgressIfOpen(REPAIR_ORDER_ID)).rejects.toBeInstanceOf(
-				BadRequestException
-			);
+			await expect(service.markInProgressIfOpen(REPAIR_ORDER_ID)).rejects.toBeInstanceOf(BadRequestException);
 		}
 	);
 
@@ -464,9 +460,7 @@ describe('RepairOrderService lifecycle', () => {
 
 		await service.markRework(REPAIR_ORDER_ID);
 
-		expect((await repairOrders.findOneBy({ id: REPAIR_ORDER_ID }))?.status).toBe(
-			RepairOrderStatusEnum.IN_PROGRESS
-		);
+		expect((await repairOrders.findOneBy({ id: REPAIR_ORDER_ID }))?.status).toBe(RepairOrderStatusEnum.IN_PROGRESS);
 	});
 
 	it.each([RepairOrderStatusEnum.OPEN, RepairOrderStatusEnum.IN_PROGRESS])(
@@ -500,9 +494,9 @@ describe('RepairOrderService lifecycle', () => {
 
 		await expect(service.markInProgressIfOpen(REPAIR_ORDER_ID)).rejects.toBeInstanceOf(NotFoundException);
 		await expect(service.close(REPAIR_ORDER_ID, {})).rejects.toBeInstanceOf(NotFoundException);
-		await expect(
-			service.cancel(REPAIR_ORDER_ID, { cancelReason: 'Customer request' })
-		).rejects.toBeInstanceOf(NotFoundException);
+		await expect(service.cancel(REPAIR_ORDER_ID, { cancelReason: 'Customer request' })).rejects.toBeInstanceOf(
+			NotFoundException
+		);
 	});
 
 	it('requires a tenant and organization context', async () => {

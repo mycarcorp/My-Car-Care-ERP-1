@@ -1,4 +1,11 @@
-import { BadRequestException, ConflictException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+	BadRequestException,
+	ConflictException,
+	forwardRef,
+	Inject,
+	Injectable,
+	NotFoundException
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
 	AutomotiveJobLaborStatusEnum,
@@ -101,15 +108,23 @@ export class AutomotiveJobQcService extends TenantAwareCrudService<AutomotiveJob
 		if (job.status !== AutomotiveJobStatusEnum.IN_PROGRESS) {
 			throw new BadRequestException('Only an in-progress job can be completed.');
 		}
-		const laborRows = await this.labors.find({ where: { automotiveJobId: jobId, ...scope }, select: { id: true, status: true } });
+		const laborRows = await this.labors.find({
+			where: { automotiveJobId: jobId, ...scope },
+			select: { id: true, status: true }
+		});
 		if (laborRows.some((labor) => labor.status !== AutomotiveJobLaborStatusEnum.COMPLETED)) {
-			throw new BadRequestException('All automotive job labor must be completed before the job can be completed.');
+			throw new BadRequestException(
+				'All automotive job labor must be completed before the job can be completed.'
+			);
 		}
 		if (laborRows.length) {
 			const runningLog = await this.timeLogs.findOne({
 				where: { automotiveJobLaborId: In(laborRows.map((labor) => labor.id)), isRunning: true, ...scope }
 			});
-			if (runningLog) throw new BadRequestException('Running labor TimeLogs must be stopped before the job can be completed.');
+			if (runningLog)
+				throw new BadRequestException(
+					'Running labor TimeLogs must be stopped before the job can be completed.'
+				);
 		}
 		const latest = await this.latestAttempt(jobId, scope);
 		if (!latest || latest.status !== AutomotiveJobQcStatusEnum.PASSED) {
@@ -156,7 +171,8 @@ export class AutomotiveJobQcService extends TenantAwareCrudService<AutomotiveJob
 	private scope(): { tenantId: ID; organizationId: ID } {
 		const tenantId = RequestContext.currentTenantId();
 		const organizationId = RequestContext.currentOrganizationId();
-		if (!tenantId || !organizationId) throw new BadRequestException('Tenant and organization context are required.');
+		if (!tenantId || !organizationId)
+			throw new BadRequestException('Tenant and organization context are required.');
 		return { tenantId, organizationId };
 	}
 }

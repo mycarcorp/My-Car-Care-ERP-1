@@ -2,12 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { NbDialogRef, NbToastrService } from '@nebular/theme';
 import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
-import {
-	IEmployeeAppointment,
-	IOrganization,
-	IRepairOrder,
-	IRepairOrderArrivalInput
-} from '@gauzy/contracts';
+import { IEmployeeAppointment, IOrganization, IRepairOrder, IRepairOrderArrivalInput } from '@gauzy/contracts';
 import { EmployeeAppointmentService, Store } from '@gauzy/ui-core/core';
 import { RepairOrderApiService } from './repair-order-api.service';
 
@@ -59,9 +54,7 @@ export class RepairOrderArrivalComponent implements OnInit {
 		}
 		this.loading = true;
 		try {
-			const { items } = await firstValueFrom(
-				this.appointmentService.getAll(['customer', 'vehicle'])
-			);
+			const { items } = await firstValueFrom(this.appointmentService.getAll(['customer', 'vehicle']));
 			this.appointments = items ?? [];
 		} catch (error) {
 			this.toastr.danger(
@@ -90,7 +83,7 @@ export class RepairOrderArrivalComponent implements OnInit {
 			return '';
 		}
 		const parts = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean);
-		return parts.length ? parts.join(' ') : vehicle.vinNormalized ?? '';
+		return parts.length ? parts.join(' ') : (vehicle.vinNormalized ?? '');
 	}
 
 	/**
@@ -106,7 +99,11 @@ export class RepairOrderArrivalComponent implements OnInit {
 			return;
 		}
 		const input: IRepairOrderArrivalInput = { appointmentId: this.selectedAppointmentId };
-		if (this.arrivalOdometer !== undefined && this.arrivalOdometer !== null && !Number.isNaN(Number(this.arrivalOdometer))) {
+		if (
+			this.arrivalOdometer !== undefined &&
+			this.arrivalOdometer !== null &&
+			!Number.isNaN(Number(this.arrivalOdometer))
+		) {
 			input.arrivalOdometer = Number(this.arrivalOdometer);
 		}
 		this.submitting = true;
