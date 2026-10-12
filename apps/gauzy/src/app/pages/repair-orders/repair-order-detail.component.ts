@@ -5,11 +5,13 @@ import { TranslateService } from '@ngx-translate/core';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { firstValueFrom } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
-import { ID, IInspection, IRepairOrder, RepairOrderStatusEnum } from '@gauzy/contracts';
+import { ID, IFinancingApplication, IInspection, IRepairOrder, RepairOrderStatusEnum } from '@gauzy/contracts';
 import { TranslationBaseComponent } from '@gauzy/ui-core/i18n';
 import { RepairOrderApiService } from './repair-order-api.service';
 import { InspectionApiService } from '../inspections/inspection-api.service';
 import { InspectionMutationComponent } from '../inspections/inspection-mutation.component';
+import { FinancingApiService } from '../financing/financing-api.service';
+import { FinancingMutationComponent } from '../financing/financing-mutation.component';
 
 @UntilDestroy({ checkProperties: true })
 @Component({
@@ -26,6 +28,7 @@ export class RepairOrderDetailComponent extends TranslationBaseComponent impleme
 
 	private readonly dialogService = inject(NbDialogService);
 	private readonly inspectionApi = inject(InspectionApiService);
+	private readonly financingApi = inject(FinancingApiService);
 
 	constructor(
 		public readonly translateService: TranslateService,
@@ -110,7 +113,9 @@ export class RepairOrderDetailComponent extends TranslationBaseComponent impleme
 			);
 		} catch (error) {
 			this.toastrService.danger(
-				error?.error?.message || error?.message || this.getTranslation('REPAIR_ORDERS_PAGE.DETAIL.INVOICE_FAILED'),
+				error?.error?.message ||
+					error?.message ||
+					this.getTranslation('REPAIR_ORDERS_PAGE.DETAIL.INVOICE_FAILED'),
 				this.getTranslation('TOASTR.TITLE.ERROR')
 			);
 		}
@@ -128,7 +133,9 @@ export class RepairOrderDetailComponent extends TranslationBaseComponent impleme
 			);
 		} catch (error) {
 			this.toastrService.danger(
-				error?.error?.message || error?.message || this.getTranslation('REPAIR_ORDERS_PAGE.DETAIL.ACTION_FAILED'),
+				error?.error?.message ||
+					error?.message ||
+					this.getTranslation('REPAIR_ORDERS_PAGE.DETAIL.ACTION_FAILED'),
 				this.getTranslation('TOASTR.TITLE.ERROR')
 			);
 		}
@@ -141,11 +148,9 @@ export class RepairOrderDetailComponent extends TranslationBaseComponent impleme
 
 	/** Cancel is allowed from OPEN, IN_PROGRESS, or READY (non-terminal). */
 	canCancel(): boolean {
-		return [
-			RepairOrderStatusEnum.OPEN,
-			RepairOrderStatusEnum.IN_PROGRESS,
-			RepairOrderStatusEnum.READY
-		].includes(this.repairOrder?.status);
+		return [RepairOrderStatusEnum.OPEN, RepairOrderStatusEnum.IN_PROGRESS, RepairOrderStatusEnum.READY].includes(
+			this.repairOrder?.status
+		);
 	}
 
 	/** Invoice generation is allowed once the RO is READY or CLOSED. */
@@ -160,7 +165,7 @@ export class RepairOrderDetailComponent extends TranslationBaseComponent impleme
 			return '';
 		}
 		const parts = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean);
-		return parts.length ? parts.join(' ') : vehicle.vinNormalized ?? '';
+		return parts.length ? parts.join(' ') : (vehicle.vinNormalized ?? '');
 	}
 
 	/** Navigates to the existing Job Board for this repair order. */
@@ -203,6 +208,38 @@ export class RepairOrderDetailComponent extends TranslationBaseComponent impleme
 		const inspection: IInspection = await firstValueFrom(dialogRef.onClose);
 		if (inspection?.id) {
 			this.router.navigate(['/pages/inspections', inspection.id]);
+		}
+	}
+
+	/**
+	 * Opens the Financing application for this repair order: navigates to the existing active
+	 * application if one exists, otherwise opens the creation dialog pre-filled with the RO context.
+	 * Does not create a duplicate application.
+	 */
+	async openFinancing(): Promise<void> {
+		if (!this.repairOrder?.id) {
+			return;
+		}
+		try {
+			const { items } = await this.financingApi.listByRepairOrder(this.repairOrder.id);
+			const existing = (items ?? []).find(
+				(application) => application.status !== 'CANCELLED' && application.status !== 'DECLINED'
+			);
+			if (existing?.id) {
+				this.router.navigate(['/pages/financing', existing.id]);
+				return;
+			}
+		} catch (error) {
+			// A failure to list simply means we fall through to create.
+		}
+		const dialogRef = this.dialogService.open(FinancingMutationComponent, {
+			context: {
+				repairOrderId: this.repairOrder.id
+			}
+		});
+		const application: IFinancingApplication = await firstValueFrom(dialogRef.onClose);
+		if (application?.id) {
+			this.router.navigate(['/pages/financing', application.id]);
 		}
 	}
 

@@ -28,6 +28,15 @@ export class EstimateApiService {
 		return firstValueFrom(this.http.get<IPagination<IEstimate>>(`${this.baseUrl}/estimates`));
 	}
 
+	/** Lists estimates for a repair order via the existing list endpoint (`GET /estimates?where[repairOrderId]=…`). */
+	listByRepairOrder(repairOrderId: ID): Promise<IPagination<IEstimate>> {
+		return firstValueFrom(
+			this.http.get<IPagination<IEstimate>>(`${this.baseUrl}/estimates`, {
+				params: toParams({ where: { repairOrderId } })
+			})
+		);
+	}
+
 	/**
 	 * Fetches a single estimate by id (`GET /estimates/:id`), loading its line items via
 	 * the metadata-only `lines` relation.

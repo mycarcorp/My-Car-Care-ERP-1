@@ -39,6 +39,7 @@ export const getPagesRoutes = (_pageRouteRegistryService: PageRouteRegistryServi
 		...getInspectionsRoute(),
 		...getDiagnosticsRoute(),
 		...getAppointmentsRoute(),
+		...getFinancingRoute(),
 		...getServiceCenterDashboardRoute(),
 		...getSalesRoutes(_pageRouteRegistryService),
 		...getEmployeesRoutes(_pageRouteRegistryService),
@@ -256,6 +257,20 @@ function getAppointmentsRoute(): Route[] {
 		{
 			path: 'appointments',
 			loadChildren: () => import('./appointments/appointments.module').then((m) => m.AppointmentsModule)
+		}
+	];
+}
+
+/**
+ * Gets the financing applications route.
+ *
+ * @returns Route[]
+ */
+function getFinancingRoute(): Route[] {
+	return [
+		{
+			path: 'financing',
+			loadChildren: () => import('./financing/financing.module').then((m) => m.FinancingModule)
 		}
 	];
 }

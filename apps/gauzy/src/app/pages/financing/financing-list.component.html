@@ -1,0 +1,67 @@
+<nb-card class="financing">
+	<nb-card-header class="financing__header">
+		<h4>{{ 'FINANCING_PAGE.TITLE' | translate }}</h4>
+	</nb-card-header>
+	<nb-card-body>
+		<div class="financing__toolbar">
+			<nb-select
+				class="financing__status"
+				[placeholder]="'FINANCING_PAGE.STATUS_FILTER' | translate"
+				[(ngModel)]="statusFilter"
+				(ngModelChange)="onStatusChange($event)"
+			>
+				<nb-option [value]="''">{{ 'FINANCING_PAGE.ALL_STATUSES' | translate }}</nb-option>
+				<nb-option *ngFor="let status of statuses" [value]="status">{{ status }}</nb-option>
+			</nb-select>
+		</div>
+
+		<div *ngIf="loading" class="financing__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<ng-template [ngIf]="!loading">
+			<ng-template [ngIf]="applications.length" [ngIfElse]="noApplications">
+				<table class="table financing__table">
+					<thead>
+						<tr>
+							<th>{{ 'FINANCING_PAGE.REPAIR_ORDER' | translate }}</th>
+							<th>{{ 'FINANCING_PAGE.CUSTOMER' | translate }}</th>
+							<th>{{ 'FINANCING_PAGE.VEHICLE' | translate }}</th>
+							<th>{{ 'FINANCING_PAGE.REQUESTED' | translate }}</th>
+							<th>{{ 'FINANCING_PAGE.STATUS' | translate }}</th>
+							<th>{{ 'FINANCING_PAGE.CREATED' | translate }}</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr *ngFor="let application of applications">
+							<td>{{ application['repairOrderNumber'] }}</td>
+							<td>{{ application['customerName'] }}</td>
+							<td>{{ application['vehicleLabel'] }}</td>
+							<td>{{ application.currency }} {{ application.requestedAmount }}</td>
+							<td>
+								<nb-badge [text]="application.status" status="basic"></nb-badge>
+							</td>
+							<td>{{ application.createdAt | date: 'shortDate' }}</td>
+							<td>
+								<button nbButton size="small" status="basic" (click)="view(application)">
+									{{ 'FINANCING_PAGE.VIEW' | translate }}
+								</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<ga-pagination
+					*ngIf="smartTableSource"
+					[source]="smartTableSource"
+					(totalItemsChange)="onPageChange()"
+				></ga-pagination>
+			</ng-template>
+			<ng-template #noApplications>
+				<div class="financing__empty">
+					{{ 'FINANCING_PAGE.EMPTY' | translate }}
+				</div>
+			</ng-template>
+		</ng-template>
+	</nb-card-body>
+</nb-card>

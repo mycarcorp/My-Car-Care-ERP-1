@@ -32,7 +32,10 @@
 					<span class="ro-detail__label">{{ 'REPAIR_ORDERS_PAGE.DETAIL.ARRIVED' | translate }}</span>
 					<span>{{ repairOrder.arrivedAt | date: 'short' }}</span>
 				</div>
-				<div class="ro-detail__row" *ngIf="repairOrder.arrivalOdometer !== undefined && repairOrder.arrivalOdometer !== null">
+				<div
+					class="ro-detail__row"
+					*ngIf="repairOrder.arrivalOdometer !== undefined && repairOrder.arrivalOdometer !== null"
+				>
 					<span class="ro-detail__label">{{ 'REPAIR_ORDERS_PAGE.DETAIL.ODOMETER' | translate }}</span>
 					<span>{{ repairOrder.arrivalOdometer }}</span>
 				</div>
@@ -46,13 +49,11 @@
 				<button nbButton status="primary" (click)="openJobBoard()">
 					{{ 'REPAIR_ORDERS_PAGE.DETAIL.OPEN_JOB_BOARD' | translate }}
 				</button>
-				<button
-					*ngxPermissionsOnly="['ORG_INSPECTION_VIEW']"
-					nbButton
-					status="info"
-					(click)="openInspection()"
-				>
+				<button *ngxPermissionsOnly="['ORG_INSPECTION_VIEW']" nbButton status="info" (click)="openInspection()">
 					{{ 'REPAIR_ORDERS_PAGE.DETAIL.INSPECTION' | translate }}
+				</button>
+				<button *ngxPermissionsOnly="['ORG_FINANCING_VIEW']" nbButton status="info" (click)="openFinancing()">
+					{{ 'REPAIR_ORDERS_PAGE.DETAIL.FINANCING' | translate }}
 				</button>
 				<button
 					*ngIf="canGenerateInvoice()"
@@ -63,22 +64,10 @@
 				>
 					{{ 'REPAIR_ORDERS_PAGE.DETAIL.GENERATE_INVOICE' | translate }}
 				</button>
-				<button
-					*ngIf="canClose()"
-					nbButton
-					status="success"
-					(click)="close()"
-					[disabled]="!canClose()"
-				>
+				<button *ngIf="canClose()" nbButton status="success" (click)="close()" [disabled]="!canClose()">
 					{{ 'REPAIR_ORDERS_PAGE.DETAIL.CLOSE' | translate }}
 				</button>
-				<button
-					*ngIf="canCancel()"
-					nbButton
-					status="danger"
-					(click)="cancel()"
-					[disabled]="!canCancel()"
-				>
+				<button *ngIf="canCancel()" nbButton status="danger" (click)="cancel()" [disabled]="!canCancel()">
 					{{ 'REPAIR_ORDERS_PAGE.DETAIL.CANCEL' | translate }}
 				</button>
 			</div>

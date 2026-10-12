@@ -1,0 +1,87 @@
+<nb-card class="financing-detail">
+	<nb-card-header class="financing-detail__header">
+		<h4>{{ 'FINANCING_PAGE.DETAIL.TITLE' | translate }}</h4>
+		<nb-badge *ngIf="application" [text]="application.status" [status]="statusBadgeStatus"></nb-badge>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="financing-detail__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<div *ngIf="!loading && notFound" class="financing-detail__empty">
+			{{ 'FINANCING_PAGE.DETAIL.NOT_FOUND' | translate }}
+		</div>
+
+		<ng-container *ngIf="!loading && application">
+			<div class="financing-detail__grid">
+				<div class="financing-detail__row">
+					<span class="financing-detail__label">{{ 'FINANCING_PAGE.REPAIR_ORDER' | translate }}</span>
+					<a class="financing-detail__link" (click)="openRepairOrder()">{{ repairOrderLabel }}</a>
+				</div>
+				<div class="financing-detail__row">
+					<span class="financing-detail__label">{{ 'FINANCING_PAGE.CUSTOMER' | translate }}</span>
+					<span>{{ customerLabel }}</span>
+				</div>
+				<div class="financing-detail__row">
+					<span class="financing-detail__label">{{ 'FINANCING_PAGE.VEHICLE' | translate }}</span>
+					<span>{{ vehicleLabel }}</span>
+				</div>
+				<div class="financing-detail__row">
+					<span class="financing-detail__label">{{ 'FINANCING_PAGE.REQUESTED' | translate }}</span>
+					<span>{{ application.currency }} {{ application.requestedAmount }}</span>
+				</div>
+				<div class="financing-detail__row" *ngIf="application.approvedAmount != null">
+					<span class="financing-detail__label">{{ 'FINANCING_PAGE.APPROVED' | translate }}</span>
+					<span>{{ application.currency }} {{ application.approvedAmount }}</span>
+				</div>
+				<div class="financing-detail__row" *ngIf="application.provider">
+					<span class="financing-detail__label">{{ 'FINANCING_PAGE.PROVIDER' | translate }}</span>
+					<span>{{ application.provider }}</span>
+				</div>
+				<div class="financing-detail__row" *ngIf="application.rejectionReason">
+					<span class="financing-detail__label">{{ 'FINANCING_PAGE.REJECTION_REASON' | translate }}</span>
+					<span>{{ application.rejectionReason }}</span>
+				</div>
+				<div class="financing-detail__row" *ngIf="application.submittedAt">
+					<span class="financing-detail__label">{{ 'FINANCING_PAGE.SUBMITTED' | translate }}</span>
+					<span>{{ application.submittedAt | date: 'short' }}</span>
+				</div>
+				<div class="financing-detail__row" *ngIf="application.decidedAt">
+					<span class="financing-detail__label">{{ 'FINANCING_PAGE.DECIDED' | translate }}</span>
+					<span>{{ application.decidedAt | date: 'short' }}</span>
+				</div>
+			</div>
+
+			<div class="financing-detail__actions">
+				<ng-container *ngxPermissionsOnly="['ORG_FINANCING_EDIT']">
+					<button *ngIf="canSubmit()" nbButton status="primary" (click)="submit()">
+						{{ 'FINANCING_PAGE.DETAIL.SUBMIT' | translate }}
+					</button>
+					<button *ngIf="canMarkPending()" nbButton status="info" (click)="markPending()">
+						{{ 'FINANCING_PAGE.DETAIL.MARK_PENDING' | translate }}
+					</button>
+					<button *ngIf="canAccept()" nbButton status="success" (click)="accept()">
+						{{ 'FINANCING_PAGE.DETAIL.ACCEPT' | translate }}
+					</button>
+					<button *ngIf="canCancel()" nbButton status="danger" outline (click)="cancel()">
+						{{ 'FINANCING_PAGE.DETAIL.CANCEL' | translate }}
+					</button>
+				</ng-container>
+				<ng-container *ngxPermissionsOnly="['ORG_FINANCING_APPROVE']">
+					<button *ngIf="canDecide()" nbButton status="success" (click)="approve()">
+						{{ 'FINANCING_PAGE.DETAIL.APPROVE' | translate }}
+					</button>
+					<button *ngIf="canDecide()" nbButton status="warning" (click)="decline()">
+						{{ 'FINANCING_PAGE.DETAIL.DECLINE' | translate }}
+					</button>
+				</ng-container>
+			</div>
+
+			<div class="financing-detail__nav">
+				<button nbButton status="basic" (click)="back()">
+					{{ 'FINANCING_PAGE.DETAIL.BACK' | translate }}
+				</button>
+			</div>
+		</ng-container>
+	</nb-card-body>
+</nb-card>

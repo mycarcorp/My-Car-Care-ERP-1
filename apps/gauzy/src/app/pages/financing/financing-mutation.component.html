@@ -1,0 +1,53 @@
+<nb-card class="financing-mutation">
+	<nb-card-header>{{ 'FINANCING_PAGE.MUTATION.TITLE' | translate }}</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="resolvingContext" class="financing-mutation__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<div *ngIf="!resolvingContext && contextError" class="financing-mutation__error">
+			{{ 'FINANCING_PAGE.MUTATION.NO_APPROVAL_CONTEXT' | translate }}
+		</div>
+
+		<ng-container *ngIf="!resolvingContext && !contextError">
+			<div class="financing-mutation__field">
+				<label>{{ 'FINANCING_PAGE.MUTATION.REQUESTED_AMOUNT' | translate }}</label>
+				<input
+					nbInput
+					type="number"
+					min="0"
+					fullWidth
+					[(ngModel)]="requestedAmount"
+					[placeholder]="'FINANCING_PAGE.MUTATION.REQUESTED_AMOUNT_PLACEHOLDER' | translate"
+				/>
+			</div>
+			<div class="financing-mutation__field">
+				<label>{{ 'FINANCING_PAGE.MUTATION.CURRENCY' | translate }}</label>
+				<input nbInput type="text" fullWidth [(ngModel)]="currency" maxlength="3" />
+			</div>
+			<div class="financing-mutation__field">
+				<label>{{ 'FINANCING_PAGE.MUTATION.PROVIDER' | translate }}</label>
+				<input
+					nbInput
+					type="text"
+					fullWidth
+					[(ngModel)]="provider"
+					[placeholder]="'FINANCING_PAGE.MUTATION.PROVIDER_PLACEHOLDER' | translate"
+				/>
+			</div>
+		</ng-container>
+	</nb-card-body>
+	<nb-card-footer class="financing-mutation__footer">
+		<button nbButton status="basic" (click)="close()">
+			{{ 'FINANCING_PAGE.MUTATION.CANCEL' | translate }}
+		</button>
+		<button
+			nbButton
+			status="primary"
+			[disabled]="!isValid || submitting || contextError"
+			(click)="submit()"
+		>
+			{{ 'FINANCING_PAGE.MUTATION.CREATE' | translate }}
+		</button>
+	</nb-card-footer>
+</nb-card>

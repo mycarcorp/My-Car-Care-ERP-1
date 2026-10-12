@@ -1,0 +1,53 @@
+.financing-detail {
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__loading {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--text-hint-color);
+  }
+
+  &__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  &__row {
+    display: flex;
+    gap: 1rem;
+  }
+
+  &__label {
+    font-weight: 600;
+    min-width: 160px;
+    color: var(--text-hint-color);
+  }
+
+  &__link {
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  &__nav {
+    margin-top: 1rem;
+  }
+}
