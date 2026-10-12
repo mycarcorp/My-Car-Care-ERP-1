@@ -1,7 +1,8 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import {
+	CurrenciesEnum,
 	CustomerWorkApprovalSubmissionStateEnum,
 	EstimateStatusEnum,
 	FINANCING_ACTIVE_KEY,
@@ -10,7 +11,9 @@ import {
 	IFinancingApplicationCreateInput,
 	IFinancingApplicationTransitionInput,
 	IFinancingApplicationUpdateInput,
+	InvoiceStatusTypesEnum,
 	PermissionsEnum,
+	PaymentMethodEnum,
 	RepairOrderStatusEnum
 } from '@gauzy/contracts';
 import { RequestContext } from '../core/context';
@@ -20,6 +23,8 @@ import { EstimateService } from '../estimate/estimate.service';
 import { OrganizationContactService } from '../organization-contact/organization-contact.service';
 import { VehicleService } from '../vehicle/vehicle.service';
 import { CustomerWorkApproval } from '../customer-work-approval/customer-work-approval.entity';
+import { Invoice } from '../invoice/invoice.entity';
+import { PaymentService } from '../payment/payment.service';
 import { FinancingApplication } from './financing-application.entity';
 import { TypeOrmFinancingApplicationRepository } from './repository/type-orm-financing-application.repository';
 import { MikroOrmFinancingApplicationRepository } from './repository/mikro-orm-financing-application.repository';
@@ -46,10 +51,17 @@ const FINANCING_TRANSITIONS: Record<FinancingApplicationStatusEnum, FinancingApp
 	],
 	[FinancingApplicationStatusEnum.ACCEPTED]: [],
 	[FinancingApplicationStatusEnum.DECLINED]: [],
-	[FinancingApplicationStatusEnum.CANCELLED]: []
+	[FinancingApplicationStatusEnum.CANCELLED]: [],
+	[FinancingApplicationStatusEnum.FUNDED]: []
 };
 
-const TERMINAL_STATUSES = [FinancingApplicationStatusEnum.DECLINED, FinancingApplicationStatusEnum.CANCELLED];
+// FUNDED is terminal but is NOT cleared by the generic transition path; it is reached only via
+// the dedicated atomic `fund()` method, which clears the sentinel after recording the payment.
+const TERMINAL_STATUSES = [
+	FinancingApplicationStatusEnum.DECLINED,
+	FinancingApplicationStatusEnum.CANCELLED,
+	FinancingApplicationStatusEnum.FUNDED
+];
 
 @Injectable()
 export class FinancingApplicationService extends TenantAwareCrudService<FinancingApplication> {
@@ -61,7 +73,10 @@ export class FinancingApplicationService extends TenantAwareCrudService<Financin
 		private readonly customerService: OrganizationContactService,
 		private readonly vehicleService: VehicleService,
 		@InjectRepository(CustomerWorkApproval)
-		private readonly approvals: Repository<CustomerWorkApproval>
+	private readonly approvals: Repository<CustomerWorkApproval>,
+	@InjectRepository(Invoice)
+	private readonly invoices: Repository<Invoice>,
+	private readonly paymentService: PaymentService
 	) {
 		super(typeOrmRepository, mikroOrmRepository);
 	}
@@ -233,6 +248,109 @@ export class FinancingApplicationService extends TenantAwareCrudService<Financin
 		if (TERMINAL_STATUSES.includes(to)) patch.activeKey = null;
 		await this.typeOrmRepository.update({ id: application.id }, patch as any);
 		return { ...application, ...patch };
+	}
+
+	/**
+	 * Records funding for an ACCEPTED financing application, atomically.
+	 *
+	 * Inside a single transaction: re-loads the application and asserts it is still ACCEPTED
+	 * (this is the duplicate/concurrency guard — the row's status is re-checked against the
+	 * transaction's view, so a concurrent funding that already committed FUNDED is rejected);
+	 * resolves the repair order's existing invoice (rejecting missing/VOID/foreign invoices);
+	 * computes the funding amount from the invoice's current server-side `amountDue`; verifies
+	 * the approved financing covers the full remaining balance; records the payment through the
+	 * existing payment engine (which recalculates the invoice authoritatively); and only then
+	 * marks the application FUNDED, stamping fundedAt/fundedAmount/invoiceId and clearing the
+	 * active sentinel. Any failure rolls the whole transaction back — no partial funding.
+	 *
+	 * The client never supplies the amount, invoice, or any lifecycle/timestamp field.
+	 */
+	async fund(id: ID): Promise<FinancingApplication> {
+		const application = await this.findOneByIdString(id);
+		this.assertSameOrganization(application);
+		const tenantId = RequestContext.currentTenantId();
+		const organizationId = application.organizationId;
+
+		return await this.typeOrmRepository.manager.transaction(async (manager: EntityManager) => {
+			// Atomic admission claim: flip ACCEPTED → FUNDED in a single conditional UPDATE keyed on
+			// id + tenant + organization + status. Only the request that actually transitions the row
+			// sees `affected === 1`; any concurrent or duplicate funding finds the row already claimed
+			// (affected 0) and fails closed. This is the repository's portable claim pattern — it avoids
+			// `SELECT … FOR UPDATE`, which is not supported on every driver we support (better-sqlite3).
+			// The payment, invoice recalculation, and the sentinel clear happen in the SAME transaction,
+			// so a payment failure rolls the claim back and leaves the application ACCEPTED.
+			const fundedAt = new Date();
+			const claim = await manager.update(
+				FinancingApplication,
+				{
+					id: application.id,
+					tenantId,
+					organizationId,
+					status: FinancingApplicationStatusEnum.ACCEPTED
+				} as any,
+				{ status: FinancingApplicationStatusEnum.FUNDED, fundedAt } as any
+			);
+			if (claim.affected !== 1) {
+				throw new ConflictException('This financing application has already been funded or is no longer accepted.');
+			}
+
+			// Resolve the repair order's existing invoice within scope; never auto-generate here.
+			const invoice = await manager.findOne(Invoice, {
+				where: { repairOrderId: application.repairOrderId, tenantId, organizationId } as any
+			});
+			if (!invoice) {
+				throw new BadRequestException(
+					'No invoice exists for this repair order. Generate the invoice once the repair order is eligible, then record funding.'
+				);
+			}
+			if (invoice.status === InvoiceStatusTypesEnum.VOID) {
+				throw new BadRequestException('A void invoice cannot be funded.');
+			}
+
+			// Funding settles the remaining balance, computed from the authoritative server-side amountDue.
+			const fundedAmount = Number(invoice.amountDue);
+			if (!Number.isFinite(fundedAmount) || fundedAmount <= 0) {
+				throw new BadRequestException('The invoice has no outstanding balance to fund.');
+			}
+
+			// The approved financing offer must cover the full remaining balance.
+			const approvedTotal = Number(application.approvedAmount);
+			if (!Number.isFinite(approvedTotal) || approvedTotal < fundedAmount) {
+				throw new BadRequestException(
+					'The approved financing amount does not cover the remaining invoice balance.'
+				);
+			}
+
+			// Record the funding payment through the existing payment engine (same transaction), so the
+			// invoice's alreadyPaid/amountDue/status recalculation stays authoritative and atomic.
+			await this.paymentService.createWithManager(
+				{
+					amount: fundedAmount,
+					currency: invoice.currency as CurrenciesEnum,
+					invoiceId: invoice.id,
+					paymentDate: new Date(),
+					paymentMethod: PaymentMethodEnum.BANK_TRANSFER,
+					note: `Financing funding for application ${application.id}`,
+				} as any,
+				manager,
+				{ tenantId, organizationId }
+			);
+
+			// Finalize the funding fields and clear the sentinel, in the same transaction as the claim
+			// and the payment. Any failure above rolls back the claim, the payment, and this update.
+			const patch: Partial<FinancingApplication> = {
+				fundedAmount,
+				invoiceId: invoice.id,
+				activeKey: null
+			};
+			await manager.update(FinancingApplication, { id: application.id }, patch as any);
+			return {
+				...application,
+				status: FinancingApplicationStatusEnum.FUNDED,
+				fundedAt,
+				...patch
+			} as FinancingApplication;
+		});
 	}
 
 	/**

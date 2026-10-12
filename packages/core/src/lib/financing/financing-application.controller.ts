@@ -56,4 +56,11 @@ export class FinancingApplicationController {
 	async transition(@Param('id', UUIDValidationPipe) id: ID, @Body() input: TransitionFinancingApplicationDTO) {
 		return this.service.transition(id, input);
 	}
+
+	@ApiOperation({ summary: 'Record funding for an accepted application against its repair order invoice' })
+	@Post(':id/fund')
+	@Permissions(PermissionsEnum.ORG_FINANCING_APPROVE)
+	async fund(@Param('id', UUIDValidationPipe) id: ID) {
+		return this.service.fund(id);
+	}
 }

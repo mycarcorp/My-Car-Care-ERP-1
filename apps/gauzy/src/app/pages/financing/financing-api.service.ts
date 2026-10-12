@@ -56,4 +56,9 @@ export class FinancingApiService {
 	transition(id: ID, input: IFinancingApplicationTransitionInput): Promise<IFinancingApplication> {
 		return firstValueFrom(this.http.post<IFinancingApplication>(`${this.baseUrl}/${id}/transition`, input));
 	}
+
+	/** Records funding for an accepted application (`POST /financing/:id/fund`). */
+	fund(id: ID): Promise<IFinancingApplication> {
+		return firstValueFrom(this.http.post<IFinancingApplication>(`${this.baseUrl}/${id}/fund`, {}));
+	}
 }

@@ -6,7 +6,9 @@ import { EstimateModule } from '../estimate/estimate.module';
 import { OrganizationContactModule } from '../organization-contact/organization-contact.module';
 import { VehicleModule } from '../vehicle/vehicle.module';
 import { RolePermissionModule } from '../role-permission/role-permission.module';
+import { PaymentModule } from '../payment/payment.module';
 import { CustomerWorkApproval } from '../customer-work-approval/customer-work-approval.entity';
+import { Invoice } from '../invoice/invoice.entity';
 import { FinancingApplication } from './financing-application.entity';
 import { FinancingApplicationController } from './financing-application.controller';
 import { FinancingApplicationService } from './financing-application.service';
@@ -15,13 +17,14 @@ import { MikroOrmFinancingApplicationRepository } from './repository/mikro-orm-f
 
 @Module({
 	imports: [
-		TypeOrmModule.forFeature([FinancingApplication, CustomerWorkApproval]),
+		TypeOrmModule.forFeature([FinancingApplication, CustomerWorkApproval, Invoice]),
 		MikroOrmModule.forFeature([FinancingApplication]),
 		RepairOrderModule,
 		EstimateModule,
 		OrganizationContactModule,
 		VehicleModule,
-		RolePermissionModule
+		RolePermissionModule,
+		PaymentModule
 	],
 	controllers: [FinancingApplicationController],
 	providers: [

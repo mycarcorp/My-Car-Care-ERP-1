@@ -1,12 +1,13 @@
 import '../core/entities/internal';
 
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { CustomerWorkApprovalSubmissionStateEnum, FinancingApplicationStatusEnum } from '@gauzy/contracts';
+import { CustomerWorkApprovalSubmissionStateEnum, FINANCING_ACTIVE_KEY, FinancingApplicationStatusEnum } from '@gauzy/contracts';
 import { CrudService } from '../core/crud/crud.service';
 import { RequestContext } from '../core/context';
 import { InMemoryTenantRepository } from '../core/testing/tenant-isolation/in-memory-tenant-repository';
 import { createTenantFixture } from '../core/testing/tenant-isolation/tenant-isolation.fixtures';
 import { MultiORMEnum } from '../core/utils';
+import { Invoice } from '../invoice/invoice.entity';
 import { FinancingApplication } from './financing-application.entity';
 import { FinancingApplicationService } from './financing-application.service';
 
@@ -22,6 +23,8 @@ describe('FinancingApplicationService', () => {
 	let approvals: { findOne: jest.Mock };
 	let repairOrders: { findOneByIdString: jest.Mock };
 	let estimates: { findOneByIdString: jest.Mock };
+	let invoices: { findOne: jest.Mock };
+	let paymentService: { createWithManager: jest.Mock };
 	let hasPermission: jest.SpyInstance;
 
 	const validInput = () => ({
@@ -78,6 +81,46 @@ describe('FinancingApplicationService', () => {
 			if (row) Object.assign(row, partial);
 			return { affected: row ? 1 : 0, raw: [], generatedMaps: [] };
 		});
+		invoices = { findOne: jest.fn() };
+		paymentService = { createWithManager: jest.fn(async () => ({})) };
+		// Transaction-capable manager operating on the same in-memory store. The fund() method runs
+		// inside manager.transaction; we route its manager reads/writes back to the repository. On error
+		// the transaction restores a snapshot so rollback semantics are genuinely exercised.
+		const manager: any = {};
+		manager.transaction = jest.fn(async (work: (m: any) => Promise<any>) => {
+			const snapshot = (repository as any).all().map((r: any) => ({ ...r }));
+			try {
+				return await work(manager);
+			} catch (error) {
+				// Roll back: restore the pre-transaction rows.
+				const current = (repository as any).all();
+				for (const row of current) {
+					const original = snapshot.find((s: any) => s.id === row.id);
+					if (original) Object.assign(row, original);
+				}
+				throw error;
+			}
+		});
+		manager.findOneOrFail = jest.fn(async (_entity: any, opts: any) => {
+			const where = opts?.where ?? opts;
+			return repository.findOneOrFail({ where } as any);
+		});
+		manager.findOne = jest.fn(async (entity: any, opts: any) => {
+			if (entity === (Invoice as any)) return invoices.findOne(opts);
+			const where = opts?.where ?? opts;
+			return repository.findOne({ where } as any);
+		});
+		// TypeORM's manager.update(entity, criteria, partial). Honor the `status` predicate so the
+		// atomic claim is genuinely exercised: only a row matching every criteria key is updated,
+		// and `affected` reflects the real matched-row count (0 when the status precondition fails).
+		manager.update = jest.fn(async (_entity: any, criteria: any, partial: any) => {
+			const rows = (repository as any).all().filter((r: any) =>
+				Object.entries(criteria).every(([key, value]) => r[key] === value)
+			);
+			for (const row of rows) Object.assign(row, partial);
+			return { affected: rows.length, raw: [], generatedMaps: [] };
+		});
+		(repository as any).manager = manager;
 		service = new FinancingApplicationService(
 			repository as any,
 			{} as any,
@@ -85,7 +128,9 @@ describe('FinancingApplicationService', () => {
 			estimates as any,
 			{} as any,
 			{} as any,
-			approvals as any
+			approvals as any,
+			invoices as any,
+			paymentService as any
 		);
 		jest.spyOn(RequestContext, 'currentUser').mockReturnValue({
 			...tenant.user,
@@ -357,6 +402,154 @@ describe('FinancingApplicationService', () => {
 			await expect(service.createApplication({ ...validInput(), requestedAmount: 2000 })).resolves.toMatchObject({
 				repairOrderId: RO_ID
 			});
+		});
+	});
+
+	describe('funding', () => {
+		const INVOICE_ID = 'inv-1';
+		// Builds an ACCEPTED application in the store with an approved amount.
+		const seedAccepted = async (approvedAmount = 2000) => {
+			const app = repository.seed({
+				repairOrderId: RO_ID,
+				estimateId: ESTIMATE_ID,
+				customerId: CUSTOMER_ID,
+				vehicleId: VEHICLE_ID,
+				status: FinancingApplicationStatusEnum.ACCEPTED,
+				approvedAmount,
+				activeKey: FINANCING_ACTIVE_KEY,
+				tenantId: tenant.tenantId,
+				organizationId: tenant.organizationId
+			} as any);
+			return app;
+		};
+		const seedInvoice = (overrides: Record<string, unknown> = {}) => {
+			invoices.findOne.mockResolvedValue({
+				id: INVOICE_ID,
+				repairOrderId: RO_ID,
+				tenantId: tenant.tenantId,
+				organizationId: tenant.organizationId,
+				status: 'SENT',
+				amountDue: 1500,
+				totalValue: 1500,
+				currency: 'USD',
+				...overrides
+			});
+		};
+
+		it('funds an ACCEPTED application, settling the remaining invoice balance', async () => {
+			hasPermission.mockReturnValue(true);
+			const app = await seedAccepted(2000);
+			seedInvoice();
+			const result = await service.fund(app.id);
+			expect(result.status).toBe(FinancingApplicationStatusEnum.FUNDED);
+			expect(result.fundedAmount).toBe(1500);
+			expect(result.invoiceId).toBe(INVOICE_ID);
+			expect(result.activeKey).toBeNull();
+			expect(result.fundedAt).toBeInstanceOf(Date);
+			expect(paymentService.createWithManager).toHaveBeenCalledWith(
+				expect.objectContaining({ amount: 1500, invoiceId: INVOICE_ID }),
+				expect.anything(),
+				expect.objectContaining({ tenantId: tenant.tenantId })
+			);
+		});
+
+		it('funds only the remaining balance after a partial customer payment', async () => {
+			hasPermission.mockReturnValue(true);
+			const app = await seedAccepted(2000);
+			seedInvoice({ amountDue: 900, totalValue: 1500 }); // customer already paid 600
+			const result = await service.fund(app.id);
+			expect(result.fundedAmount).toBe(900);
+		});
+
+		it('rejects funding when the approved offer cannot cover the remaining balance', async () => {
+			hasPermission.mockReturnValue(true);
+			const app = await seedAccepted(500); // approved 500 < balance 1500
+			seedInvoice();
+			await expect(service.fund(app.id)).rejects.toBeInstanceOf(BadRequestException);
+			expect(paymentService.createWithManager).not.toHaveBeenCalled();
+		});
+
+		it.each([0, -50])('rejects funding when the invoice has no outstanding balance (%s)', async (amountDue) => {
+			hasPermission.mockReturnValue(true);
+			const app = await seedAccepted(2000);
+			seedInvoice({ amountDue });
+			await expect(service.fund(app.id)).rejects.toBeInstanceOf(BadRequestException);
+		});
+
+		it('rejects funding when no invoice exists', async () => {
+			hasPermission.mockReturnValue(true);
+			const app = await seedAccepted(2000);
+			invoices.findOne.mockResolvedValue(null);
+			await expect(service.fund(app.id)).rejects.toBeInstanceOf(BadRequestException);
+		});
+
+		it('rejects funding a VOID invoice', async () => {
+			hasPermission.mockReturnValue(true);
+			const app = await seedAccepted(2000);
+			seedInvoice({ status: 'VOID' });
+			await expect(service.fund(app.id)).rejects.toBeInstanceOf(BadRequestException);
+		});
+
+		it('rejects funding from an invalid lifecycle state', async () => {
+			hasPermission.mockReturnValue(true);
+			const app = repository.seed({
+				repairOrderId: RO_ID,
+				status: FinancingApplicationStatusEnum.APPROVED,
+				tenantId: tenant.tenantId,
+				organizationId: tenant.organizationId
+			} as any);
+			// The atomic claim requires status: ACCEPTED; an APPROVED row matches zero rows → conflict.
+			await expect(service.fund(app.id)).rejects.toBeInstanceOf(ConflictException);
+		});
+
+		it('claims the application atomically with id + tenant + organization + ACCEPTED in one update', async () => {
+			hasPermission.mockReturnValue(true);
+			const app = await seedAccepted(2000);
+			seedInvoice();
+			await service.fund(app.id);
+			const updateMock = (repository as any).manager.update as jest.Mock;
+			const [claimEntity, claimCriteria, claimPatch] = updateMock.mock.calls[0];
+			expect(claimCriteria).toMatchObject({
+				id: app.id,
+				tenantId: tenant.tenantId,
+				organizationId: tenant.organizationId,
+				status: FinancingApplicationStatusEnum.ACCEPTED
+			});
+			expect(claimPatch).toMatchObject({ status: FinancingApplicationStatusEnum.FUNDED });
+		});
+
+		it('rejects a second funding request after success (duplicate/retry guard)', async () => {
+			hasPermission.mockReturnValue(true);
+			const app = await seedAccepted(2000);
+			seedInvoice();
+			await service.fund(app.id);
+			// After funding, the row is FUNDED; the claim's status predicate matches zero rows → conflict,
+			// and no additional payment is recorded.
+			await expect(service.fund(app.id)).rejects.toBeInstanceOf(ConflictException);
+			expect(paymentService.createWithManager).toHaveBeenCalledTimes(1);
+		});
+
+		it('does not record funding when the payment step fails', async () => {
+			hasPermission.mockReturnValue(true);
+			const app = await seedAccepted(2000);
+			seedInvoice();
+			paymentService.createWithManager.mockRejectedValueOnce(new Error('payment failed'));
+			await expect(service.fund(app.id)).rejects.toBeInstanceOf(Error);
+			// The application remains ACCEPTED (not FUNDED) and keeps its sentinel.
+			const row = repository.all().find((r: any) => r.id === app.id) as any;
+			expect(row.status).toBe(FinancingApplicationStatusEnum.ACCEPTED);
+			expect(row.activeKey).toBe(FINANCING_ACTIVE_KEY);
+		});
+
+		it('cannot fund an application belonging to another tenant', async () => {
+			hasPermission.mockReturnValue(true);
+			const foreign = repository.seed({
+				repairOrderId: RO_ID,
+				status: FinancingApplicationStatusEnum.ACCEPTED,
+				tenantId: 'b7a1f2c4-1a2b-4c3d-8e9f-0a1b2c3d4e5f',
+				organizationId: tenant.organizationId
+			} as any);
+			await expect(service.fund(foreign.id)).rejects.toBeInstanceOf(NotFoundException);
 		});
 	});
 });

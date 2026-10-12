@@ -74,6 +74,15 @@
 					<button *ngIf="canDecide()" nbButton status="warning" (click)="decline()">
 						{{ 'FINANCING_PAGE.DETAIL.DECLINE' | translate }}
 					</button>
+					<button
+						*ngIf="canFund()"
+						nbButton
+						status="primary"
+						[disabled]="fundingInProgress"
+						(click)="fund()"
+					>
+						{{ 'FINANCING_PAGE.DETAIL.RECORD_FUNDING' | translate }}
+					</button>
 				</ng-container>
 			</div>
 

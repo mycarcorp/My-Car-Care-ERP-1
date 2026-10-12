@@ -30,6 +30,7 @@ export class FinancingDetailComponent extends TranslationBaseComponent implement
 	public application: IFinancingApplication;
 	public loading = false;
 	public notFound = false;
+	public fundingInProgress = false;
 	public readonly statuses = FinancingApplicationStatusEnum;
 
 	public canEdit = false;
@@ -157,6 +158,31 @@ export class FinancingDetailComponent extends TranslationBaseComponent implement
 		await this.transition(FinancingApplicationStatusEnum.ACCEPTED);
 	}
 
+	/**
+	 * ACCEPTED → FUNDED: records the funding payment against the repair order's invoice,
+	 * settling its remaining balance. Approver-only. Confirms before submitting, guards
+	 * against repeat submission while running, and refreshes the application on success.
+	 */
+	async fund(): Promise<void> {
+		if (!this.canFund() || this.fundingInProgress) return;
+		if (!window.confirm(this.getTranslation('FINANCING_PAGE.DETAIL.CONFIRM_FUND'))) return;
+		this.fundingInProgress = true;
+		try {
+			this.application = await this.api.fund(this.application.id);
+			this.toastrService.success(
+				this.getTranslation('FINANCING_PAGE.DETAIL.FUND_SUCCESS'),
+				this.getTranslation('TOASTR.TITLE.SUCCESS')
+			);
+		} catch (error) {
+			this.toastrService.danger(
+				error?.error?.message || error?.message || this.getTranslation('FINANCING_PAGE.DETAIL.FUND_FAILED'),
+				this.getTranslation('TOASTR.TITLE.ERROR')
+			);
+		} finally {
+			this.fundingInProgress = false;
+		}
+	}
+
 	/** Cancel from any active status. */
 	async cancel(): Promise<void> {
 		if (!this.canCancel()) return;
@@ -182,6 +208,11 @@ export class FinancingDetailComponent extends TranslationBaseComponent implement
 	/** Accept allowed from APPROVED. */
 	canAccept(): boolean {
 		return this.canEdit && this.application?.status === FinancingApplicationStatusEnum.APPROVED;
+	}
+
+	/** Fund allowed only from ACCEPTED and requires the APPROVE (decision) permission. */
+	canFund(): boolean {
+		return this.canApprove && this.application?.status === FinancingApplicationStatusEnum.ACCEPTED;
 	}
 
 	/** Cancel allowed from any active (non-terminal) status. */

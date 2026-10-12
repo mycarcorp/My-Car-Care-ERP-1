@@ -3,9 +3,10 @@ import { IBasePerTenantAndOrganizationEntityModel, ID } from './base-entity.mode
 /**
  * Financing application lifecycle.
  *
- * DRAFT → SUBMITTED → PENDING → APPROVED / DECLINED → ACCEPTED / CANCELLED → (FUNDED reserved).
- * DECLINED and CANCELLED are terminal in Phase 1. APPROVED is never FUNDED.
- * FUNDED is reserved for a later phase and is not reachable through Phase 1 APIs.
+ * DRAFT → SUBMITTED → PENDING → APPROVED / DECLINED → ACCEPTED / CANCELLED → FUNDED.
+ * DECLINED and CANCELLED are terminal. FUNDED is terminal and reached only from ACCEPTED
+ * by recording the funding payment against the repair order's invoice (server-side `fund()`),
+ * never through the generic transition input.
  */
 export enum FinancingApplicationStatusEnum {
 	DRAFT = 'DRAFT',
@@ -14,7 +15,8 @@ export enum FinancingApplicationStatusEnum {
 	APPROVED = 'APPROVED',
 	DECLINED = 'DECLINED',
 	ACCEPTED = 'ACCEPTED',
-	CANCELLED = 'CANCELLED'
+	CANCELLED = 'CANCELLED',
+	FUNDED = 'FUNDED'
 }
 
 /**

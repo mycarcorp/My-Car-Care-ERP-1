@@ -77,7 +77,18 @@ export class PaymentService extends TenantAwareCrudService<Payment> {
 	 */
 	public async create(entity: IPayment): Promise<Payment> {
 		const scope = this.scope();
+		this.prepareAndValidate(entity, scope);
+		return this.typeOrmRepository.manager.transaction(async (manager: EntityManager) =>
+			this.createWithManager(entity, manager, scope)
+		);
+	}
 
+	/**
+	 * Validates the payment's invariant fields (amount + invoice). Shared by the standalone
+	 * `create` path and the caller-owned-transaction path so both enforce identical rules.
+	 * Mutates `entity` by stripping server-controlled financial fields.
+	 */
+	private prepareAndValidate(entity: IPayment, scope: { tenantId: ID; organizationId: ID }): void {
 		// Strip client-supplied invoice financial fields; they are recomputed
 		// server-side from the actual payment rows and are never trusted.
 		delete (entity as any).alreadyPaid;
@@ -94,10 +105,30 @@ export class PaymentService extends TenantAwareCrudService<Payment> {
 				throw new BadRequestException('Payment amount must be a positive number.');
 			}
 		}
+	}
 
-		// Reject foreign, void or currency-mismatched invoices before opening a transaction.
+	/**
+	 * Creates (or, when `entity.id` is present, updates) a payment inside the caller's
+	 * transaction and recalculates the owning invoice's payment state with the same manager.
+	 * Use this from a service that must persist a payment atomically with its own state change
+	 * (e.g. financing funding). The public `create` delegates here within its own transaction.
+	 *
+	 * @param entity - The payment payload (already field-validated by the caller or `create`).
+	 * @param manager - The caller-owned transactional entity manager.
+	 * @param scope - The current tenant/organization scope.
+	 * @returns The saved payment.
+	 */
+	public async createWithManager(
+		entity: IPayment,
+		manager: EntityManager,
+		scope: { tenantId: ID; organizationId: ID } = this.scope()
+	): Promise<Payment> {
+		this.prepareAndValidate(entity, scope);
+		const isUpdate = isNotEmpty(entity.id);
+
+		// Reject foreign, void or currency-mismatched invoices within the caller's transaction.
 		if (entity.invoiceId) {
-			await this.validatePaymentInvoice(entity.invoiceId, entity.currency as CurrenciesEnum | undefined, scope);
+			await this.validatePaymentInvoiceTx(entity.invoiceId, entity.currency as CurrenciesEnum | undefined, manager, scope);
 		}
 
 		// Inherited Gauzy self-enrichment: when the caller may not act for another
@@ -105,41 +136,37 @@ export class PaymentService extends TenantAwareCrudService<Payment> {
 		const employeeId = RequestContext.currentEmployeeId();
 		const canChangeSelectedEmployee = RequestContext.hasPermission(PermissionsEnum.CHANGE_SELECTED_EMPLOYEE);
 
-		return this.typeOrmRepository.manager.transaction(async (manager: EntityManager) => {
-			let previousInvoiceId: ID | undefined;
-			if (isUpdate) {
-				const existing = await manager.findOne(Payment, {
-					where: { id: entity.id, ...scope },
-					select: { id: true, invoiceId: true }
-				});
-				if (!existing) {
-					throw new NotFoundException('Payment not found in this organization.');
-				}
-				previousInvoiceId = existing.invoiceId;
+		let previousInvoiceId: ID | undefined;
+		if (isUpdate) {
+			const existing = await manager.findOne(Payment, {
+				where: { id: entity.id, ...scope },
+				select: { id: true, invoiceId: true }
+			});
+			if (!existing) {
+				throw new NotFoundException('Payment not found in this organization.');
 			}
+			previousInvoiceId = existing.invoiceId;
+		}
 
-			const payment = await manager.save(
-				Payment,
-				manager.create(Payment, {
-					...entity,
-					...scope,
-					// Preserve the inherited Gauzy convention: a caller without
-					// CHANGE_SELECTED_EMPLOYEE records the payment for themselves.
-					...(isNotEmpty(employeeId) && !canChangeSelectedEmployee ? { employeeId } : {})
-				})
-			);
+		const payment = await manager.save(
+			Payment,
+			manager.create(Payment, {
+				...entity,
+				...scope,
+				...(isNotEmpty(employeeId) && !canChangeSelectedEmployee ? { employeeId } : {})
+			})
+		);
 
-			// `invoiceId: null` (or a different invoice) re-parents the payment: the
-			// previously linked invoice must be recalculated as well.
-			const effectiveInvoiceId = entity.invoiceId !== undefined ? entity.invoiceId : previousInvoiceId;
-			if (effectiveInvoiceId) {
-				await this.recalculateInvoicePaymentState(effectiveInvoiceId, manager, scope);
-			}
-			if (previousInvoiceId && previousInvoiceId !== effectiveInvoiceId) {
-				await this.recalculateInvoicePaymentState(previousInvoiceId, manager, scope);
-			}
-			return payment;
-		});
+		// `invoiceId: null` (or a different invoice) re-parents the payment: the
+		// previously linked invoice must be recalculated as well.
+		const effectiveInvoiceId = entity.invoiceId !== undefined ? entity.invoiceId : previousInvoiceId;
+		if (effectiveInvoiceId) {
+			await this.recalculateInvoicePaymentState(effectiveInvoiceId, manager, scope);
+		}
+		if (previousInvoiceId && previousInvoiceId !== effectiveInvoiceId) {
+			await this.recalculateInvoicePaymentState(previousInvoiceId, manager, scope);
+		}
+		return payment;
 	}
 
 	/**
@@ -257,6 +284,29 @@ export class PaymentService extends TenantAwareCrudService<Payment> {
 		scope: { tenantId: ID; organizationId: ID }
 	): Promise<Invoice> {
 		const invoice = await this.invoices.findOneBy({ id: invoiceId, ...scope });
+		if (!invoice) {
+			throw new BadRequestException('Invoice not found in this organization.');
+		}
+		if (invoice.status === InvoiceStatusTypesEnum.VOID) {
+			throw new BadRequestException('A void invoice cannot accept payments.');
+		}
+		if (currency && invoice.currency && currency !== invoice.currency) {
+			throw new BadRequestException('Payment currency must match the invoice currency.');
+		}
+		return invoice;
+	}
+
+	/**
+	 * Transactional variant of `validatePaymentInvoice` that reads the invoice through the
+	 * caller's entity manager so the check participates in the surrounding transaction.
+	 */
+	private async validatePaymentInvoiceTx(
+		invoiceId: ID,
+		currency: CurrenciesEnum | undefined,
+		manager: EntityManager,
+		scope: { tenantId: ID; organizationId: ID }
+	): Promise<Invoice> {
+		const invoice = await manager.findOne(Invoice, { where: { id: invoiceId, ...scope } });
 		if (!invoice) {
 			throw new BadRequestException('Invoice not found in this organization.');
 		}
