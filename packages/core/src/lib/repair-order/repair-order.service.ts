@@ -1,4 +1,11 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+	BadRequestException,
+	ConflictException,
+	forwardRef,
+	Inject,
+	Injectable,
+	NotFoundException
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
 import { In, Repository } from 'typeorm';
@@ -28,7 +35,11 @@ import { RepairOrder } from './repair-order.entity';
 const RO_TRANSITIONS: Record<RepairOrderStatusEnum, RepairOrderStatusEnum[]> = {
 	[RepairOrderStatusEnum.OPEN]: [RepairOrderStatusEnum.IN_PROGRESS, RepairOrderStatusEnum.CANCELLED],
 	[RepairOrderStatusEnum.IN_PROGRESS]: [RepairOrderStatusEnum.READY, RepairOrderStatusEnum.CANCELLED],
-	[RepairOrderStatusEnum.READY]: [RepairOrderStatusEnum.IN_PROGRESS, RepairOrderStatusEnum.CLOSED, RepairOrderStatusEnum.CANCELLED],
+	[RepairOrderStatusEnum.READY]: [
+		RepairOrderStatusEnum.IN_PROGRESS,
+		RepairOrderStatusEnum.CLOSED,
+		RepairOrderStatusEnum.CANCELLED
+	],
 	[RepairOrderStatusEnum.CLOSED]: [],
 	[RepairOrderStatusEnum.CANCELLED]: []
 };
@@ -44,7 +55,7 @@ export class RepairOrderService extends TenantAwareCrudService<RepairOrder> {
 		@InjectRepository(AutomotiveJob) private readonly jobs: Repository<AutomotiveJob>,
 		@InjectRepository(AutomotiveJobLabor) private readonly labors: Repository<AutomotiveJobLabor>,
 		@InjectRepository(TimeLog) private readonly timeLogs: Repository<TimeLog>,
-		private readonly jobQc: AutomotiveJobQcService
+		@Inject(forwardRef(() => AutomotiveJobQcService)) private readonly jobQc: AutomotiveJobQcService
 	) {
 		super(typeOrmRepairOrderRepository, mikroOrmRepairOrderRepository);
 	}
@@ -107,7 +118,11 @@ export class RepairOrderService extends TenantAwareCrudService<RepairOrder> {
 				organizationId: appointment.organizationId
 			});
 			const saved = await repairOrderRepository.save(repairOrder);
-			await manager.update(EmployeeAppointment, { id: appointment.id }, { status: EmployeeAppointmentStatus.COMPLETED });
+			await manager.update(
+				EmployeeAppointment,
+				{ id: appointment.id },
+				{ status: EmployeeAppointmentStatus.COMPLETED }
+			);
 			return saved;
 		});
 	}
@@ -248,7 +263,8 @@ export class RepairOrderService extends TenantAwareCrudService<RepairOrder> {
 	private scope(): { tenantId: ID; organizationId: ID } {
 		const tenantId = RequestContext.currentTenantId();
 		const organizationId = RequestContext.currentOrganizationId();
-		if (!tenantId || !organizationId) throw new BadRequestException('Tenant and organization context are required.');
+		if (!tenantId || !organizationId)
+			throw new BadRequestException('Tenant and organization context are required.');
 		return { tenantId, organizationId };
 	}
 }

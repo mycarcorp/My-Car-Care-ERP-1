@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { RepairOrderModule } from '../repair-order/repair-order.module';
+import { InspectionModule } from '../inspection/inspection.module';
+import { DiagnosticModule } from '../diagnostic/diagnostic.module';
 import { RolePermissionModule } from '../role-permission/role-permission.module';
 import { EstimateController } from './estimate.controller';
 import { EstimateLineController } from './estimate-line.controller';
@@ -18,6 +20,8 @@ import { CustomerWorkApprovalRequest } from '../customer-work-approval/customer-
 		TypeOrmModule.forFeature([Estimate, EstimateLine, CustomerWorkApprovalRequest]),
 		MikroOrmModule.forFeature([Estimate, EstimateLine]),
 		RepairOrderModule,
+		InspectionModule,
+		DiagnosticModule,
 		RolePermissionModule
 	],
 	controllers: [EstimateController, EstimateLineController],
