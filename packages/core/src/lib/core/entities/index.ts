@@ -33,6 +33,7 @@ import {
 	CustomerWorkApproval,
 	CustomerWorkApprovalLine,
 	CustomerWorkApprovalRequest,
+	CustomerFollowUp,
 	DailyPlan,
 	Dashboard,
 	DashboardWidget,

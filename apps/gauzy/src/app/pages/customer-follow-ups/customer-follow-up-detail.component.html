@@ -1,0 +1,154 @@
+<nb-card class="follow-up-detail">
+	<nb-card-header class="follow-up-detail__header">
+		<div class="follow-up-detail__header-main">
+			<button nbButton size="small" status="basic" (click)="back()">Back</button>
+			<div>
+				<h4 *ngIf="followUp">{{ followUp.title }}</h4>
+				<p class="follow-up-detail__subtitle">Review the follow-up, adjust ownership, and move it through its lifecycle.</p>
+			</div>
+		</div>
+		<div *ngIf="followUp">
+			<nb-badge [text]="followUp.status" [status]="statusBadgeStatus(followUp.status)"></nb-badge>
+		</div>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="follow-up-detail__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<nb-alert *ngIf="!loading && notFound" status="warning" outline="danger" class="follow-up-detail__not-found">
+			Follow-up not found.
+		</nb-alert>
+
+		<ng-container *ngIf="!loading && followUp">
+			<div class="follow-up-detail__summary">
+				<div class="follow-up-detail__row">
+					<span class="follow-up-detail__label">Customer</span>
+					<a [routerLink]="['/pages/contacts/view', followUp.customerId]">{{ relatedCustomer() }}</a>
+				</div>
+				<div class="follow-up-detail__row">
+					<span class="follow-up-detail__label">Owner</span>
+					<span>{{ ownerLabel() }}</span>
+				</div>
+				<div class="follow-up-detail__row">
+					<span class="follow-up-detail__label">Type</span>
+					<span>{{ followUp.type }}</span>
+				</div>
+				<div class="follow-up-detail__row" *ngIf="followUp.dueAt">
+					<span class="follow-up-detail__label">Due at</span>
+					<span>{{ followUp.dueAt | date: 'short' }}</span>
+				</div>
+				<div class="follow-up-detail__row" *ngIf="followUp.scheduledAt">
+					<span class="follow-up-detail__label">Scheduled at</span>
+					<span>{{ followUp.scheduledAt | date: 'short' }}</span>
+				</div>
+				<div class="follow-up-detail__row" *ngIf="followUp.statusReason">
+					<span class="follow-up-detail__label">Reason</span>
+					<span>{{ followUp.statusReason }}</span>
+				</div>
+			</div>
+
+			<nb-card class="follow-up-detail__panel">
+				<nb-card-header>Linked records</nb-card-header>
+				<nb-card-body class="follow-up-detail__links">
+					<a *ngIf="followUp.vehicle" [routerLink]="['/pages/vehicles', followUp.vehicleId]">Vehicle: {{ followUp.vehicle?.vinNormalized || followUp.vehicleId }}</a>
+					<a *ngIf="followUp.repairOrder" [routerLink]="['/pages/repair-orders', followUp.repairOrderId]">Repair order: {{ followUp.repairOrder?.repairOrderNumber || followUp.repairOrderId }}</a>
+					<a *ngIf="followUp.estimate" [routerLink]="['/pages/estimates', followUp.estimateId]">Estimate: {{ followUp.estimate?.estimateNumber || followUp.estimateId }}</a>
+					<a *ngIf="followUp.invoice" [routerLink]="['/pages/invoices/view', followUp.invoiceId]">Invoice: {{ followUp.invoice?.invoiceNumber || followUp.invoiceId }}</a>
+					<div *ngIf="followUp.task">Task: {{ followUp.task?.title || followUp.taskId }}</div>
+				</nb-card-body>
+			</nb-card>
+
+			<nb-card class="follow-up-detail__panel">
+				<nb-card-header>Communication history</nb-card-header>
+				<nb-card-body class="follow-up-detail__history">
+					<div class="follow-up-detail__history-note">Automated email/SMS delivery is not available in this workspace.</div>
+					<div class="follow-up-detail__row" *ngIf="followUp.sourceEventType">
+						<span class="follow-up-detail__label">Source event</span>
+						<span>{{ communicationSummary() }}</span>
+					</div>
+					<div class="follow-up-detail__row" *ngIf="followUp.createdAt">
+						<span class="follow-up-detail__label">Created</span>
+						<span>{{ followUp.createdAt | date: 'short' }}</span>
+					</div>
+					<div class="follow-up-detail__row" *ngIf="followUp.updatedAt">
+						<span class="follow-up-detail__label">Updated</span>
+						<span>{{ followUp.updatedAt | date: 'short' }}</span>
+					</div>
+					<div class="follow-up-detail__row" *ngIf="followUp.completedAt">
+						<span class="follow-up-detail__label">Completed</span>
+						<span>{{ followUp.completedAt | date: 'short' }}</span>
+					</div>
+					<div class="follow-up-detail__row" *ngIf="followUp.deferredUntil">
+						<span class="follow-up-detail__label">Deferred until</span>
+						<span>{{ followUp.deferredUntil | date: 'short' }}</span>
+					</div>
+				</nb-card-body>
+			</nb-card>
+
+			<nb-card class="follow-up-detail__panel">
+				<nb-card-header>Actions</nb-card-header>
+				<nb-card-body>
+					<div class="follow-up-detail__action-grid">
+						<div class="follow-up-detail__field">
+							<label class="label" for="owner">Owner</label>
+							<nb-select id="owner" fullWidth [(ngModel)]="ownerEmployeeId">
+								@for (employee of employees; track employee.id) {
+								<nb-option [value]="employee.id">{{ employee.fullName || employee.firstName || employee.id }}</nb-option>
+								}
+							</nb-select>
+						</div>
+						<div class="follow-up-detail__field">
+							<label class="label" for="dueAt">Due at</label>
+							<input id="dueAt" nbInput fullWidth [nbDatepicker]="duePicker" [(ngModel)]="dueAt" />
+							<nb-datepicker #duePicker></nb-datepicker>
+						</div>
+						<div class="follow-up-detail__field">
+							<label class="label" for="scheduledAt">Scheduled at</label>
+							<input id="scheduledAt" nbInput fullWidth [nbDatepicker]="scheduledPicker" [(ngModel)]="scheduledAt" />
+							<nb-datepicker #scheduledPicker></nb-datepicker>
+						</div>
+						<div class="follow-up-detail__field">
+							<label class="label" for="reason">Status reason</label>
+							<textarea id="reason" nbInput fullWidth rows="3" [(ngModel)]="statusReason" placeholder="Optional reason or note"></textarea>
+						</div>
+						<div class="follow-up-detail__field">
+							<label class="label" for="deferredUntil">Deferred until</label>
+							<input id="deferredUntil" nbInput fullWidth [nbDatepicker]="deferredPicker" [(ngModel)]="deferredUntil" />
+							<nb-datepicker #deferredPicker></nb-datepicker>
+						</div>
+					</div>
+
+					<div class="follow-up-detail__buttons">
+						<button nbButton status="basic" (click)="saveSchedule()" [disabled]="saving">Save dates</button>
+						<button nbButton status="primary" (click)="assignOwner()" [disabled]="saving">Assign owner</button>
+						<ng-container *ngIf="availableTransitions.length">
+							<button
+								*ngFor="let status of availableTransitions"
+								nbButton
+								status="info"
+								(click)="transitionTo(status)"
+								[disabled]="saving"
+							>
+								{{ status }}
+							</button>
+						</ng-container>
+					</div>
+				</nb-card-body>
+			</nb-card>
+
+			<nb-accordion>
+				<nb-accordion-item>
+					<nb-accordion-item-header>Edit follow-up fields</nb-accordion-item-header>
+					<nb-accordion-item-body>
+						<ga-customer-follow-up-form
+							mode="edit"
+							[followUp]="followUp"
+							(saved)="reloadAfterEdit($event)"
+						></ga-customer-follow-up-form>
+					</nb-accordion-item-body>
+				</nb-accordion-item>
+			</nb-accordion>
+		</ng-container>
+	</nb-card-body>
+</nb-card>

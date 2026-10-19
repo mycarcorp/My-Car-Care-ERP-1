@@ -1,0 +1,61 @@
+<nb-card class="follow-ups-page">
+	<nb-card-header class="follow-ups-page__header">
+		<div>
+			<h4>Customer follow-ups</h4>
+			<p class="follow-ups-page__subtitle">Track customer touchpoints, linked records, and ownership from one place.</p>
+		</div>
+		<button nbButton status="basic" size="small" (click)="load()" [disabled]="loading">
+			Reload
+		</button>
+	</nb-card-header>
+	<nb-card-body>
+		<ng-container *ngxPermissionsOnly="[permissions.ORG_CUSTOMER_FOLLOW_UP_ADD]">
+			<ga-customer-follow-up-form mode="create" (saved)="created($event)"></ga-customer-follow-up-form>
+		</ng-container>
+
+		<nb-card class="follow-ups-page__list-card">
+			<nb-card-header class="follow-ups-page__list-header">
+				<div>
+					<h5>Follow-up list</h5>
+					<p class="follow-ups-page__subtitle">Open a follow-up to edit its state, owner, or schedule.</p>
+				</div>
+			</nb-card-header>
+			<nb-card-body>
+				<div *ngIf="loading" class="follow-ups-page__loading">
+					<nb-spinner></nb-spinner>
+				</div>
+
+				<nb-alert *ngIf="!loading && error" status="danger" outline="danger" class="follow-ups-page__error">
+					<div>{{ error }}</div>
+					<button nbButton size="small" status="basic" (click)="load()">Retry</button>
+				</nb-alert>
+
+				<ng-container *ngIf="!loading && !error">
+					<ng-container *ngIf="followUps.length; else emptyState">
+						<nb-list class="follow-ups-page__items">
+							<nb-list-item *ngFor="let item of followUps" class="follow-ups-page__item" (click)="open(item.id)">
+								<div class="follow-ups-page__item-main">
+									<div class="follow-ups-page__item-title-row">
+										<strong>{{ item.title }}</strong>
+										<nb-badge [text]="item.status" [status]="statusBadgeStatus(item.status)"></nb-badge>
+									</div>
+									<div class="follow-ups-page__item-meta">{{ followUpSummary(item) || 'No linked records' }}</div>
+									<div class="follow-ups-page__item-meta follow-ups-page__item-meta--secondary">
+										<span>Owner: {{ item.ownerEmployee?.fullName || item.ownerEmployee?.firstName || 'Unassigned' }}</span>
+										<span *ngIf="item.dueAt">Due: {{ item.dueAt | date: 'shortDate' }}</span>
+									</div>
+								</div>
+								<button nbButton ghost size="small" status="basic" (click)="open(item.id); $event.stopPropagation()">Open</button>
+							</nb-list-item>
+						</nb-list>
+					</ng-container>
+					<ng-template #emptyState>
+						<div class="follow-ups-page__empty">
+							No customer follow-ups yet.
+						</div>
+					</ng-template>
+				</ng-container>
+			</nb-card-body>
+		</nb-card>
+	</nb-card-body>
+</nb-card>

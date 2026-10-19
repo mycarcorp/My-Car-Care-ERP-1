@@ -34,6 +34,7 @@ export const getPagesRoutes = (_pageRouteRegistryService: PageRouteRegistryServi
 		...getTasksRoute(),
 		...getAutomotiveJobsRoute(),
 		...getRepairOrdersRoute(),
+		...getCustomerFollowUpsRoute(),
 		...getVehiclesRoute(),
 		...getEstimatesRoute(),
 		...getInspectionsRoute(),
@@ -187,6 +188,16 @@ function getRepairOrdersRoute(): Route[] {
 		{
 			path: 'repair-orders',
 			loadChildren: () => import('./repair-orders/repair-orders.module').then((m) => m.RepairOrdersModule)
+		}
+	];
+}
+
+function getCustomerFollowUpsRoute(): Route[] {
+	return [
+		{
+			path: 'customer-follow-ups',
+			loadChildren: () =>
+				import('./customer-follow-ups/customer-follow-ups.module').then((m) => m.CustomerFollowUpsModule)
 		}
 	];
 }

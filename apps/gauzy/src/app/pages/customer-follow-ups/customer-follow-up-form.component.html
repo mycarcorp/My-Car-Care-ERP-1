@@ -1,0 +1,155 @@
+<nb-card class="follow-up-form">
+	<nb-card-header class="follow-up-form__header">
+		<div>
+			<h5>{{ titleLabel }}</h5>
+			<p class="follow-up-form__subtitle">
+				Manage customer context, linked records, and initial ownership.
+			</p>
+		</div>
+		<div *ngIf="loadingLookups">
+			<nb-spinner size="small"></nb-spinner>
+		</div>
+	</nb-card-header>
+	<nb-card-body>
+		<form class="follow-up-form__grid" [formGroup]="form">
+			<div class="follow-up-form__field follow-up-form__field--full">
+				<label class="label" for="follow-up-title">Title</label>
+				<input id="follow-up-title" nbInput fullWidth formControlName="title" placeholder="Follow-up title" />
+			</div>
+			<div class="follow-up-form__field follow-up-form__field--full">
+				<label class="label" for="follow-up-description">Description</label>
+				<textarea id="follow-up-description" nbInput fullWidth rows="3" formControlName="description" placeholder="What should the team remember?"></textarea>
+			</div>
+			<div class="follow-up-form__field">
+				<label class="label" for="follow-up-type">Type</label>
+				<nb-select id="follow-up-type" fullWidth formControlName="type">
+					@for (type of types; track type) {
+					<nb-option [value]="type">{{ type }}</nb-option>
+					}
+				</nb-select>
+			</div>
+			<div class="follow-up-form__field">
+				<label class="label" for="follow-up-owner">Owner</label>
+				<nb-select id="follow-up-owner" fullWidth formControlName="ownerEmployeeId">
+					@for (employee of ownerOptions; track employee.id) {
+					<nb-option [value]="employee.id">{{ employee.fullName || employee.firstName || employee.id }}</nb-option>
+					}
+				</nb-select>
+			</div>
+			<div class="follow-up-form__field">
+				<label class="label" for="follow-up-customer">Customer</label>
+				<nb-select id="follow-up-customer" fullWidth formControlName="customerId" (selectedChange)="onCustomerChanged()">
+					@for (customer of customerOptions; track customer.id) {
+					<nb-option [value]="customer.id">{{ customer.name }}</nb-option>
+					}
+				</nb-select>
+			</div>
+			<div class="follow-up-form__field">
+				<label class="label" for="follow-up-due-at">Due at</label>
+				<input id="follow-up-due-at" nbInput fullWidth [nbDatepicker]="duePicker" formControlName="dueAt" placeholder="Due date" />
+				<nb-datepicker #duePicker></nb-datepicker>
+			</div>
+			<div class="follow-up-form__field">
+				<label class="label" for="follow-up-scheduled-at">Scheduled at</label>
+				<input id="follow-up-scheduled-at" nbInput fullWidth [nbDatepicker]="scheduledPicker" formControlName="scheduledAt" placeholder="Scheduled date" />
+				<nb-datepicker #scheduledPicker></nb-datepicker>
+			</div>
+
+			<nb-accordion class="follow-up-form__accordion follow-up-form__field--full">
+				<nb-accordion-item>
+					<nb-accordion-item-header>Optional links</nb-accordion-item-header>
+					<nb-accordion-item-body>
+						<div class="follow-up-form__grid follow-up-form__grid--compact">
+							<div class="follow-up-form__field">
+								<label class="label" for="follow-up-vehicle">Vehicle</label>
+								<nb-select id="follow-up-vehicle" fullWidth formControlName="vehicleId">
+									<nb-option [value]="null">None</nb-option>
+									@for (vehicle of vehicleOptions; track vehicle.id) {
+									<nb-option [value]="vehicle.id">{{ vehicleLabel(vehicle) }}</nb-option>
+									}
+								</nb-select>
+							</div>
+							<div class="follow-up-form__field">
+								<label class="label" for="follow-up-repair-order">Repair order</label>
+								<nb-select id="follow-up-repair-order" fullWidth formControlName="repairOrderId">
+									<nb-option [value]="null">None</nb-option>
+									@for (repairOrder of repairOrderOptions; track repairOrder.id) {
+									<nb-option [value]="repairOrder.id">{{ repairOrderLabel(repairOrder) }}</nb-option>
+									}
+								</nb-select>
+							</div>
+							<div class="follow-up-form__field">
+								<label class="label" for="follow-up-estimate">Estimate</label>
+								<nb-select id="follow-up-estimate" fullWidth formControlName="estimateId">
+									<nb-option [value]="null">None</nb-option>
+									@for (estimate of estimateOptions; track estimate.id) {
+									<nb-option [value]="estimate.id">{{ estimateLabel(estimate) }}</nb-option>
+									}
+								</nb-select>
+							</div>
+							<div class="follow-up-form__field">
+								<label class="label" for="follow-up-invoice">Invoice</label>
+								<nb-select id="follow-up-invoice" fullWidth formControlName="invoiceId">
+									<nb-option [value]="null">None</nb-option>
+									@for (invoice of invoiceOptions; track invoice.id) {
+									<nb-option [value]="invoice.id">{{ invoiceLabel(invoice) }}</nb-option>
+									}
+								</nb-select>
+							</div>
+							<div class="follow-up-form__field follow-up-form__field--full">
+								<label class="label" for="follow-up-task">Task</label>
+								<nb-select id="follow-up-task" fullWidth formControlName="taskId">
+									<nb-option [value]="null">None</nb-option>
+									@for (task of taskOptions; track task.id) {
+									<nb-option [value]="task.id">{{ taskLabel(task) }}</nb-option>
+									}
+								</nb-select>
+							</div>
+						</div>
+					</nb-accordion-item-body>
+				</nb-accordion-item>
+			</nb-accordion>
+
+			<nb-accordion class="follow-up-form__field--full">
+				<nb-accordion-item>
+					<nb-accordion-item-header>Source event metadata</nb-accordion-item-header>
+					<nb-accordion-item-body>
+						<div class="follow-up-form__grid follow-up-form__grid--compact">
+							<div class="follow-up-form__field">
+								<label class="label" for="follow-up-source-type">Source type</label>
+								<input id="follow-up-source-type" nbInput fullWidth formControlName="sourceEntityType" placeholder="repair_order" />
+							</div>
+							<div class="follow-up-form__field">
+								<label class="label" for="follow-up-source-id">Source id</label>
+								<input id="follow-up-source-id" nbInput fullWidth formControlName="sourceEntityId" placeholder="Source entity id" />
+							</div>
+							<div class="follow-up-form__field">
+								<label class="label" for="follow-up-source-event-type">Source event</label>
+								<nb-select id="follow-up-source-event-type" fullWidth formControlName="sourceEventType">
+									@for (eventType of sourceEventTypes; track eventType) {
+									<nb-option [value]="eventType">{{ eventType }}</nb-option>
+									}
+								</nb-select>
+							</div>
+							<div class="follow-up-form__field">
+								<label class="label" for="follow-up-source-event-key">Source key</label>
+								<input id="follow-up-source-event-key" nbInput fullWidth formControlName="sourceEventKey" placeholder="Unique source event key" />
+							</div>
+							<div class="follow-up-form__field follow-up-form__field--full">
+								<label class="label" for="follow-up-source-event-at">Source event at</label>
+								<input id="follow-up-source-event-at" nbInput fullWidth [nbDatepicker]="sourceEventPicker" formControlName="sourceEventAt" placeholder="Event timestamp" />
+								<nb-datepicker #sourceEventPicker></nb-datepicker>
+							</div>
+						</div>
+					</nb-accordion-item-body>
+				</nb-accordion-item>
+			</nb-accordion>
+		</form>
+	</nb-card-body>
+	<nb-card-footer class="follow-up-form__footer">
+		<div class="follow-up-form__hint" *ngIf="mode === 'create'">The backend will prevent duplicate source-event records for the same tenant and organization.</div>
+		<button nbButton status="primary" (click)="submit()" [disabled]="submitting || loadingLookups || form.invalid">
+			{{ submitLabel }}
+		</button>
+	</nb-card-footer>
+</nb-card>

@@ -58,6 +58,7 @@ export * from '../../estimate/estimate-line.entity';
 export * from '../../customer-work-approval/customer-work-approval-request.entity';
 export * from '../../customer-work-approval/customer-work-approval.entity';
 export * from '../../customer-work-approval/customer-work-approval-line.entity';
+export * from '../../customer-follow-up/customer-follow-up.entity';
 export * from '../../automotive-part/automotive-part-profile.entity';
 export * from '../../automotive-part/automotive-part-vendor.entity';
 export * from '../../automotive-part/part-stock-movement.entity';

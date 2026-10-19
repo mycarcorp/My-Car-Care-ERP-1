@@ -38,6 +38,7 @@ export const RESERVED_PAGE_SECTION_PATHS = new Set<string>([
 	'dashboard',
 	'accounting',
 	'contacts',
+	'customer-follow-ups',
 	'projects',
 	'tasks',
 	'sales',

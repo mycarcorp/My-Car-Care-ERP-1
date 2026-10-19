@@ -224,6 +224,10 @@ export const DEFAULT_ROLE_PERMISSIONS = [
 			PermissionsEnum.ORG_ESTIMATE_CREATE,
 			PermissionsEnum.ORG_ESTIMATE_EDIT,
 			PermissionsEnum.ORG_ESTIMATE_SEND,
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_VIEW,
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_ADD,
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_EDIT,
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_DELETE,
 			PermissionsEnum.ORG_CUSTOMER_WORK_APPROVAL_VIEW,
 			PermissionsEnum.ORG_CUSTOMER_WORK_APPROVAL_CREATE,
 			PermissionsEnum.ORG_CUSTOMER_WORK_APPROVAL_EDIT,
@@ -526,6 +530,10 @@ export const DEFAULT_ROLE_PERMISSIONS = [
 			PermissionsEnum.ORG_ESTIMATE_CREATE,
 			PermissionsEnum.ORG_ESTIMATE_EDIT,
 			PermissionsEnum.ORG_ESTIMATE_SEND,
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_VIEW,
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_ADD,
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_EDIT,
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_DELETE,
 			PermissionsEnum.ORG_CUSTOMER_WORK_APPROVAL_VIEW,
 			PermissionsEnum.ORG_CUSTOMER_WORK_APPROVAL_CREATE,
 			PermissionsEnum.ORG_CUSTOMER_WORK_APPROVAL_EDIT,
@@ -671,6 +679,11 @@ export const DEFAULT_ROLE_PERMISSIONS = [
 			PermissionsEnum.ORG_ESTIMATE_VIEW,
 			PermissionsEnum.ORG_ESTIMATE_CREATE,
 			PermissionsEnum.ORG_ESTIMATE_EDIT,
+			// Customer follow-up management stays available to employees who handle the repair lifecycle.
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_VIEW,
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_ADD,
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_EDIT,
+			PermissionsEnum.ORG_CUSTOMER_FOLLOW_UP_DELETE,
 			// Customer approval revocation (ORG_CUSTOMER_WORK_APPROVAL_REVOKE) stays admin-only;
 			// employees get view/create/edit.
 			PermissionsEnum.ORG_CUSTOMER_WORK_APPROVAL_VIEW,
