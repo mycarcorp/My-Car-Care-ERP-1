@@ -1,11 +1,19 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router, UrlSerializer } from '@angular/router';
+import { Location } from '@angular/common';
 import { NbToastrService } from '@nebular/theme';
 import { TranslateService } from '@ngx-translate/core';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { filter, tap } from 'rxjs/operators';
-import { EstimateStatusEnum, ID, IEstimate } from '@gauzy/contracts';
+import {
+	CustomerWorkApprovalDeliveryChannelEnum,
+	CustomerWorkApprovalDeliveryStatusEnum,
+	EstimateStatusEnum,
+	ID,
+	IEstimate
+} from '@gauzy/contracts';
 import { TranslationBaseComponent } from '@gauzy/ui-core/i18n';
+import { __prepareExternalUrlLocation } from '@gauzy/ui-core/common';
 import { EstimateApiService } from './estimate-api.service';
 
 @UntilDestroy({ checkProperties: true })
@@ -15,18 +23,28 @@ import { EstimateApiService } from './estimate-api.service';
 	styleUrls: ['./estimate-detail.component.scss'],
 	standalone: false
 })
-export class EstimateDetailComponent extends TranslationBaseComponent implements OnInit, OnDestroy {
+export class EstimateDetailComponent extends TranslationBaseComponent implements OnInit {
 	public estimate: IEstimate;
 	public loading = false;
 	public notFound = false;
 	public approvalSending = false;
+	public approvalRequestId: ID;
+	public approvalRequestToken: string;
 	public approvalLink: string;
+	public approvalDeliveryChannel: CustomerWorkApprovalDeliveryChannelEnum;
+	public approvalDeliveryStatus: CustomerWorkApprovalDeliveryStatusEnum;
+	public approvalDeliveryError: string;
+	public copied = false;
 	public readonly statuses = EstimateStatusEnum;
+	public readonly deliveryChannels = CustomerWorkApprovalDeliveryChannelEnum;
+	public readonly deliveryStatuses = CustomerWorkApprovalDeliveryStatusEnum;
 
 	constructor(
 		public readonly translateService: TranslateService,
 		private readonly route: ActivatedRoute,
 		private readonly router: Router,
+		private readonly location: Location,
+		private readonly urlSerializer: UrlSerializer,
 		private readonly api: EstimateApiService,
 		private readonly toastrService: NbToastrService
 	) {
@@ -53,7 +71,7 @@ export class EstimateDetailComponent extends TranslationBaseComponent implements
 		this.notFound = false;
 		try {
 			this.estimate = await this.api.getById(id, ['lines', 'repairOrder']);
-		} catch (error) {
+		} catch {
 			this.notFound = true;
 			this.estimate = undefined;
 			this.toastrService.danger(
@@ -135,18 +153,37 @@ export class EstimateDetailComponent extends TranslationBaseComponent implements
 	 * backend endpoint (`POST /customer-work-approval-requests`). The raw secure token is
 	 * returned exactly once and surfaced here for manual sharing; it is not persisted.
 	 */
-	async sendForApproval(): Promise<void> {
+	async sendForApproval(
+		deliveryChannel: CustomerWorkApprovalDeliveryChannelEnum = CustomerWorkApprovalDeliveryChannelEnum.EMAIL
+	): Promise<void> {
 		if (!this.canSendForApproval() || this.approvalSending) {
 			return;
 		}
 		this.approvalSending = true;
 		try {
 			const request = await this.api.createApprovalRequest(this.estimate.id);
-			this.approvalLink = request.token;
-			this.toastrService.success(
-				this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_CREATED'),
-				this.getTranslation('TOASTR.TITLE.SUCCESS')
-			);
+			this.approvalRequestId = request.id;
+			this.approvalRequestToken = request.token ?? this.approvalRequestToken;
+			this.approvalLink = request.token ? this.buildApprovalLink(request.id, request.token) : this.approvalLink;
+			if (request.token && deliveryChannel === this.deliveryChannels.EMAIL) {
+				const delivery = await this.api.deliverApprovalRequest(request.id, request.token, deliveryChannel);
+				this.approvalDeliveryChannel = delivery.deliveryChannel ?? deliveryChannel;
+				this.approvalDeliveryStatus = delivery.deliveryStatus;
+				this.approvalDeliveryError = delivery.deliveryError;
+				this.surfaceDeliveryResult(delivery.deliveryStatus, delivery.deliveryError);
+				return;
+			}
+			if (!request.token) {
+				this.approvalDeliveryChannel = deliveryChannel;
+				this.approvalDeliveryStatus = this.deliveryStatuses.UNAVAILABLE;
+				this.approvalDeliveryError = this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_FAILED');
+				this.surfaceDeliveryResult(this.deliveryStatuses.UNAVAILABLE, this.approvalDeliveryError);
+				return;
+			}
+			this.approvalDeliveryChannel = deliveryChannel;
+			this.approvalDeliveryStatus = this.deliveryStatuses.UNAVAILABLE;
+			this.approvalDeliveryError = 'SMS delivery is not available in this workspace.';
+			this.surfaceDeliveryResult(this.deliveryStatuses.UNAVAILABLE, this.approvalDeliveryError);
 		} catch (error) {
 			this.toastrService.danger(
 				error?.error?.message || error?.message || this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_FAILED'),
@@ -155,6 +192,122 @@ export class EstimateDetailComponent extends TranslationBaseComponent implements
 		} finally {
 			this.approvalSending = false;
 		}
+	}
+
+	/**
+	 * Builds the fully-qualified public approval URL for the secure link, following the
+	 * app's `/share/...` convention and the public route `/share/customer-work-approval/:requestId?token=...`.
+	 * Uses the router/location URL machinery (no hardcoded host/port), so it inherits the
+	 * current origin and base href.
+	 *
+	 * @param requestId - The approval request id.
+	 * @param token - The raw bearer token (returned exactly once by the backend).
+	 */
+	private buildApprovalLink(requestId: ID, token: string): string {
+		const urlTree = this.router.createUrlTree(['/share/customer-work-approval', requestId], {
+			queryParams: { token }
+		});
+		const serializedUrl = this.urlSerializer.serialize(urlTree);
+		return __prepareExternalUrlLocation(this.location.prepareExternalUrl(serializedUrl));
+	}
+
+	async retryApprovalDelivery(
+		deliveryChannel: CustomerWorkApprovalDeliveryChannelEnum = CustomerWorkApprovalDeliveryChannelEnum.EMAIL
+	): Promise<void> {
+		if (!this.approvalRequestId || !this.approvalRequestToken || this.approvalSending) {
+			return;
+		}
+		this.approvalSending = true;
+		try {
+			const request = await this.api.deliverApprovalRequest(
+				this.approvalRequestId,
+				this.approvalRequestToken,
+				deliveryChannel
+			);
+			this.approvalDeliveryChannel = request.deliveryChannel ?? deliveryChannel;
+			this.approvalDeliveryStatus = request.deliveryStatus;
+			this.approvalDeliveryError = request.deliveryError;
+			this.surfaceDeliveryResult(request.deliveryStatus, request.deliveryError);
+		} catch (error) {
+			this.toastrService.danger(
+				error?.error?.message || error?.message || this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_FAILED'),
+				this.getTranslation('TOASTR.TITLE.ERROR')
+			);
+		} finally {
+			this.approvalSending = false;
+		}
+	}
+
+	private surfaceDeliveryResult(
+		status?: CustomerWorkApprovalDeliveryStatusEnum,
+		errorMessage?: string
+	): void {
+		switch (status) {
+			case CustomerWorkApprovalDeliveryStatusEnum.SENT:
+				this.toastrService.success(
+					this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_CREATED'),
+					this.getTranslation('TOASTR.TITLE.SUCCESS')
+				);
+				break;
+			case CustomerWorkApprovalDeliveryStatusEnum.UNAVAILABLE:
+				this.toastrService.warning(
+					errorMessage || this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_FAILED'),
+					this.getTranslation('TOASTR.TITLE.WARNING')
+				);
+				break;
+			case CustomerWorkApprovalDeliveryStatusEnum.FAILED:
+				this.toastrService.danger(
+					errorMessage || this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_FAILED'),
+					this.getTranslation('TOASTR.TITLE.ERROR')
+				);
+				break;
+			default:
+				this.toastrService.success(
+					this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_CREATED'),
+					this.getTranslation('TOASTR.TITLE.SUCCESS')
+				);
+		}
+	}
+
+	/**
+	 * Copies the approval link to the clipboard, using the async Clipboard API with a
+	 * `execCommand` fallback for older browsers/contexts. Success/failure surface via toastr,
+	 * the established application convention.
+	 */
+	async copyApprovalLink(): Promise<void> {
+		if (!this.approvalLink) {
+			return;
+		}
+		try {
+			if (navigator?.clipboard?.writeText) {
+				await navigator.clipboard.writeText(this.approvalLink);
+			} else {
+				this.fallbackCopyToClipboard(this.approvalLink);
+			}
+			this.copied = true;
+			this.toastrService.success(
+				this.getTranslation('BUTTONS.COPIED'),
+				this.getTranslation('TOASTR.TITLE.SUCCESS')
+			);
+			setTimeout(() => (this.copied = false), 2000);
+		} catch {
+			this.toastrService.danger(
+				this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_LINK_COPY_FAILED'),
+				this.getTranslation('TOASTR.TITLE.ERROR')
+			);
+		}
+	}
+
+	/**
+	 * Fallback clipboard copy for contexts without the async Clipboard API.
+	 */
+	private fallbackCopyToClipboard(text: string): void {
+		const textArea = document.createElement('textarea');
+		textArea.value = text;
+		document.body.appendChild(textArea);
+		textArea.select();
+		document.execCommand('copy');
+		document.body.removeChild(textArea);
 	}
 
 	/** The estimate's line items (loaded via the `lines` relation). */
@@ -192,6 +345,4 @@ export class EstimateDetailComponent extends TranslationBaseComponent implements
 				return 'basic';
 		}
 	}
-
-	ngOnDestroy(): void {}
 }

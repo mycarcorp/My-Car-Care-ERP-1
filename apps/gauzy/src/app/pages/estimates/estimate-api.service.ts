@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import {
 	ID,
 	ICustomerWorkApprovalRequestCreateResponse,
+	CustomerWorkApprovalDeliveryChannelEnum,
 	IEstimate,
 	IEstimateCreateInput,
 	IEstimateLine,
@@ -87,11 +88,28 @@ export class EstimateApiService {
 	 * The response carries the raw secure `token` exactly once (it is never persisted or
 	 * returned again); the caller surfaces it to the employee for manual sharing in this slice.
 	 */
-	createApprovalRequest(estimateId: ID): Promise<ICustomerWorkApprovalRequestCreateResponse> {
+	createApprovalRequest(
+		estimateId: ID,
+		deliveryChannel?: CustomerWorkApprovalDeliveryChannelEnum
+	): Promise<ICustomerWorkApprovalRequestCreateResponse> {
 		return firstValueFrom(
 			this.http.post<ICustomerWorkApprovalRequestCreateResponse>(
 				`${this.baseUrl}/customer-work-approval-requests`,
-				{ estimateId }
+				{ estimateId, deliveryChannel }
+			)
+		);
+	}
+
+	/** Resends a previously created approval link using the preserved raw bearer token. */
+	deliverApprovalRequest(
+		requestId: ID,
+		token: string,
+		deliveryChannel?: CustomerWorkApprovalDeliveryChannelEnum
+	): Promise<ICustomerWorkApprovalRequestCreateResponse> {
+		return firstValueFrom(
+			this.http.post<ICustomerWorkApprovalRequestCreateResponse>(
+				`${this.baseUrl}/customer-work-approval-requests/${requestId}/deliver`,
+				{ token, deliveryChannel }
 			)
 		);
 	}

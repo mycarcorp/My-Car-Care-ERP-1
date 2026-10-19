@@ -19,6 +19,7 @@ export const ENTITY_ICONS: Record<BaseEntityEnum, string> = {
 	[BaseEntityEnum.OrganizationDocument]: 'fas fa-file-alt',
 	[BaseEntityEnum.Document]: 'fas fa-book',
 	[BaseEntityEnum.Expense]: 'fas fa-money-bill-wave',
+	[BaseEntityEnum.Estimate]: 'far fa-file',
 	[BaseEntityEnum.Invoice]: 'fas fa-file-invoice-dollar',
 	[BaseEntityEnum.Income]: 'fas fa-coins',
 	[BaseEntityEnum.DailyPlan]: 'fas fa-calendar-day',
@@ -36,7 +37,9 @@ export const ENTITY_ICONS: Record<BaseEntityEnum, string> = {
 	[BaseEntityEnum.Organization]: 'fas fa-building',
 	[BaseEntityEnum.Broadcast]: 'fas fa-broadcast-tower',
 	[BaseEntityEnum.OrganizationStrategicInitiative]: 'fas fa-bullseye',
-	[BaseEntityEnum.CustomerFollowUp]: 'fas fa-clipboard-check'
+	[BaseEntityEnum.CustomerFollowUp]: 'fas fa-clipboard-check',
+	[BaseEntityEnum.RepairOrder]: 'fas fa-tools',
+	[BaseEntityEnum.Vehicle]: 'fas fa-car'
 };
 
 export const ENTITY_LINKS: Record<BaseEntityEnum, (id: string) => string> = {
@@ -54,6 +57,7 @@ export const ENTITY_LINKS: Record<BaseEntityEnum, (id: string) => string> = {
 	[BaseEntityEnum.OrganizationDocument]: (id) => `/pages/organization/documents/edit/${id}`,
 	[BaseEntityEnum.Document]: (id) => `/pages/documents?id=${id}`,
 	[BaseEntityEnum.Expense]: (id) => `/pages/accounting/expenses/edit/${id}`,
+	[BaseEntityEnum.Estimate]: (id) => `/pages/estimates/${id}`,
 	[BaseEntityEnum.Invoice]: (id) => `/pages/accounting/invoices/edit/${id}`,
 	[BaseEntityEnum.Income]: (id) => `/pages/accounting/income/edit/${id}`,
 	[BaseEntityEnum.DailyPlan]: (id) => `/pages/daily-plans/edit/${id}`,
@@ -71,5 +75,7 @@ export const ENTITY_LINKS: Record<BaseEntityEnum, (id: string) => string> = {
 	[BaseEntityEnum.Organization]: (id) => `/pages/organization/edit/${id}`,
 	[BaseEntityEnum.Broadcast]: (id) => `/pages/broadcasts/edit/${id}`,
 	[BaseEntityEnum.OrganizationStrategicInitiative]: (id) => `/pages/organization/strategic-initiatives/edit/${id}`,
-	[BaseEntityEnum.CustomerFollowUp]: (id) => `/pages/customer-follow-ups/${id}`
+	[BaseEntityEnum.CustomerFollowUp]: (id) => `/pages/customer-follow-ups/${id}`,
+	[BaseEntityEnum.RepairOrder]: (id) => `/pages/repair-orders/${id}`,
+	[BaseEntityEnum.Vehicle]: (id) => `/pages/vehicles/${id}`
 };

@@ -113,16 +113,57 @@
 					</button>
 				</ng-container>
 				<ng-container *ngxPermissionsOnly="['ORG_CUSTOMER_WORK_APPROVAL_CREATE']">
+					<div *ngIf="canSendForApproval()" class="estimate-detail__delivery-actions">
+						<button
+							nbButton
+							status="success"
+							(click)="sendForApproval(deliveryChannels.EMAIL)"
+							[disabled]="approvalSending"
+						>
+							{{ 'ESTIMATES_PAGE.DETAIL.SEND_FOR_APPROVAL' | translate }}
+						</button>
+						<button
+							nbButton
+							status="basic"
+							outline
+							(click)="sendForApproval(deliveryChannels.SMS)"
+							[disabled]="approvalSending"
+						>
+							SMS unavailable
+						</button>
+					</div>
+				</ng-container>
+			</div>
+
+			<div
+				*ngIf="approvalDeliveryStatus || approvalDeliveryError"
+				class="estimate-detail__delivery-state"
+			>
+				<div class="estimate-detail__row">
+					<span class="estimate-detail__label">Delivery channel</span>
+					<span>{{ approvalDeliveryChannel || 'EMAIL' }}</span>
+				</div>
+				<div class="estimate-detail__row">
+					<span class="estimate-detail__label">Delivery status</span>
+					<span>{{ approvalDeliveryStatus }}</span>
+				</div>
+				<div *ngIf="approvalDeliveryError" class="estimate-detail__row">
+					<span class="estimate-detail__label">Delivery note</span>
+					<span>{{ approvalDeliveryError }}</span>
+				</div>
+				<div
+					class="estimate-detail__delivery-actions"
+					*ngIf="(approvalDeliveryStatus === deliveryStatuses.FAILED || approvalDeliveryStatus === deliveryStatuses.UNAVAILABLE) && approvalRequestToken"
+				>
 					<button
-						*ngIf="canSendForApproval()"
 						nbButton
-						status="success"
-						(click)="sendForApproval()"
+						status="info"
+						(click)="retryApprovalDelivery(deliveryChannels.EMAIL)"
 						[disabled]="approvalSending"
 					>
-						{{ 'ESTIMATES_PAGE.DETAIL.SEND_FOR_APPROVAL' | translate }}
+						Retry email delivery
 					</button>
-				</ng-container>
+				</div>
 			</div>
 
 			<div *ngIf="approvalLink" class="estimate-detail__approval-link">
@@ -130,6 +171,9 @@
 					{{ 'ESTIMATES_PAGE.DETAIL.APPROVAL_LINK' | translate }}
 				</span>
 				<code class="estimate-detail__link">{{ approvalLink }}</code>
+				<button nbButton size="small" status="info" (click)="copyApprovalLink()">
+					{{ (copied ? 'BUTTONS.COPIED' : 'BUTTONS.COPY_LINK') | translate }}
+				</button>
 			</div>
 		</ng-container>
 	</nb-card-body>

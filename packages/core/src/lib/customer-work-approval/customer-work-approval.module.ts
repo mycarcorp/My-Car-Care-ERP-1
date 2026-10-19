@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EstimateModule } from '../estimate/estimate.module';
+import { EmailSendModule } from '../email-send/email-send.module';
 import { OrganizationContactModule } from '../organization-contact/organization-contact.module';
 import { OrganizationModule } from '../organization/organization.module';
 import { RepairOrderModule } from '../repair-order/repair-order.module';
@@ -41,6 +42,7 @@ import { TypeOrmEstimateLineRepository } from '../estimate/repository/type-orm-e
 		]),
 		EstimateModule,
 		OrganizationModule,
+		EmailSendModule,
 		OrganizationContactModule,
 		RepairOrderModule,
 		RolePermissionModule,

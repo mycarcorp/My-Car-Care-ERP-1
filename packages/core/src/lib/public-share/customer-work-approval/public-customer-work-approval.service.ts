@@ -60,9 +60,40 @@ export class PublicCustomerWorkApprovalService {
 		if (request.status === CustomerWorkApprovalRequestStatusEnum.SUBMITTED) {
 			return this.confirmationFor(request.id);
 		}
+		// Customer-safe projections: fetch only the columns the public page renders. No tenant/org
+		// ids, internal user ids, deletion/audit metadata, or unrelated linkage ids are selected.
 		const [estimate, lines] = await Promise.all([
-			this.estimates.findOneByOrFail({ id: request.estimateId }),
-			this.estimateLines.find({ where: { estimateId: request.estimateId }, order: { lineNumber: 'ASC' } })
+			this.estimates.findOneOrFail({
+				where: { id: request.estimateId },
+				select: {
+					id: true,
+					estimateNumber: true,
+					revisionNumber: true,
+					currency: true,
+					subtotal: true,
+					taxTotal: true,
+					discountTotal: true,
+					total: true
+				},
+				relations: { repairOrder: { vehicle: true } }
+			}),
+			this.estimateLines.find({
+				where: { estimateId: request.estimateId },
+				order: { lineNumber: 'ASC' },
+				select: {
+					id: true,
+					estimateId: true,
+					lineNumber: true,
+					description: true,
+					reason: true,
+					priority: true,
+					quantity: true,
+					unitPrice: true,
+					taxAmount: true,
+					discountAmount: true,
+					lineTotal: true
+				}
+			})
 		]);
 		return {
 			request: {
@@ -71,8 +102,8 @@ export class PublicCustomerWorkApprovalService {
 				expiresAt: request.expiresAt,
 				estimateRevisionNumber: request.estimateRevisionNumber
 			},
-			estimate,
-			lines
+			estimate: this.toPublicEstimate(estimate),
+			lines: lines.map((line) => this.toPublicEstimateLine(line))
 		};
 	}
 
@@ -172,11 +203,85 @@ export class PublicCustomerWorkApprovalService {
 	}
 
 	private async confirmationFor(requestId: ID): Promise<ICustomerWorkApprovalConfirmationView> {
-		const approval = await this.approvals.findOneByOrFail({ approvalRequestId: requestId });
+		// Customer-safe projection: select only the confirmation fields the public page renders.
+		const approval = await this.approvals.findOneOrFail({
+			where: { approvalRequestId: requestId },
+			select: {
+				id: true,
+				estimateRevisionNumber: true,
+				submittedAt: true,
+				approvedTotal: true,
+				currency: true,
+				submissionState: true
+			}
+		});
 		const lines = await this.approvalLines.find({
 			where: { customerWorkApprovalId: approval.id },
-			order: { createdAt: 'ASC' }
+			order: { createdAt: 'ASC' },
+			select: {
+				id: true,
+				customerWorkApprovalId: true,
+				estimateLineId: true,
+				selected: true,
+				approvedQuantity: true,
+				priority: true,
+				description: true,
+				reason: true,
+				unitPrice: true,
+				taxAmount: true,
+				discountAmount: true,
+				lineTotal: true
+			}
 		});
-		return { ...approval, lines };
+		return {
+			id: approval.id,
+			estimateRevisionNumber: approval.estimateRevisionNumber,
+			submittedAt: approval.submittedAt,
+			approvedTotal: approval.approvedTotal,
+			currency: approval.currency,
+			submissionState: approval.submissionState,
+			lines
+		};
+	}
+
+	/**
+	 * Maps a narrowly-selected Estimate to its customer-safe public shape. The vehicle label
+	 * fields (year/make/model) are nested under `repairOrder.vehicle` to match the existing
+	 * frontend `vehicleLabel` accessor; no other repair-order/vehicle graph data is included.
+	 * No internal ids, tenant/org metadata, or audit fields are carried through.
+	 */
+	private toPublicEstimate(estimate: Estimate): ICustomerWorkApprovalPublicView['estimate'] {
+		const vehicle = estimate?.repairOrder?.['vehicle'];
+		return {
+			id: estimate.id,
+			estimateNumber: estimate.estimateNumber,
+			revisionNumber: estimate.revisionNumber,
+			currency: estimate.currency,
+			subtotal: estimate.subtotal,
+			taxTotal: estimate.taxTotal,
+			discountTotal: estimate.discountTotal,
+			total: estimate.total,
+			// Vehicle label only: year/make/model, nothing else from the repair order graph.
+			repairOrder: vehicle
+				? { vehicle: { year: vehicle.year, make: vehicle.make, model: vehicle.model } }
+				: undefined
+		};
+	}
+
+	/** Maps a narrowly-selected EstimateLine to its customer-safe public shape. */
+	private toPublicEstimateLine(line: EstimateLine): ICustomerWorkApprovalPublicView['lines'][number] {
+		return {
+			id: line.id,
+			estimateId: line.estimateId,
+			lineNumber: line.lineNumber,
+			description: line.description,
+			reason: line.reason,
+			priority: line.priority,
+			quantity: line.quantity,
+			unitPrice: line.unitPrice,
+			taxAmount: line.taxAmount,
+			discountAmount: line.discountAmount,
+			lineTotal: line.lineTotal
+		};
 	}
 }

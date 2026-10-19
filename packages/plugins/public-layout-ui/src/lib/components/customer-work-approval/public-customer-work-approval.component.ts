@@ -130,8 +130,9 @@ export class PublicCustomerWorkApprovalComponent extends TranslationBaseComponen
 		if (!vehicle) {
 			return '';
 		}
+		// The public projection exposes only year/make/model (no VIN).
 		const parts = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean);
-		return parts.length ? parts.join(' ') : vehicle.vinNormalized ?? '';
+		return parts.join(' ');
 	}
 
 	/**

@@ -1,21 +1,25 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { addDays } from 'date-fns';
 import {
+	CustomerWorkApprovalDeliveryChannelEnum,
+	CustomerWorkApprovalDeliveryStatusEnum,
 	CustomerWorkApprovalRequestStatusEnum,
 	EstimateStatusEnum,
 	ICustomerWorkApprovalRequestCreateInput,
 	ICustomerWorkApprovalRequestCreateResponse,
 	ID
 } from '@gauzy/contracts';
+import { environment as env } from '@gauzy/config';
 import { TenantAwareCrudService } from '../core/crud';
 import { RequestContext } from '../core/context';
-import { signPurposeToken, TokenPurposeEnum } from '../auth/purpose-token';
+import { signPurposeToken, TokenPurposeEnum, verifyPurposeToken } from '../auth/purpose-token';
 import { EstimateService } from '../estimate/estimate.service';
 import { OrganizationService } from '../organization/organization.service';
 import { OrganizationContactService } from '../organization-contact/organization-contact.service';
 import { RepairOrderService } from '../repair-order/repair-order.service';
 import { VehicleService } from '../vehicle/vehicle.service';
+import { EmailSendService } from '../email-send/email-send.service';
 import { CustomerWorkApprovalRequest } from './customer-work-approval-request.entity';
 import { TypeOrmCustomerWorkApprovalRequestRepository } from './repository/type-orm-customer-work-approval-request.repository';
 import { MikroOrmCustomerWorkApprovalRequestRepository } from './repository/mikro-orm-customer-work-approval-request.repository';
@@ -44,7 +48,8 @@ export class CustomerWorkApprovalRequestService extends TenantAwareCrudService<C
 		private readonly organizations: OrganizationService,
 		private readonly repairOrders: RepairOrderService,
 		private readonly customers: OrganizationContactService,
-		private readonly vehicles: VehicleService
+		private readonly vehicles: VehicleService,
+		private readonly emailSendService: EmailSendService
 	) {
 		super(typeOrmRepository, mikroOrmRepository);
 	}
@@ -102,6 +107,16 @@ export class CustomerWorkApprovalRequestService extends TenantAwareCrudService<C
 		}
 
 		const organization = await this.organizations.findOneByIdString(estimate.organizationId);
+		const activeRequest = await this.typeOrmRepository.findOne({
+			where: {
+				estimateRootId: estimate.rootEstimateId ?? estimate.id,
+				status: CustomerWorkApprovalRequestStatusEnum.ACTIVE
+			}
+		});
+		if (activeRequest && activeRequest.expiresAt.getTime() > Date.now()) {
+			return { ...activeRequest };
+		}
+
 		const expiryDays = organization?.inviteExpiryPeriod || DEFAULT_APPROVAL_REQUEST_EXPIRY_DAYS;
 		const expiresAt = addDays(new Date(), expiryDays);
 
@@ -146,10 +161,148 @@ export class CustomerWorkApprovalRequestService extends TenantAwareCrudService<C
 			{ expiresIn: Math.max(1, Math.floor((expiresAt.getTime() - Date.now()) / 1000)) }
 		);
 
+		const response: ICustomerWorkApprovalRequestCreateResponse = { ...request, token: signedToken };
 		// The raw bearer token (the signed JWT, secret embedded) is returned ONLY here, in the
 		// creation response, and never logged or persisted anywhere — this is the one intended
 		// link-generation path.
-		return { ...request, token: signedToken };
+		return response;
+	}
+
+	async deliverRequest(
+		id: ID,
+		token: string,
+		deliveryChannel: CustomerWorkApprovalDeliveryChannelEnum = CustomerWorkApprovalDeliveryChannelEnum.EMAIL
+	): Promise<ICustomerWorkApprovalRequestCreateResponse> {
+		const request = await this.findOneByIdString(id);
+		if (request.status !== CustomerWorkApprovalRequestStatusEnum.ACTIVE) {
+			throw new BadRequestException('This approval request is no longer active.');
+		}
+		if (request.expiresAt.getTime() <= Date.now()) {
+			throw new BadRequestException('This approval request has expired.');
+		}
+
+		const claims = verifyPurposeToken<{
+			requestId: ID;
+			tenantId: ID;
+			organizationId: ID;
+			customerId: ID;
+			vehicleId: ID;
+			repairOrderId: ID;
+			estimateId: ID;
+			estimateRootId: ID;
+			estimateRevisionNumber: string;
+			secret: string;
+		}>(token, TokenPurposeEnum.CUSTOMER_WORK_APPROVAL, {
+			requiredClaims: [
+				'requestId',
+				'tenantId',
+				'organizationId',
+				'customerId',
+				'vehicleId',
+				'repairOrderId',
+				'estimateId',
+				'estimateRootId',
+				'estimateRevisionNumber',
+				'secret'
+			]
+		});
+		if (claims.requestId !== id) {
+			throw new BadRequestException('This approval request no longer matches the provided token.');
+		}
+
+		const receivedHash = Buffer.from(hashApprovalToken(claims.secret), 'hex');
+		const storedHash = Buffer.from(request.tokenHash, 'hex');
+		if (storedHash.length !== receivedHash.length || !timingSafeEqual(storedHash, receivedHash)) {
+			throw new BadRequestException('This approval request no longer matches the provided token.');
+		}
+
+		const customer = await this.customers.findOneByIdString(request.customerId);
+		const delivery = await this.sendDelivery(request, token, deliveryChannel, customer);
+		return { ...request, ...delivery };
+	}
+
+	private buildApprovalUrl(requestId: ID, token: string): string {
+		const url = new URL(`/share/customer-work-approval/${requestId}`, env.clientBaseUrl);
+		url.searchParams.set('token', token);
+		return url.toString();
+	}
+
+	private async sendDelivery(
+		request: CustomerWorkApprovalRequest,
+		token: string,
+		deliveryChannel: CustomerWorkApprovalDeliveryChannelEnum,
+		customer: { primaryEmail?: string; primaryPhone?: string }
+	): Promise<Pick<ICustomerWorkApprovalRequestCreateResponse, 'deliveryChannel' | 'deliveryStatus' | 'deliveryAttemptedAt' | 'deliveryError'>> {
+		const attemptedAt = new Date();
+		if (deliveryChannel === CustomerWorkApprovalDeliveryChannelEnum.SMS) {
+			const delivery = {
+				deliveryChannel,
+				deliveryStatus: CustomerWorkApprovalDeliveryStatusEnum.UNAVAILABLE,
+				deliveryAttemptedAt: attemptedAt,
+				deliveryError: 'SMS delivery is not available in this workspace.'
+			} satisfies Pick<
+				ICustomerWorkApprovalRequestCreateResponse,
+				'deliveryChannel' | 'deliveryStatus' | 'deliveryAttemptedAt' | 'deliveryError'
+			>;
+			await this.typeOrmRepository.update({ id: request.id }, delivery);
+			return delivery;
+		}
+
+		if (!customer?.primaryEmail) {
+			const delivery = {
+				deliveryChannel,
+				deliveryStatus: CustomerWorkApprovalDeliveryStatusEnum.UNAVAILABLE,
+				deliveryAttemptedAt: attemptedAt,
+				deliveryError: 'Customer email is missing.'
+			} satisfies Pick<
+				ICustomerWorkApprovalRequestCreateResponse,
+				'deliveryChannel' | 'deliveryStatus' | 'deliveryAttemptedAt' | 'deliveryError'
+			>;
+			await this.typeOrmRepository.update({ id: request.id }, delivery);
+			return delivery;
+		}
+
+		try {
+			const approvalUrl = this.buildApprovalUrl(request.id, token);
+			const transport = await this.emailSendService.getEmailInstance({
+				organizationId: request.organizationId,
+				tenantId: request.tenantId
+			});
+			await transport.send({
+				message: {
+					to: customer.primaryEmail,
+					subject: `Secure approval link for estimate #${request.estimateRevisionNumber}`,
+					html: `<p>Your secure approval link is ready.</p><p><a href="${approvalUrl}">Open approval request</a></p>`
+				}
+			});
+
+			const delivery = {
+				deliveryChannel,
+				deliveryStatus: CustomerWorkApprovalDeliveryStatusEnum.SENT,
+				deliveryAttemptedAt: attemptedAt,
+				deliveryError: undefined
+			} satisfies Pick<
+				ICustomerWorkApprovalRequestCreateResponse,
+				'deliveryChannel' | 'deliveryStatus' | 'deliveryAttemptedAt' | 'deliveryError'
+			>;
+			await this.typeOrmRepository.update({ id: request.id }, delivery);
+			return delivery;
+		} catch (error) {
+			const isUnavailable = /SMTP configuration is not set|smtp configuration is not set/i.test(error?.message ?? '');
+			const delivery = {
+				deliveryChannel,
+				deliveryStatus: isUnavailable
+					? CustomerWorkApprovalDeliveryStatusEnum.UNAVAILABLE
+					: CustomerWorkApprovalDeliveryStatusEnum.FAILED,
+				deliveryAttemptedAt: attemptedAt,
+				deliveryError: error?.message || 'Unable to deliver the approval link.'
+			} satisfies Pick<
+				ICustomerWorkApprovalRequestCreateResponse,
+				'deliveryChannel' | 'deliveryStatus' | 'deliveryAttemptedAt' | 'deliveryError'
+			>;
+			await this.typeOrmRepository.update({ id: request.id }, delivery);
+			return delivery;
+		}
 	}
 
 	/** Tenant/org-scoped revocation. A revoked request can never be submitted. */

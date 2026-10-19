@@ -105,6 +105,7 @@ export enum BaseEntityEnum {
 	Document = 'Document',
 	Employee = 'Employee',
 	Expense = 'Expense',
+	Estimate = 'Estimate',
 	Invoice = 'Invoice',
 	Income = 'Income',
 	Language = 'Language',
@@ -121,9 +122,11 @@ export enum BaseEntityEnum {
 	ScreeningTask = 'ScreeningTask',
 	OrganizationStrategicInitiative = 'OrganizationStrategicInitiative',
 	CustomerFollowUp = 'CustomerFollowUp',
+	RepairOrder = 'RepairOrder',
 	Task = 'Task',
 	TaskLinkedIssue = 'TaskLinkedIssue',
 	TaskView = 'TaskView',
+	Vehicle = 'Vehicle',
 	User = 'User',
 	Tenant = 'Tenant'
 }

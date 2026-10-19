@@ -1,9 +1,13 @@
-import { IsArray, IsBoolean, IsNotEmpty, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CustomerWorkApprovalChannelEnum } from '@gauzy/contracts';
+import { CustomerWorkApprovalChannelEnum, CustomerWorkApprovalDeliveryChannelEnum } from '@gauzy/contracts';
 
 export class CreateCustomerWorkApprovalRequestDTO {
 	@IsUUID() estimateId: string;
+
+	@IsOptional()
+	@IsEnum(CustomerWorkApprovalDeliveryChannelEnum)
+	deliveryChannel?: CustomerWorkApprovalDeliveryChannelEnum;
 }
 
 export class CustomerWorkApprovalLineDecisionDTO {
@@ -20,6 +24,12 @@ export class SubmitCustomerWorkApprovalDTO {
 
 export class PublicCustomerWorkApprovalTokenDTO {
 	@IsNotEmpty() @IsString() token: string;
+}
+
+export class DeliverCustomerWorkApprovalRequestDTO extends PublicCustomerWorkApprovalTokenDTO {
+	@IsOptional()
+	@IsEnum(CustomerWorkApprovalDeliveryChannelEnum)
+	deliveryChannel?: CustomerWorkApprovalDeliveryChannelEnum;
 }
 
 export class SubmissionChannelDTO {

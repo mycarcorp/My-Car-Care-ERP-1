@@ -3,7 +3,7 @@ import { ID, PermissionsEnum } from '@gauzy/contracts';
 import { Permissions } from '../shared/decorators';
 import { PermissionGuard, TenantPermissionGuard } from '../shared/guards';
 import { UUIDValidationPipe } from '../shared/pipes';
-import { CreateCustomerWorkApprovalRequestDTO } from './dto';
+import { CreateCustomerWorkApprovalRequestDTO, DeliverCustomerWorkApprovalRequestDTO } from './dto';
 import { CustomerWorkApprovalRequestService } from './customer-work-approval-request.service';
 
 @UseGuards(TenantPermissionGuard, PermissionGuard)
@@ -15,6 +15,12 @@ export class CustomerWorkApprovalRequestController {
 	@Permissions(PermissionsEnum.ORG_CUSTOMER_WORK_APPROVAL_CREATE)
 	create(@Body() body: CreateCustomerWorkApprovalRequestDTO) {
 		return this.service.createRequest(body);
+	}
+
+	@Post(':id/deliver')
+	@Permissions(PermissionsEnum.ORG_CUSTOMER_WORK_APPROVAL_CREATE)
+	deliver(@Param('id', UUIDValidationPipe) id: ID, @Body() body: DeliverCustomerWorkApprovalRequestDTO) {
+		return this.service.deliverRequest(id, body.token, body.deliveryChannel);
 	}
 
 	@Get(':id')

@@ -15,6 +15,6 @@ import { OrganizationModule } from './../organization/organization.module';
         forwardRef(() => EmailHistoryModule),
     ],
     providers: [EmailService, EmailSendService, EmailTemplateRenderService],
-    exports: [EmailService], // Export the service to be accessible by other modules
+    exports: [EmailService, EmailSendService], // Export the services to be accessible by other modules
 })
 export class EmailSendModule { }

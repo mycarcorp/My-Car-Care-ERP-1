@@ -2318,6 +2318,11 @@
 		"BONUS_TOOLTIP": "This is a direct bonus",
 		"EMPLOYEES_GENERATE_INCOME": "Employees that generate income"
 	},
+	"ESTIMATES_PAGE": {
+		"DETAIL": {
+			"APPROVAL_LINK_COPY_FAILED": "Could not copy the link. Please copy it manually."
+		}
+	},
 	"EXPENSES_PAGE": {
 		"EXPENSES": "Expenses",
 		"MUTATION": {

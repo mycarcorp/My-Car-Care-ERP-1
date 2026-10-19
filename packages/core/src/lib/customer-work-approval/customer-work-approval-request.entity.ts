@@ -1,6 +1,8 @@
 import { JoinColumn, RelationId } from 'typeorm';
 import { IsDate, IsEnum, IsNumber, IsString, IsUUID } from 'class-validator';
 import {
+	CustomerWorkApprovalDeliveryChannelEnum,
+	CustomerWorkApprovalDeliveryStatusEnum,
 	CustomerWorkApprovalRequestStatusEnum,
 	ID,
 	ICustomerWorkApprovalRequest,
@@ -58,4 +60,26 @@ export class CustomerWorkApprovalRequest extends TenantOrganizationBaseEntity im
 		default: CustomerWorkApprovalRequestStatusEnum.ACTIVE
 	})
 	status: CustomerWorkApprovalRequestStatusEnum;
+
+	@IsEnum(CustomerWorkApprovalDeliveryChannelEnum)
+	@MultiORMColumn({
+		type: 'simple-enum',
+		nullable: true,
+		enum: CustomerWorkApprovalDeliveryChannelEnum
+	})
+	deliveryChannel?: CustomerWorkApprovalDeliveryChannelEnum;
+
+	@IsEnum(CustomerWorkApprovalDeliveryStatusEnum)
+	@MultiORMColumn({
+		type: 'simple-enum',
+		nullable: true,
+		enum: CustomerWorkApprovalDeliveryStatusEnum
+	})
+	deliveryStatus?: CustomerWorkApprovalDeliveryStatusEnum;
+
+	@MultiORMColumn({ nullable: true })
+	deliveryAttemptedAt?: Date;
+
+	@MultiORMColumn({ nullable: true, length: 1024 })
+	deliveryError?: string;
 }
