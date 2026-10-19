@@ -155,6 +155,9 @@ export class RepairOrderInvoiceService {
 					paid: false,
 					tax: 0,
 					tax2: 0,
+					// `terms` is a NOT NULL column with no customer-supplied value on this path;
+					// the codebase's minimal non-null default is an empty string (no payment terms).
+					terms: '',
 					totalValue,
 					status: InvoiceStatusTypesEnum.DRAFT,
 					isEstimate: false,

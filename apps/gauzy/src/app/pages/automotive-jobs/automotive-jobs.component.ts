@@ -46,11 +46,16 @@ export class AutomotiveJobsComponent implements OnInit {
 	canStartQc = false;
 	canPassQc = false;
 	canFailQc = false;
+	readonly qcStartingByJob: Record<string, boolean> = {};
+	readonly qcSubmittingByAttempt: Record<string, boolean> = {};
 	readonly qcByJob: Record<string, IAutomotiveJobQcAttempt[]> = {};
 	readonly qcReasonByAttempt: Record<string, string> = {};
 	// Parts consumption state
+	canViewParts = false;
 	parts: IAutomotivePartProfile[] = [];
 	readonly partsByJob: Record<string, IPartStockMovement[]> = {};
+	readonly partsLoadingByJob: Record<string, boolean> = {};
+	readonly partsErrorByJob: Record<string, string | null> = {};
 	readonly selectedPartByJob: Record<string, string | undefined> = {};
 	readonly partStockByJob: Record<
 		string,
@@ -59,6 +64,7 @@ export class AutomotiveJobsComponent implements OnInit {
 	readonly selectedStockByJob: Record<string, string | undefined> = {};
 	readonly partQuantityByJob: Record<string, number | null> = {};
 	readonly consumingJobId: Record<string, boolean> = {};
+	readonly reversingMovementId: Record<string, boolean> = {};
 	readonly partReverseReasonByMovement: Record<string, string> = {};
 	canConsumeParts = false;
 	canReverseParts = false;
@@ -74,11 +80,15 @@ export class AutomotiveJobsComponent implements OnInit {
 
 	async ngOnInit(): Promise<void> {
 		this.repairOrderId = this.route.snapshot.paramMap.get('repairOrderId');
+		await this.loadPermissions();
 		await this.refresh();
 		await this.loadEmployees();
 		await this.loadCategories();
 		await this.loadParts();
 		this.currentEmployeeId = this.store.user?.employee?.id;
+	}
+
+	private async loadPermissions(): Promise<void> {
 		this.canManageLabor = await this.permissions.hasPermission([
 			PermissionsEnum.ALL_ORG_EDIT,
 			PermissionsEnum.ORG_AUTOMOTIVE_JOB_LABOR_EDIT
@@ -98,6 +108,10 @@ export class AutomotiveJobsComponent implements OnInit {
 			PermissionsEnum.ALL_ORG_EDIT,
 			PermissionsEnum.ORG_AUTOMOTIVE_JOB_PART_REVERSE
 		]);
+		this.canViewParts = await this.permissions.hasPermission([
+			PermissionsEnum.ALL_ORG_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_PART_VIEW
+		]);
 	}
 
 	async refresh(): Promise<void> {
@@ -110,15 +124,17 @@ export class AutomotiveJobsComponent implements OnInit {
 			for (const job of this.jobs) this.selectedCategoryByJob[job.id] = job.categoryId ?? '';
 			const laborResults = await Promise.all(this.jobs.map((job) => this.api.listLabor(job.id)));
 			const qcResults = await Promise.all(this.jobs.map((job) => this.api.listQc(job.id)));
-			const partsResults = await Promise.all(this.jobs.map((job) => this.api.listPartConsumptions(job.id)));
 			this.jobs.forEach((job, index) => {
 				this.laborByJob[job.id] = laborResults[index];
 				this.qcByJob[job.id] = qcResults[index];
-				this.partsByJob[job.id] = partsResults[index];
 				for (const labor of laborResults[index]) {
 					this.laborTechnicianById[labor.id] = [...(labor.assignedEmployeeIds ?? [])];
 				}
 			});
+			this.resetPartConsumptionState();
+			if (this.canViewParts) {
+				await Promise.all(this.jobs.map((job) => this.loadPartConsumptions(job.id)));
+			}
 		} catch {
 			this.toastr.danger('Could not load authorized work for this repair order.');
 		} finally {
@@ -285,34 +301,46 @@ export class AutomotiveJobsComponent implements OnInit {
 	}
 
 	async startQc(job: IAutomotiveJob): Promise<void> {
+		if (this.qcStartingByJob[job.id]) return;
+		this.qcStartingByJob[job.id] = true;
 		try {
 			await this.api.startQc(job.id);
 			this.toastr.success('QC attempt started.');
 			await this.refresh();
 		} catch {
 			this.toastr.danger('Could not start a QC attempt.');
+		} finally {
+			this.qcStartingByJob[job.id] = false;
 		}
 	}
 
 	async passQc(attempt: IAutomotiveJobQcAttempt): Promise<void> {
+		if (this.qcSubmittingByAttempt[attempt.id]) return;
+		this.qcSubmittingByAttempt[attempt.id] = true;
 		try {
 			await this.api.passQc(attempt.id);
 			this.toastr.success('QC passed. Complete the job when all gates are satisfied.');
 			await this.refresh();
 		} catch {
 			this.toastr.danger('Could not pass this QC attempt.');
+		} finally {
+			this.qcSubmittingByAttempt[attempt.id] = false;
 		}
 	}
 
 	async failQc(attempt: IAutomotiveJobQcAttempt): Promise<void> {
 		const reason = this.qcReasonByAttempt[attempt.id]?.trim();
 		if (!reason) return;
+		if (this.qcSubmittingByAttempt[attempt.id]) return;
+		this.qcSubmittingByAttempt[attempt.id] = true;
 		try {
 			await this.api.failQc(attempt.id, { reason });
 			this.toastr.warning('QC failed. The job remains in progress for rework.');
 			await this.refresh();
 		} catch {
 			this.toastr.danger('Could not fail this QC attempt.');
+		} finally {
+			this.qcSubmittingByAttempt[attempt.id] = false;
 		}
 	}
 
@@ -348,6 +376,30 @@ export class AutomotiveJobsComponent implements OnInit {
 		} catch {
 			this.toastr.danger('Could not load available parts.');
 		}
+	}
+
+	private resetPartConsumptionState(): void {
+		for (const key of Object.keys(this.partsByJob)) delete this.partsByJob[key];
+		for (const key of Object.keys(this.partsLoadingByJob)) delete this.partsLoadingByJob[key];
+		for (const key of Object.keys(this.partsErrorByJob)) delete this.partsErrorByJob[key];
+	}
+
+	private async loadPartConsumptions(jobId: string): Promise<void> {
+		this.partsLoadingByJob[jobId] = true;
+		this.partsErrorByJob[jobId] = null;
+		try {
+			this.partsByJob[jobId] = await this.api.listPartConsumptions(jobId);
+		} catch (error) {
+			this.partsByJob[jobId] = [];
+			this.partsErrorByJob[jobId] = error?.error?.message || error?.message || 'Could not load parts consumption.';
+		} finally {
+			this.partsLoadingByJob[jobId] = false;
+		}
+	}
+
+	async retryPartConsumptions(job: IAutomotiveJob): Promise<void> {
+		if (!this.canViewParts) return;
+		await this.loadPartConsumptions(job.id);
 	}
 
 	/** Display label for a part profile (part number + manufacturer/OEM). */
@@ -405,6 +457,8 @@ export class AutomotiveJobsComponent implements OnInit {
 	 */
 	async consumePart(job: IAutomotiveJob): Promise<void> {
 		if (!this.canSubmitConsumption(job) || this.consumingJobId[job.id]) return;
+		const selectedPartId = this.selectedPartByJob[job.id];
+		const selectedStockId = this.selectedStockByJob[job.id];
 		const stockId = this.selectedStockByJob[job.id];
 		const stock = (this.partStockByJob[job.id] || []).find((s) => s.warehouseProductVariantId === stockId);
 		this.consumingJobId[job.id] = true;
@@ -417,11 +471,19 @@ export class AutomotiveJobsComponent implements OnInit {
 				operationKey: this.newOperationKey()
 			});
 			this.toastr.success('Part consumed.');
-			this.selectedPartByJob[job.id] = undefined;
-			this.selectedStockByJob[job.id] = undefined;
 			this.partQuantityByJob[job.id] = null;
-			this.partStockByJob[job.id] = [];
 			await this.refresh();
+			if (selectedPartId) {
+				await this.onPartSelected(job, selectedPartId);
+				if (
+					selectedStockId &&
+					(this.partStockByJob[job.id] || []).some(
+						(stockBalance) => stockBalance.warehouseProductVariantId === selectedStockId
+					)
+				) {
+					this.selectedStockByJob[job.id] = selectedStockId;
+				}
+			}
 		} catch (error) {
 			this.toastr.danger(error?.error?.message || 'Could not consume this part.');
 		} finally {
@@ -431,15 +493,23 @@ export class AutomotiveJobsComponent implements OnInit {
 
 	/** Reverses a previous consumption with a required reason; blocked if already reversed. */
 	async reverseConsumption(job: IAutomotiveJob, movement: IPartStockMovement): Promise<void> {
+		if (this.reversingMovementId[movement.id]) return;
 		const reason = this.partReverseReasonByMovement[movement.id]?.trim();
 		if (!reason || this.isReversed(movement)) return;
+		this.reversingMovementId[movement.id] = true;
 		try {
 			await this.api.reversePartConsumption(job.id, movement.id, reason);
 			this.toastr.success('Consumption reversed.');
 			this.partReverseReasonByMovement[movement.id] = '';
 			await this.refresh();
+			const selectedPartId = this.selectedPartByJob[job.id];
+			if (selectedPartId) {
+				await this.onPartSelected(job, selectedPartId);
+			}
 		} catch (error) {
 			this.toastr.danger(error?.error?.message || 'Could not reverse this consumption.');
+		} finally {
+			this.reversingMovementId[movement.id] = false;
 		}
 	}
 

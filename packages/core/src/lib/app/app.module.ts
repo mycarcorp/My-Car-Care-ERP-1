@@ -74,6 +74,7 @@ import { EquipmentModule } from '../equipment/equipment.module';
 import { EstimateEmailModule } from '../estimate-email/estimate-email.module';
 import { EstimateModule } from '../estimate/estimate.module';
 import { CustomerWorkApprovalModule } from '../customer-work-approval/customer-work-approval.module';
+import { CustomerFollowUpModule } from '../customer-follow-up/customer-follow-up.module';
 import { AutomotivePartModule } from '../automotive-part/automotive-part.module';
 import { PurchaseOrderModule } from '../purchase-order/purchase-order.module';
 import { AutomotiveJobModule } from '../automotive-job/automotive-job.module';
@@ -497,6 +498,7 @@ if (environment.THROTTLE_ENABLED) {
 		EstimateEmailModule,
 		EstimateModule,
 		CustomerWorkApprovalModule,
+		CustomerFollowUpModule,
 		AutomotivePartModule,
 		PurchaseOrderModule,
 		AutomotiveJobModule,

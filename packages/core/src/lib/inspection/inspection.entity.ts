@@ -60,7 +60,7 @@ export class Inspection extends TenantOrganizationBaseEntity implements IInspect
 
 	@ApiProperty({ type: () => Employee })
 	@MultiORMManyToOne(() => Employee, { nullable: false, onDelete: 'RESTRICT' })
-	@JoinColumn()
+	@JoinColumn({ name: 'technicianEmployeeId' })
 	technician?: IEmployee;
 
 	@ApiProperty({ type: () => String })

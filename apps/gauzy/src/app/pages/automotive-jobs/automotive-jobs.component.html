@@ -278,12 +278,30 @@
 												@if (attempt.notes) { <p>{{ attempt.notes }}</p> }
 												@if (last && attempt.status === qcStatuses.PENDING) {
 													@if (canPassQc) {
-														<button nbButton size="small" status="success" (click)="passQc(attempt)">Pass QC</button>
+														<button
+															[disabled]="qcSubmittingByAttempt[attempt.id]"
+															aria-busy="{{ qcSubmittingByAttempt[attempt.id] ? 'true' : 'false' }}"
+															nbButton
+															size="small"
+															status="success"
+															(click)="passQc(attempt)"
+														>
+															Pass QC
+														</button>
 													}
 													@if (canFailQc) {
 														<div class="qc-fail-actions">
 															<input nbInput placeholder="Failure reason" [value]="qcReasonByAttempt[attempt.id] || ''" (input)="qcReasonByAttempt[attempt.id] = $any($event.target).value" />
-															<button nbButton size="small" status="danger" [disabled]="!(qcReasonByAttempt[attempt.id] || '').trim()" (click)="failQc(attempt)">Fail QC</button>
+															<button
+																[disabled]="!(qcReasonByAttempt[attempt.id] || '').trim() || qcSubmittingByAttempt[attempt.id]"
+																aria-busy="{{ qcSubmittingByAttempt[attempt.id] ? 'true' : 'false' }}"
+																nbButton
+																size="small"
+																status="danger"
+																(click)="failQc(attempt)"
+															>
+																Fail QC
+															</button>
 														</div>
 													}
 												}
@@ -292,7 +310,16 @@
 									</div>
 								}
 								@if (canStartQc && job.status === statuses.IN_PROGRESS && qcStatus(job.id) !== qcStatuses.PENDING) {
-									<button nbButton size="small" status="basic" (click)="startQc(job)">Start QC</button>
+									<button
+										nbButton
+										size="small"
+										status="basic"
+										[disabled]="qcStartingByJob[job.id]"
+										aria-busy="{{ qcStartingByJob[job.id] ? 'true' : 'false' }}"
+										(click)="startQc(job)"
+									>
+										Start QC
+									</button>
 								}
 								@if (job.status === statuses.IN_PROGRESS && qcStatus(job.id) !== qcStatuses.PASSED) {
 									<span class="qc-blocked">Job completion requires passed QC.</span>
@@ -301,48 +328,73 @@
 							<section class="parts-section" [attr.aria-label]="'Parts for ' + job.title">
 								<div class="parts-header">
 									<h6>Parts</h6>
-									<span>{{ consumptionsFor(job).length }} consumed</span>
+									@if (canViewParts) {
+										<span>{{ consumptionsFor(job).length }} consumed</span>
+									}
 								</div>
-								@if (!consumptionsFor(job).length) {
-									<p class="empty-state">No parts consumed.</p>
-								} @else {
-									<div class="parts-history">
-										@for (movement of consumptionsFor(job); track movement.id) {
-											<div class="part-row">
-												<div class="part-copy">
-													<strong>{{ partNameFor(movement) }}</strong>
-													<span
-														>Qty {{ -movement.quantityDelta }} ·
-														{{ movement.costCurrency }} {{ movement.unitCost }} each</span
-													>
-													<nb-badge
-														*ngIf="isReversed(movement)"
-														text="REVERSED"
-														status="warning"
-													></nb-badge>
-												</div>
-												@if (canReverseParts && !isReversed(movement)) {
-													<div class="part-reverse">
-														<input
-															nbInput
-															placeholder="Reversal reason"
-															[value]="partReverseReasonByMovement[movement.id] || ''"
-															(input)="partReverseReasonByMovement[movement.id] = $any($event.target).value"
-														/>
-														<button
-															nbButton
-															size="small"
-															status="warning"
-															[disabled]="!(partReverseReasonByMovement[movement.id] || '').trim()"
-															(click)="reverseConsumption(job, movement)"
+								@if (canViewParts) {
+									@if (partsLoadingByJob[job.id]) {
+										<p class="empty-state">Loading parts consumption…</p>
+									} @else if (partsErrorByJob[job.id]) {
+										<div class="parts-error" role="alert">
+											<p>{{ partsErrorByJob[job.id] }}</p>
+											<button nbButton size="small" status="basic" (click)="retryPartConsumptions(job)">
+												Retry
+											</button>
+										</div>
+									} @else if (!consumptionsFor(job).length) {
+										<p class="empty-state">No parts consumed.</p>
+									} @else {
+										<div class="parts-history">
+											@for (movement of consumptionsFor(job); track movement.id) {
+												<div class="part-row">
+													<div class="part-copy">
+														<strong>{{ partNameFor(movement) }}</strong>
+														<span
+															>Variant {{ movement.productVariantId }} · Qty {{ -movement.quantityDelta }} ·
+															{{ movement.costCurrency }} {{ movement.unitCost }} each</span
 														>
-															Reverse
-														</button>
+														<span>
+															Stock {{ movement.quantityBefore }} → {{ movement.quantityAfter }} ·
+															Recorded {{ movement.createdAt | date: 'medium' }}
+														</span>
+														<span>Reason: {{ movement.reason }}</span>
+														@if (movement.notes) {
+															<span>Notes: {{ movement.notes }}</span>
+														}
+														@if (isReversed(movement)) {
+															<nb-badge text="REVERSED" status="warning"></nb-badge>
+														}
 													</div>
-												}
-											</div>
-										}
-									</div>
+													@if (canReverseParts && !isReversed(movement)) {
+														<div class="part-reverse">
+															<input
+																nbInput
+																placeholder="Reversal reason"
+																[value]="partReverseReasonByMovement[movement.id] || ''"
+																(input)="partReverseReasonByMovement[movement.id] = $any($event.target).value"
+															/>
+															<button
+																nbButton
+																size="small"
+																status="warning"
+																[disabled]="
+																	!(partReverseReasonByMovement[movement.id] || '').trim() ||
+																	reversingMovementId[movement.id]
+															"
+																[aria-busy]="reversingMovementId[movement.id] ? 'true' : 'false'"
+																(click)="reverseConsumption(job, movement)"
+															>
+																	{{ reversingMovementId[movement.id] ? 'Reversing…' : 'Reverse' }}
+															</button>
+														</div>
+													}
+												</div>
+											}
+										</div>
+									}
+								} @else {
+									<p class="empty-state">You do not have permission to view parts consumption history.</p>
 								}
 								@if (canConsume(job)) {
 									<div class="part-consume">

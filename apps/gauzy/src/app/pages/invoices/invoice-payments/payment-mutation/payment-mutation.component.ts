@@ -32,6 +32,7 @@ export class PaymentMutationComponent extends TranslationBaseComponent implement
 	invoices: IInvoice[] = [];
 	public organization: IOrganization;
 	payment: IPayment;
+	public isSubmitting = false;
 	paymentMethods = Object.values(PaymentMethodEnum);
 	currencyString: string;
 
@@ -139,7 +140,7 @@ export class PaymentMutationComponent extends TranslationBaseComponent implement
 			if (this.invoice) {
 				this.form.patchValue({ invoice: this.invoice });
 				if (this.invoice.toContact) {
-					this.form.patchValue({ contact: this.invoice.toContact });
+					this.form.patchValue({ organizationContact: this.invoice.toContact });
 				}
 				this.form.updateValueAndValidity();
 			}
@@ -147,6 +148,11 @@ export class PaymentMutationComponent extends TranslationBaseComponent implement
 	}
 
 	async addEditPayment() {
+		if (this.isSubmitting) {
+			return;
+		}
+		this.isSubmitting = true;
+
 		const { tenantId } = this.store.user;
 		const { id: organizationId } = this.organization;
 		const { amount, paymentDate, note, paymentMethod, organizationContact, project, tags, invoice } =

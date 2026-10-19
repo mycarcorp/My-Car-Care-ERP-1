@@ -5,11 +5,12 @@ import { TranslateService } from '@ngx-translate/core';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { firstValueFrom } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
-import { ID, IServiceHistoryRecord, IVehicle, RepairOrderStatusEnum } from '@gauzy/contracts';
+import { ID, IServiceHistoryRecord, IVehicle, PermissionsEnum, RepairOrderStatusEnum } from '@gauzy/contracts';
 import { TranslationBaseComponent } from '@gauzy/ui-core/i18n';
 import { RepairOrderApiService } from '../repair-orders/repair-order-api.service';
 import { VehicleApiService } from './vehicle-api.service';
 import { VehicleMutationComponent } from './vehicle-mutation.component';
+import { NgxPermissionsService } from 'ngx-permissions';
 
 @UntilDestroy({ checkProperties: true })
 @Component({
@@ -21,6 +22,8 @@ import { VehicleMutationComponent } from './vehicle-mutation.component';
 export class VehicleDetailComponent extends TranslationBaseComponent implements OnInit, OnDestroy {
 	public vehicle: IVehicle;
 	public serviceHistory: IServiceHistoryRecord[] = [];
+	public canViewServiceHistory = false;
+	public serviceHistoryError: string | null = null;
 	public loading = false;
 	public historyLoading = false;
 	public notFound = false;
@@ -32,7 +35,8 @@ export class VehicleDetailComponent extends TranslationBaseComponent implements 
 		private readonly api: VehicleApiService,
 		private readonly repairOrderApi: RepairOrderApiService,
 		private readonly toastrService: NbToastrService,
-		private readonly dialogService: NbDialogService
+		private readonly dialogService: NbDialogService,
+		private readonly permissions: NgxPermissionsService
 	) {
 		super(translateService);
 	}
@@ -76,17 +80,31 @@ export class VehicleDetailComponent extends TranslationBaseComponent implements 
 	 */
 	private async loadServiceHistory(id: ID): Promise<void> {
 		this.historyLoading = true;
+		this.serviceHistoryError = null;
 		try {
+			this.canViewServiceHistory = await this.permissions.hasPermission(PermissionsEnum.ORG_REPAIR_ORDER_VIEW);
+			if (!this.canViewServiceHistory) {
+				this.serviceHistory = [];
+				return;
+			}
 			this.serviceHistory = await this.repairOrderApi.getVehicleServiceHistory(id);
 		} catch (error) {
 			this.serviceHistory = [];
+			this.serviceHistoryError = error?.error?.message || error?.message || this.getTranslation('VEHICLES_PAGE.HISTORY.LOAD_FAILED');
 			this.toastrService.danger(
-				error?.error?.message || error?.message || this.getTranslation('VEHICLES_PAGE.HISTORY.LOAD_FAILED'),
+				this.serviceHistoryError,
 				this.getTranslation('TOASTR.TITLE.ERROR')
 			);
 		} finally {
 			this.historyLoading = false;
 		}
+	}
+
+	async reloadServiceHistory(): Promise<void> {
+		if (!this.vehicle) {
+			return;
+		}
+		await this.loadServiceHistory(this.vehicle.id);
 	}
 
 	/**

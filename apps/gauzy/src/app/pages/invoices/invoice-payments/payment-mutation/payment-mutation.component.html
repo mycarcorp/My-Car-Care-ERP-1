@@ -194,7 +194,7 @@
         <button
           (click)="addEditPayment()"
           status="success"
-          [disabled]="form.invalid"
+          [disabled]="form.invalid || isSubmitting"
           size="small"
           nbButton
           >

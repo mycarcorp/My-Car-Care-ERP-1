@@ -67,14 +67,21 @@
 				</div>
 			</div>
 
-			<div class="vehicle-detail__history">
+			<div class="vehicle-detail__history" *ngIf="canViewServiceHistory">
 				<h5>{{ 'VEHICLES_PAGE.HISTORY.TITLE' | translate }}</h5>
 
 				<div *ngIf="historyLoading" class="vehicle-detail__loading">
 					<nb-spinner></nb-spinner>
 				</div>
 
-				<ng-template [ngIf]="!historyLoading">
+				<nb-alert *ngIf="!historyLoading && serviceHistoryError" status="danger" outline="danger" class="vehicle-detail__history-error">
+					<div class="vehicle-detail__history-error-text">{{ serviceHistoryError }}</div>
+					<button nbButton size="small" status="basic" (click)="reloadServiceHistory()">
+						{{ 'BUTTONS.RETRY' | translate }}
+					</button>
+				</nb-alert>
+
+				<ng-template [ngIf]="!historyLoading && !serviceHistoryError">
 					<ng-template [ngIf]="serviceHistory.length" [ngIfElse]="noHistory">
 						<table class="table vehicle-detail__history-table">
 							<thead>

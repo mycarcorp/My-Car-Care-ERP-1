@@ -201,15 +201,22 @@ export class PartStockMovementService extends TenantAwareCrudService<PartStockMo
 					where: { id: profile.productVariantId, ...scope },
 					relations: { price: true }
 				});
+				// `price` is the inverse side of a OneToOne (the FK lives on ProductVariantPrice).
+				// Under TypeORM that inverse relation does not hydrate reliably (it stayed null in the
+				// real-DB integration test), so read the price from the owning side keyed by the variant id.
+				const price = await manager.findOne(ProductVariantPrice, {
+					where: { productVariant: { id: profile.productVariantId }, ...scope } as any
+				});
+				const effectivePrice = price ?? variant?.price;
 				if (
 					!variant ||
 					variant.enabled === false ||
-					!variant.price ||
-					variant.price.tenantId !== scope.tenantId ||
-					variant.price.organizationId !== scope.organizationId ||
-					!Number.isFinite(Number(variant.price.unitCost)) ||
-					Number(variant.price.unitCost) < 0 ||
-					!variant.price.unitCostCurrency
+					!effectivePrice ||
+					effectivePrice.tenantId !== scope.tenantId ||
+					effectivePrice.organizationId !== scope.organizationId ||
+					!Number.isFinite(Number(effectivePrice.unitCost)) ||
+					Number(effectivePrice.unitCost) < 0 ||
+					!effectivePrice.unitCostCurrency
 				) {
 					throw new BadRequestException('Part variant must have a scoped, valid current cost and currency.');
 				}
@@ -235,8 +242,8 @@ export class PartStockMovementService extends TenantAwareCrudService<PartStockMo
 					...scope,
 					automotiveJobId: job.id,
 					repairOrderId: repairOrder.id,
-					unitCost: Number(variant.price.unitCost),
-					costCurrency: variant.price.unitCostCurrency,
+					unitCost: Number(effectivePrice.unitCost),
+					costCurrency: effectivePrice.unitCostCurrency,
 					recordedByUserId: actorId,
 					operationKey: input.operationKey
 				});

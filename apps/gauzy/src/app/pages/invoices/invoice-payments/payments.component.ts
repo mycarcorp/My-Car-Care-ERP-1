@@ -24,6 +24,7 @@ import {
 	Store,
 	ToastrService
 } from '@gauzy/ui-core/core';
+import { compareDate } from '@gauzy/ui-core/common';
 import {
 	DateViewComponent,
 	DeleteConfirmationComponent,
@@ -204,9 +205,7 @@ export class InvoicePaymentsComponent extends TranslationBaseComponent implement
 
 		if (result) {
 			await this.paymentService.add(result);
-			this.totalPaid = 0;
-			this.subject$.next(true);
-			await this.updateInvoiceStatus(+this.invoice.totalValue, this.totalPaid);
+			await this.getInvoice();
 
 			if (result.invoice) {
 				const { invoice, amount, currency } = result;
@@ -229,8 +228,7 @@ export class InvoicePaymentsComponent extends TranslationBaseComponent implement
 
 		if (result) {
 			await this.paymentService.update(result.id, result);
-			this.subject$.next(true);
-			await this.updateInvoiceStatus(+this.invoice.totalValue, this.totalPaid);
+			await this.getInvoice();
 
 			if (result.invoice) {
 				const { invoice } = result;
@@ -245,8 +243,7 @@ export class InvoicePaymentsComponent extends TranslationBaseComponent implement
 
 		if (result) {
 			await this.paymentService.delete(this.selectedPayment.id);
-			this.subject$.next(true);
-			await this.updateInvoiceStatus(+this.invoice.totalValue, this.totalPaid);
+			await this.getInvoice();
 
 			const { invoice } = this.selectedPayment;
 			if (invoice) {
@@ -404,7 +401,7 @@ export class InvoicePaymentsComponent extends TranslationBaseComponent implement
 			organizationId: this.invoice.fromOrganization.id,
 			tenantId
 		};
-		payment.overdue = this.invoice.dueDate >= new Date();
+		payment.overdue = compareDate(new Date(), this.invoice.dueDate);
 
 		await this.paymentService.add(payment);
 		const { amount, currency, invoice } = payment;
@@ -414,7 +411,7 @@ export class InvoicePaymentsComponent extends TranslationBaseComponent implement
 			await this.createInvoiceHistory(action, invoice);
 		}
 
-		this.subject$.next(true);
+		await this.getInvoice();
 		this.toastrService.success('INVOICES_PAGE.PAYMENTS.PAYMENT_ADD', { amount, currency });
 	}
 

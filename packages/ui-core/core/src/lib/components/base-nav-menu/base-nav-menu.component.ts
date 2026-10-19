@@ -94,6 +94,7 @@ export class BaseNavMenuComponent extends TranslationBaseComponent implements On
 		return [
 			...this._getDashboardMenu(),
 			...this._getFavoritesMenu(),
+			...this._getServiceCenterMenu(),
 			...this._getAccountingMenu(),
 			...this._getSalesMenu(),
 			...this._getTasksMenu(),
@@ -202,6 +203,86 @@ export class BaseNavMenuComponent extends TranslationBaseComponent implements On
 					translationKey: 'MENU.FAVORITES'
 				},
 				items: this._favoriteItems
+			}
+		];
+	}
+
+	/**
+	 * Returns the Service Center (My Car Care) menu section: the dashboard plus the
+	 * core workflow pages (Repair Orders, Appointments, Vehicles, Estimates). Each item
+	 * is gated by its read permission, and the whole section is hidden when the user has
+	 * none of them — so the menu never shows an empty group.
+	 */
+	private _getServiceCenterMenu(): NavMenuSectionItem[] {
+		const items: NavMenuSectionItem[] = [
+			{
+				id: 'service-center-dashboard',
+				title: 'Dashboard',
+				icon: 'fas fa-th',
+				link: '/pages/service-center-dashboard',
+				pathMatch: 'full',
+				data: {
+					translationKey: 'MENU.DASHBOARD'
+				}
+			},
+			{
+				id: 'service-center-repair-orders',
+				title: 'Repair Orders',
+				icon: 'fas fa-tools',
+				link: '/pages/repair-orders',
+				pathMatch: 'prefix',
+				data: {
+					translationKey: 'MENU.REPAIR_ORDERS',
+					permissionKeys: [PermissionsEnum.ORG_REPAIR_ORDER_VIEW]
+				}
+			},
+			{
+				id: 'service-center-appointments',
+				title: 'Appointments',
+				icon: 'far fa-calendar-check',
+				link: '/pages/appointments',
+				pathMatch: 'prefix',
+				data: {
+					translationKey: 'MENU.APPOINTMENTS',
+					permissionKeys: [PermissionsEnum.ORG_APPOINTMENT_VIEW]
+				}
+			},
+			{
+				id: 'service-center-vehicles',
+				title: 'Vehicles',
+				icon: 'fas fa-car',
+				link: '/pages/vehicles',
+				pathMatch: 'prefix',
+				data: {
+					translationKey: 'MENU.VEHICLES'
+				}
+			},
+			{
+				id: 'service-center-estimates',
+				title: 'Estimates',
+				icon: 'far fa-file',
+				link: '/pages/estimates',
+				pathMatch: 'prefix',
+				data: {
+					translationKey: 'MENU.ESTIMATES',
+					permissionKeys: [PermissionsEnum.ORG_ESTIMATE_VIEW]
+				}
+			}
+		];
+		// Hide the whole Service Center section when the user has none of the gated permissions.
+		const anyVisible = items.some(
+			(item) => !item.data.permissionKeys?.length || this._store.hasAnyPermission(...item.data.permissionKeys)
+		);
+		return [
+			{
+				id: 'service-center',
+				title: 'Service Center',
+				icon: 'fas fa-car-side',
+				hidden: !anyVisible,
+				data: {
+					translationKey: 'MENU.SERVICE_CENTER'
+				},
+				items
 			}
 		];
 	}

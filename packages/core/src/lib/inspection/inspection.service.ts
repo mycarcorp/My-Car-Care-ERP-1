@@ -70,13 +70,14 @@ export class InspectionService extends TenantAwareCrudService<Inspection> {
 	}
 
 	/**
-	 * Finds a single inspection by id within the current tenant scope, including its findings.
+	 * Finds a single inspection by id within the current tenant scope, including its findings
+	 * and the display relations the detail view renders (repair order, vehicle, technician).
 	 *
 	 * @param id - The inspection id.
-	 * @returns The inspection with its findings.
+	 * @returns The inspection with its findings and display relations.
 	 */
 	async findByIdWithFindings(id: ID): Promise<Inspection> {
-		return await this.findOneByIdString(id, { relations: ['findings'] } as any);
+		return await this.findOneByIdString(id, { relations: ['findings', 'repairOrder', 'vehicle', 'technician'] } as any);
 	}
 
 	/**

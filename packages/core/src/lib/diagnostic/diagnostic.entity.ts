@@ -1,8 +1,9 @@
 import { JoinColumn, RelationId } from 'typeorm';
 import { IsDate, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
-import { DiagnosticStatusEnum, ID, IDiagnostic, IEmployee, IInspection } from '@gauzy/contracts';
+import { DiagnosticStatusEnum, ID, IDiagnostic, IDiagnosticFinding, IEmployee, IInspection } from '@gauzy/contracts';
 import { Employee, Inspection, TenantOrganizationBaseEntity } from '../core/entities/internal';
-import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToOne } from '../core/decorators/entity';
+import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToOne, MultiORMOneToMany } from '../core/decorators/entity';
+import { DiagnosticFinding } from './diagnostic-finding.entity';
 import { MikroOrmDiagnosticRepository } from './repository/mikro-orm-diagnostic.repository';
 @MultiORMEntity('diagnostic', { mikroOrmRepository: () => MikroOrmDiagnosticRepository })
 export class Diagnostic extends TenantOrganizationBaseEntity implements IDiagnostic {
@@ -23,10 +24,26 @@ export class Diagnostic extends TenantOrganizationBaseEntity implements IDiagnos
 	@ColumnIndex()
 	@MultiORMColumn({ relationId: true })
 	inspectionId: ID;
-	@MultiORMManyToOne(() => Employee, { nullable: false, onDelete: 'RESTRICT' }) @JoinColumn() technician?: IEmployee;
+	@MultiORMManyToOne(() => Employee, { nullable: false, onDelete: 'RESTRICT' })
+	@JoinColumn({ name: 'technicianEmployeeId' })
+	technician?: IEmployee;
 	@IsUUID()
 	@RelationId((it: Diagnostic) => it.technician)
 	@ColumnIndex()
 	@MultiORMColumn({ relationId: true })
 	technicianEmployeeId: ID;
+
+	/*
+	|--------------------------------------------------------------------------
+	| @OneToMany
+	|--------------------------------------------------------------------------
+	*/
+	/**
+	 * Diagnostic findings belonging to this diagnostic.
+	 */
+	@MultiORMOneToMany(() => DiagnosticFinding, (entity) => entity.diagnostic, {
+		onDelete: 'SET NULL'
+	})
+	@JoinColumn()
+	findings?: IDiagnosticFinding[];
 }
