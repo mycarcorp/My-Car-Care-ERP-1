@@ -231,6 +231,7 @@ export const coreEntities = [
 	CustomerWorkApproval,
 	CustomerWorkApprovalLine,
 	CustomerWorkApprovalRequest,
+	CustomerFollowUp,
 	DailyPlan,
 	Dashboard,
 	DashboardWidget,
