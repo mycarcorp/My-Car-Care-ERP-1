@@ -35,7 +35,7 @@
 		"@gauzy/utils": "^0.1.0",
 		"@ever-gauzy/plugin-integration-plane-api": "^0.1.6",
 		"@ever-gauzy/plugin-integration-plane-models": "^0.1.3",
-		"@nestjs/axios": "github:ever-co/nestjs-axios#master",
+		"@nestjs/axios": "^4.0.1",
 		"@nestjs/cqrs": "^11.0.3",
 		"@nestjs/swagger": "^11.4.4",
 		"axios": "^1.18.0",

@@ -4,6 +4,7 @@
 export * from './lib/components/appointment-form/appointment-form.component';
 export * from './lib/components/confirm-appointment/confirm-appointment.component';
 export * from './lib/components/create-appointment/create-appointment.component';
+export * from './lib/components/customer-work-approval/public-customer-work-approval.component';
 export * from './lib/components/edit-appointment/edit-appointment.component';
 export * from './lib/components/employee/employee.component';
 export * from './lib/components/invoice-estimate/invoice-estimate-view.component';
