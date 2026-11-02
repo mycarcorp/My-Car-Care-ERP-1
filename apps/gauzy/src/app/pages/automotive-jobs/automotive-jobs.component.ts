@@ -97,9 +97,18 @@ export class AutomotiveJobsComponent implements OnInit {
 			PermissionsEnum.ALL_ORG_EDIT,
 			PermissionsEnum.ORG_AUTOMOTIVE_JOB_LABOR_COMPLETE
 		]);
-		this.canStartQc = await this.permissions.hasPermission([PermissionsEnum.ALL_ORG_EDIT, PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_START]);
-		this.canPassQc = await this.permissions.hasPermission([PermissionsEnum.ALL_ORG_EDIT, PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_PASS]);
-		this.canFailQc = await this.permissions.hasPermission([PermissionsEnum.ALL_ORG_EDIT, PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_FAIL]);
+		this.canStartQc = await this.permissions.hasPermission([
+			PermissionsEnum.ALL_ORG_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_START
+		]);
+		this.canPassQc = await this.permissions.hasPermission([
+			PermissionsEnum.ALL_ORG_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_PASS
+		]);
+		this.canFailQc = await this.permissions.hasPermission([
+			PermissionsEnum.ALL_ORG_EDIT,
+			PermissionsEnum.ORG_AUTOMOTIVE_JOB_QC_FAIL
+		]);
 		this.canConsumeParts = await this.permissions.hasPermission([
 			PermissionsEnum.ALL_ORG_EDIT,
 			PermissionsEnum.ORG_AUTOMOTIVE_JOB_PART_CONSUME
@@ -391,7 +400,8 @@ export class AutomotiveJobsComponent implements OnInit {
 			this.partsByJob[jobId] = await this.api.listPartConsumptions(jobId);
 		} catch (error) {
 			this.partsByJob[jobId] = [];
-			this.partsErrorByJob[jobId] = error?.error?.message || error?.message || 'Could not load parts consumption.';
+			this.partsErrorByJob[jobId] =
+				error?.error?.message || error?.message || 'Could not load parts consumption.';
 		} finally {
 			this.partsLoadingByJob[jobId] = false;
 		}
@@ -421,7 +431,8 @@ export class AutomotiveJobsComponent implements OnInit {
 		try {
 			const balances = await this.api.getPartStock(partProfileId);
 			this.partStockByJob[job.id] = (balances ?? []).map((balance) => ({
-				warehouseId: balance['warehouseProduct']?.warehouse?.id ?? balance['warehouseProduct']?.warehouseId ?? '',
+				warehouseId:
+					balance['warehouseProduct']?.warehouse?.id ?? balance['warehouseProduct']?.warehouseId ?? '',
 				warehouseProductVariantId: balance.id,
 				quantity: Number(balance.quantity ?? 0),
 				label: `${balance['warehouseProduct']?.warehouse?.name ?? 'Warehouse'} — available ${balance.quantity ?? 0}`

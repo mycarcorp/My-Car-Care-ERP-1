@@ -87,6 +87,8 @@ export class CustomerFollowUpsComponent implements OnInit {
 		if (!vehicle) {
 			return '';
 		}
-		return [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ') || vehicle.vinNormalized || vehicle.id;
+		return (
+			[vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ') || vehicle.vinNormalized || vehicle.id
+		);
 	}
 }

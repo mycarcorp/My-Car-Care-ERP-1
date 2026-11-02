@@ -5,12 +5,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { NgxPermissionsService } from 'ngx-permissions';
 import { filter, tap } from 'rxjs/operators';
-import {
-	FinancingApplicationStatusEnum,
-	ID,
-	IFinancingApplication,
-	PermissionsEnum
-} from '@gauzy/contracts';
+import { FinancingApplicationStatusEnum, ID, IFinancingApplication, PermissionsEnum } from '@gauzy/contracts';
 import { TranslationBaseComponent } from '@gauzy/ui-core/i18n';
 import { FinancingApiService } from './financing-api.service';
 
@@ -238,7 +233,7 @@ export class FinancingDetailComponent extends TranslationBaseComponent implement
 		const vehicle = this.application?.['vehicle'];
 		if (!vehicle) return '';
 		const parts = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean);
-		return parts.length ? parts.join(' ') : vehicle.vinNormalized ?? '';
+		return parts.length ? parts.join(' ') : (vehicle.vinNormalized ?? '');
 	}
 
 	/** Repair order display label. */

@@ -73,10 +73,10 @@ export class FinancingApplicationService extends TenantAwareCrudService<Financin
 		private readonly customerService: OrganizationContactService,
 		private readonly vehicleService: VehicleService,
 		@InjectRepository(CustomerWorkApproval)
-	private readonly approvals: Repository<CustomerWorkApproval>,
-	@InjectRepository(Invoice)
-	private readonly invoices: Repository<Invoice>,
-	private readonly paymentService: PaymentService
+		private readonly approvals: Repository<CustomerWorkApproval>,
+		@InjectRepository(Invoice)
+		private readonly invoices: Repository<Invoice>,
+		private readonly paymentService: PaymentService
 	) {
 		super(typeOrmRepository, mikroOrmRepository);
 	}
@@ -136,7 +136,9 @@ export class FinancingApplicationService extends TenantAwareCrudService<Financin
 		// FINALIZED/SENT/VIEWED estimate (enforced at approval-request creation), so DRAFT/SUPERSEDED/
 		// EXPIRED/CANCELLED estimates are ineligible even if a stale approval references them.
 		if (
-			![EstimateStatusEnum.FINALIZED, EstimateStatusEnum.SENT, EstimateStatusEnum.VIEWED].includes(estimate.status)
+			![EstimateStatusEnum.FINALIZED, EstimateStatusEnum.SENT, EstimateStatusEnum.VIEWED].includes(
+				estimate.status
+			)
 		) {
 			throw new BadRequestException('Financing requires a finalized customer-facing estimate.');
 		}
@@ -291,7 +293,9 @@ export class FinancingApplicationService extends TenantAwareCrudService<Financin
 				{ status: FinancingApplicationStatusEnum.FUNDED, fundedAt } as any
 			);
 			if (claim.affected !== 1) {
-				throw new ConflictException('This financing application has already been funded or is no longer accepted.');
+				throw new ConflictException(
+					'This financing application has already been funded or is no longer accepted.'
+				);
 			}
 
 			// Resolve the repair order's existing invoice within scope; never auto-generate here.
@@ -330,7 +334,7 @@ export class FinancingApplicationService extends TenantAwareCrudService<Financin
 					invoiceId: invoice.id,
 					paymentDate: new Date(),
 					paymentMethod: PaymentMethodEnum.BANK_TRANSFER,
-					note: `Financing funding for application ${application.id}`,
+					note: `Financing funding for application ${application.id}`
 				} as any,
 				manager,
 				{ tenantId, organizationId }

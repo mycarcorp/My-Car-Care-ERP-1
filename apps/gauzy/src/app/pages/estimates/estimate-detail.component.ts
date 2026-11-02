@@ -141,11 +141,9 @@ export class EstimateDetailComponent extends TranslationBaseComponent implements
 	 * backend `createRequest` accepts FINALIZED / SENT / VIEWED.
 	 */
 	canSendForApproval(): boolean {
-		return [
-			EstimateStatusEnum.FINALIZED,
-			EstimateStatusEnum.SENT,
-			EstimateStatusEnum.VIEWED
-		].includes(this.estimate?.status);
+		return [EstimateStatusEnum.FINALIZED, EstimateStatusEnum.SENT, EstimateStatusEnum.VIEWED].includes(
+			this.estimate?.status
+		);
 	}
 
 	/**
@@ -186,7 +184,9 @@ export class EstimateDetailComponent extends TranslationBaseComponent implements
 			this.surfaceDeliveryResult(this.deliveryStatuses.UNAVAILABLE, this.approvalDeliveryError);
 		} catch (error) {
 			this.toastrService.danger(
-				error?.error?.message || error?.message || this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_FAILED'),
+				error?.error?.message ||
+					error?.message ||
+					this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_FAILED'),
 				this.getTranslation('TOASTR.TITLE.ERROR')
 			);
 		} finally {
@@ -230,7 +230,9 @@ export class EstimateDetailComponent extends TranslationBaseComponent implements
 			this.surfaceDeliveryResult(request.deliveryStatus, request.deliveryError);
 		} catch (error) {
 			this.toastrService.danger(
-				error?.error?.message || error?.message || this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_FAILED'),
+				error?.error?.message ||
+					error?.message ||
+					this.getTranslation('ESTIMATES_PAGE.DETAIL.APPROVAL_REQUEST_FAILED'),
 				this.getTranslation('TOASTR.TITLE.ERROR')
 			);
 		} finally {
@@ -238,10 +240,7 @@ export class EstimateDetailComponent extends TranslationBaseComponent implements
 		}
 	}
 
-	private surfaceDeliveryResult(
-		status?: CustomerWorkApprovalDeliveryStatusEnum,
-		errorMessage?: string
-	): void {
+	private surfaceDeliveryResult(status?: CustomerWorkApprovalDeliveryStatusEnum, errorMessage?: string): void {
 		switch (status) {
 			case CustomerWorkApprovalDeliveryStatusEnum.SENT:
 				this.toastrService.success(
@@ -322,7 +321,7 @@ export class EstimateDetailComponent extends TranslationBaseComponent implements
 			return '';
 		}
 		const parts = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean);
-		return parts.length ? parts.join(' ') : vehicle.vinNormalized ?? '';
+		return parts.length ? parts.join(' ') : (vehicle.vinNormalized ?? '');
 	}
 
 	/** Returns to the estimate list. */

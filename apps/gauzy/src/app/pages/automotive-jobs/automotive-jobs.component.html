@@ -274,13 +274,19 @@
 													<strong>Attempt {{ $index + 1 }}</strong>
 													<nb-badge [text]="attempt.status" status="basic"></nb-badge>
 												</div>
-												@if (attempt.reason) { <p>{{ attempt.reason }}</p> }
-												@if (attempt.notes) { <p>{{ attempt.notes }}</p> }
+												@if (attempt.reason) {
+													<p>{{ attempt.reason }}</p>
+												}
+												@if (attempt.notes) {
+													<p>{{ attempt.notes }}</p>
+												}
 												@if (last && attempt.status === qcStatuses.PENDING) {
 													@if (canPassQc) {
 														<button
 															[disabled]="qcSubmittingByAttempt[attempt.id]"
-															aria-busy="{{ qcSubmittingByAttempt[attempt.id] ? 'true' : 'false' }}"
+															aria-busy="{{
+																qcSubmittingByAttempt[attempt.id] ? 'true' : 'false'
+															}}"
 															nbButton
 															size="small"
 															status="success"
@@ -291,10 +297,24 @@
 													}
 													@if (canFailQc) {
 														<div class="qc-fail-actions">
-															<input nbInput placeholder="Failure reason" [value]="qcReasonByAttempt[attempt.id] || ''" (input)="qcReasonByAttempt[attempt.id] = $any($event.target).value" />
+															<input
+																nbInput
+																placeholder="Failure reason"
+																[value]="qcReasonByAttempt[attempt.id] || ''"
+																(input)="
+																	qcReasonByAttempt[attempt.id] = $any(
+																		$event.target
+																	).value
+																"
+															/>
 															<button
-																[disabled]="!(qcReasonByAttempt[attempt.id] || '').trim() || qcSubmittingByAttempt[attempt.id]"
-																aria-busy="{{ qcSubmittingByAttempt[attempt.id] ? 'true' : 'false' }}"
+																[disabled]="
+																	!(qcReasonByAttempt[attempt.id] || '').trim() ||
+																	qcSubmittingByAttempt[attempt.id]
+																"
+																aria-busy="{{
+																	qcSubmittingByAttempt[attempt.id] ? 'true' : 'false'
+																}}"
 																nbButton
 																size="small"
 																status="danger"
@@ -309,7 +329,11 @@
 										}
 									</div>
 								}
-								@if (canStartQc && job.status === statuses.IN_PROGRESS && qcStatus(job.id) !== qcStatuses.PENDING) {
+								@if (
+									canStartQc &&
+									job.status === statuses.IN_PROGRESS &&
+									qcStatus(job.id) !== qcStatuses.PENDING
+								) {
 									<button
 										nbButton
 										size="small"
@@ -338,7 +362,12 @@
 									} @else if (partsErrorByJob[job.id]) {
 										<div class="parts-error" role="alert">
 											<p>{{ partsErrorByJob[job.id] }}</p>
-											<button nbButton size="small" status="basic" (click)="retryPartConsumptions(job)">
+											<button
+												nbButton
+												size="small"
+												status="basic"
+												(click)="retryPartConsumptions(job)"
+											>
 												Retry
 											</button>
 										</div>
@@ -351,12 +380,14 @@
 													<div class="part-copy">
 														<strong>{{ partNameFor(movement) }}</strong>
 														<span
-															>Variant {{ movement.productVariantId }} · Qty {{ -movement.quantityDelta }} ·
-															{{ movement.costCurrency }} {{ movement.unitCost }} each</span
+															>Variant {{ movement.productVariantId }} · Qty
+															{{ -movement.quantityDelta }} · {{ movement.costCurrency }}
+															{{ movement.unitCost }} each</span
 														>
 														<span>
-															Stock {{ movement.quantityBefore }} → {{ movement.quantityAfter }} ·
-															Recorded {{ movement.createdAt | date: 'medium' }}
+															Stock {{ movement.quantityBefore }} →
+															{{ movement.quantityAfter }} · Recorded
+															{{ movement.createdAt | date: 'medium' }}
 														</span>
 														<span>Reason: {{ movement.reason }}</span>
 														@if (movement.notes) {
@@ -372,20 +403,31 @@
 																nbInput
 																placeholder="Reversal reason"
 																[value]="partReverseReasonByMovement[movement.id] || ''"
-																(input)="partReverseReasonByMovement[movement.id] = $any($event.target).value"
+																(input)="
+																	partReverseReasonByMovement[movement.id] = $any(
+																		$event.target
+																	).value
+																"
 															/>
 															<button
 																nbButton
 																size="small"
 																status="warning"
 																[disabled]="
-																	!(partReverseReasonByMovement[movement.id] || '').trim() ||
-																	reversingMovementId[movement.id]
-															"
-																[aria-busy]="reversingMovementId[movement.id] ? 'true' : 'false'"
+																	!(
+																		partReverseReasonByMovement[movement.id] || ''
+																	).trim() || reversingMovementId[movement.id]
+																"
+																[aria-busy]="
+																	reversingMovementId[movement.id] ? 'true' : 'false'
+																"
 																(click)="reverseConsumption(job, movement)"
 															>
-																	{{ reversingMovementId[movement.id] ? 'Reversing…' : 'Reverse' }}
+																{{
+																	reversingMovementId[movement.id]
+																		? 'Reversing…'
+																		: 'Reverse'
+																}}
 															</button>
 														</div>
 													}
@@ -394,7 +436,9 @@
 										</div>
 									}
 								} @else {
-									<p class="empty-state">You do not have permission to view parts consumption history.</p>
+									<p class="empty-state">
+										You do not have permission to view parts consumption history.
+									</p>
 								}
 								@if (canConsume(job)) {
 									<div class="part-consume">
@@ -414,8 +458,13 @@
 												placeholder="Select stock / warehouse"
 												[(ngModel)]="selectedStockByJob[job.id]"
 											>
-												@for (stock of partStockByJob[job.id]; track stock.warehouseProductVariantId) {
-													<nb-option [value]="stock.warehouseProductVariantId">{{ stock.label }}</nb-option>
+												@for (
+													stock of partStockByJob[job.id];
+													track stock.warehouseProductVariantId
+												) {
+													<nb-option [value]="stock.warehouseProductVariantId">{{
+														stock.label
+													}}</nb-option>
 												}
 											</nb-select>
 										}

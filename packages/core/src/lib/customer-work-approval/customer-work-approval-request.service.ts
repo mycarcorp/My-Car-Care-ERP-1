@@ -232,7 +232,12 @@ export class CustomerWorkApprovalRequestService extends TenantAwareCrudService<C
 		token: string,
 		deliveryChannel: CustomerWorkApprovalDeliveryChannelEnum,
 		customer: { primaryEmail?: string; primaryPhone?: string }
-	): Promise<Pick<ICustomerWorkApprovalRequestCreateResponse, 'deliveryChannel' | 'deliveryStatus' | 'deliveryAttemptedAt' | 'deliveryError'>> {
+	): Promise<
+		Pick<
+			ICustomerWorkApprovalRequestCreateResponse,
+			'deliveryChannel' | 'deliveryStatus' | 'deliveryAttemptedAt' | 'deliveryError'
+		>
+	> {
 		const attemptedAt = new Date();
 		if (deliveryChannel === CustomerWorkApprovalDeliveryChannelEnum.SMS) {
 			const delivery = {
@@ -288,7 +293,9 @@ export class CustomerWorkApprovalRequestService extends TenantAwareCrudService<C
 			await this.typeOrmRepository.update({ id: request.id }, delivery);
 			return delivery;
 		} catch (error) {
-			const isUnavailable = /SMTP configuration is not set|smtp configuration is not set/i.test(error?.message ?? '');
+			const isUnavailable = /SMTP configuration is not set|smtp configuration is not set/i.test(
+				error?.message ?? ''
+			);
 			const delivery = {
 				deliveryChannel,
 				deliveryStatus: isUnavailable

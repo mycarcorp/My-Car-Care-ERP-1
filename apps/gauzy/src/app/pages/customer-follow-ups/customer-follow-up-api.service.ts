@@ -45,11 +45,15 @@ export class CustomerFollowUpApiService {
 	constructor(private readonly http: HttpClient) {}
 
 	list(relations: string[] = CUSTOMER_FOLLOW_UP_RELATIONS): Promise<IPagination<ICustomerFollowUpView>> {
-		return firstValueFrom(this.http.get<IPagination<ICustomerFollowUpView>>(this.baseUrl, { params: toParams({ relations }) }));
+		return firstValueFrom(
+			this.http.get<IPagination<ICustomerFollowUpView>>(this.baseUrl, { params: toParams({ relations }) })
+		);
 	}
 
 	getById(id: ID, relations: string[] = CUSTOMER_FOLLOW_UP_RELATIONS): Promise<ICustomerFollowUpView> {
-		return firstValueFrom(this.http.get<ICustomerFollowUpView>(`${this.baseUrl}/${id}`, { params: toParams({ relations }) }));
+		return firstValueFrom(
+			this.http.get<ICustomerFollowUpView>(`${this.baseUrl}/${id}`, { params: toParams({ relations }) })
+		);
 	}
 
 	create(body: ICustomerFollowUpCreateInput): Promise<ICustomerFollowUpView> {
@@ -61,7 +65,9 @@ export class CustomerFollowUpApiService {
 	}
 
 	assign(id: ID, ownerEmployeeId: ID): Promise<ICustomerFollowUpView> {
-		return firstValueFrom(this.http.post<ICustomerFollowUpView>(`${this.baseUrl}/${id}/assign`, { ownerEmployeeId }));
+		return firstValueFrom(
+			this.http.post<ICustomerFollowUpView>(`${this.baseUrl}/${id}/assign`, { ownerEmployeeId })
+		);
 	}
 
 	transition(id: ID, body: ICustomerFollowUpTransitionInput): Promise<ICustomerFollowUpView> {
@@ -69,11 +75,15 @@ export class CustomerFollowUpApiService {
 	}
 
 	complete(id: ID, statusReason?: string): Promise<ICustomerFollowUpView> {
-		return firstValueFrom(this.http.post<ICustomerFollowUpView>(`${this.baseUrl}/${id}/complete`, { statusReason }));
+		return firstValueFrom(
+			this.http.post<ICustomerFollowUpView>(`${this.baseUrl}/${id}/complete`, { statusReason })
+		);
 	}
 
 	defer(id: ID, deferredUntil: Date, statusReason?: string): Promise<ICustomerFollowUpView> {
-		return firstValueFrom(this.http.post<ICustomerFollowUpView>(`${this.baseUrl}/${id}/defer`, { deferredUntil, statusReason }));
+		return firstValueFrom(
+			this.http.post<ICustomerFollowUpView>(`${this.baseUrl}/${id}/defer`, { deferredUntil, statusReason })
+		);
 	}
 
 	overdue(id: ID, statusReason?: string): Promise<ICustomerFollowUpView> {

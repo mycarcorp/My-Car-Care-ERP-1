@@ -128,7 +128,12 @@ export class PaymentService extends TenantAwareCrudService<Payment> {
 
 		// Reject foreign, void or currency-mismatched invoices within the caller's transaction.
 		if (entity.invoiceId) {
-			await this.validatePaymentInvoiceTx(entity.invoiceId, entity.currency as CurrenciesEnum | undefined, manager, scope);
+			await this.validatePaymentInvoiceTx(
+				entity.invoiceId,
+				entity.currency as CurrenciesEnum | undefined,
+				manager,
+				scope
+			);
 		}
 
 		// Inherited Gauzy self-enrichment: when the caller may not act for another

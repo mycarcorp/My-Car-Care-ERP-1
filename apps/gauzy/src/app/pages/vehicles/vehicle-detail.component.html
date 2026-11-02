@@ -57,7 +57,10 @@
 					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.COLOR' | translate }}</span>
 					<span>{{ vehicle.color }}</span>
 				</div>
-				<div class="vehicle-detail__row" *ngIf="vehicle.currentMileage !== undefined && vehicle.currentMileage !== null">
+				<div
+					class="vehicle-detail__row"
+					*ngIf="vehicle.currentMileage !== undefined && vehicle.currentMileage !== null"
+				>
 					<span class="vehicle-detail__label">{{ 'VEHICLES_PAGE.CURRENT_MILEAGE' | translate }}</span>
 					<span>{{ vehicle.currentMileage }}</span>
 				</div>
@@ -74,7 +77,12 @@
 					<nb-spinner></nb-spinner>
 				</div>
 
-				<nb-alert *ngIf="!historyLoading && serviceHistoryError" status="danger" outline="danger" class="vehicle-detail__history-error">
+				<nb-alert
+					*ngIf="!historyLoading && serviceHistoryError"
+					status="danger"
+					outline="danger"
+					class="vehicle-detail__history-error"
+				>
 					<div class="vehicle-detail__history-error-text">{{ serviceHistoryError }}</div>
 					<button nbButton size="small" status="basic" (click)="reloadServiceHistory()">
 						{{ 'BUTTONS.RETRY' | translate }}
@@ -97,7 +105,10 @@
 								<tr *ngFor="let record of serviceHistory">
 									<td>{{ record.repairOrderNumber }}</td>
 									<td>
-										<nb-badge [text]="record.status" [status]="historyBadgeStatus(record.status)"></nb-badge>
+										<nb-badge
+											[text]="record.status"
+											[status]="historyBadgeStatus(record.status)"
+										></nb-badge>
 									</td>
 									<td>{{ record.arrivedAt | date: 'short' }}</td>
 									<td>{{ record.concern }}</td>

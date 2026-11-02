@@ -90,11 +90,9 @@ export class VehicleDetailComponent extends TranslationBaseComponent implements 
 			this.serviceHistory = await this.repairOrderApi.getVehicleServiceHistory(id);
 		} catch (error) {
 			this.serviceHistory = [];
-			this.serviceHistoryError = error?.error?.message || error?.message || this.getTranslation('VEHICLES_PAGE.HISTORY.LOAD_FAILED');
-			this.toastrService.danger(
-				this.serviceHistoryError,
-				this.getTranslation('TOASTR.TITLE.ERROR')
-			);
+			this.serviceHistoryError =
+				error?.error?.message || error?.message || this.getTranslation('VEHICLES_PAGE.HISTORY.LOAD_FAILED');
+			this.toastrService.danger(this.serviceHistoryError, this.getTranslation('TOASTR.TITLE.ERROR'));
 		} finally {
 			this.historyLoading = false;
 		}

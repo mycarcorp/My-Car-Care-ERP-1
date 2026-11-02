@@ -8,13 +8,13 @@ import { EmailHistoryModule } from './../email-history/email-history.module';
 import { OrganizationModule } from './../organization/organization.module';
 
 @Module({
-    imports: [
-        forwardRef(() => CustomSmtpModule),
-        forwardRef(() => EmailTemplateModule),
-        forwardRef(() => OrganizationModule),
-        forwardRef(() => EmailHistoryModule),
-    ],
-    providers: [EmailService, EmailSendService, EmailTemplateRenderService],
-    exports: [EmailService, EmailSendService], // Export the services to be accessible by other modules
+	imports: [
+		forwardRef(() => CustomSmtpModule),
+		forwardRef(() => EmailTemplateModule),
+		forwardRef(() => OrganizationModule),
+		forwardRef(() => EmailHistoryModule)
+	],
+	providers: [EmailService, EmailSendService, EmailTemplateRenderService],
+	exports: [EmailService, EmailSendService] // Export the services to be accessible by other modules
 })
-export class EmailSendModule { }
+export class EmailSendModule {}

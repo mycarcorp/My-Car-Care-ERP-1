@@ -36,10 +36,10 @@ import { InvoicePaymentReceiptMutationComponent } from './payment-receipt-mutati
 
 @UntilDestroy({ checkProperties: true })
 @Component({
-    selector: 'ga-payments',
-    templateUrl: './payments.component.html',
-    styleUrls: ['./payments.component.scss'],
-    standalone: false
+	selector: 'ga-payments',
+	templateUrl: './payments.component.html',
+	styleUrls: ['./payments.component.scss'],
+	standalone: false
 })
 export class InvoicePaymentsComponent extends TranslationBaseComponent implements OnInit {
 	public invoiceId: string;

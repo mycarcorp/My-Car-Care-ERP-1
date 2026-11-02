@@ -17,7 +17,6 @@ import {
 import { TranslationBaseComponent } from '@gauzy/ui-core/i18n';
 import { PublicCustomerWorkApprovalApiService } from './public-customer-work-approval-api.service';
 
-
 type PageState = 'loading' | 'ready' | 'submitted' | 'error';
 
 /**

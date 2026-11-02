@@ -47,7 +47,15 @@ describe('PaymentMutationComponent', () => {
 		}).compileComponents();
 
 		component = TestBed.runInInjectionContext(
-			() => new PaymentMutationComponent(TestBed.inject(TranslateService), TestBed.inject(UntypedFormBuilder), dialogRef, TestBed.inject(Store), TestBed.inject(InvoicesService), TestBed.inject(OrganizationSettingService))
+			() =>
+				new PaymentMutationComponent(
+					TestBed.inject(TranslateService),
+					TestBed.inject(UntypedFormBuilder),
+					dialogRef,
+					TestBed.inject(Store),
+					TestBed.inject(InvoicesService),
+					TestBed.inject(OrganizationSettingService)
+				)
 		);
 		component.organization = organization;
 		component.invoice = {

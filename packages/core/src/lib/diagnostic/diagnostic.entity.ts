@@ -2,7 +2,13 @@ import { JoinColumn, RelationId } from 'typeorm';
 import { IsDate, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import { DiagnosticStatusEnum, ID, IDiagnostic, IDiagnosticFinding, IEmployee, IInspection } from '@gauzy/contracts';
 import { Employee, Inspection, TenantOrganizationBaseEntity } from '../core/entities/internal';
-import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToOne, MultiORMOneToMany } from '../core/decorators/entity';
+import {
+	ColumnIndex,
+	MultiORMColumn,
+	MultiORMEntity,
+	MultiORMManyToOne,
+	MultiORMOneToMany
+} from '../core/decorators/entity';
 import { DiagnosticFinding } from './diagnostic-finding.entity';
 import { MikroOrmDiagnosticRepository } from './repository/mikro-orm-diagnostic.repository';
 @MultiORMEntity('diagnostic', { mikroOrmRepository: () => MikroOrmDiagnosticRepository })

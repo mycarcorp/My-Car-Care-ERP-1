@@ -131,15 +131,21 @@ export class AutomotiveJobApiService {
 	}
 
 	startQc(jobId: string, body: IAutomotiveJobQcCreateInput = {}): Promise<IAutomotiveJobQcAttempt> {
-		return firstValueFrom(this.http.post<IAutomotiveJobQcAttempt>(`${this.baseUrl}/automotive-jobs/${jobId}/qc`, body));
+		return firstValueFrom(
+			this.http.post<IAutomotiveJobQcAttempt>(`${this.baseUrl}/automotive-jobs/${jobId}/qc`, body)
+		);
 	}
 
 	passQc(qcId: string): Promise<IAutomotiveJobQcAttempt> {
-		return firstValueFrom(this.http.patch<IAutomotiveJobQcAttempt>(`${this.baseUrl}/automotive-job-qc/${qcId}/pass`, {}));
+		return firstValueFrom(
+			this.http.patch<IAutomotiveJobQcAttempt>(`${this.baseUrl}/automotive-job-qc/${qcId}/pass`, {})
+		);
 	}
 
 	failQc(qcId: string, body: IAutomotiveJobQcFailInput): Promise<IAutomotiveJobQcAttempt> {
-		return firstValueFrom(this.http.patch<IAutomotiveJobQcAttempt>(`${this.baseUrl}/automotive-job-qc/${qcId}/fail`, body));
+		return firstValueFrom(
+			this.http.patch<IAutomotiveJobQcAttempt>(`${this.baseUrl}/automotive-job-qc/${qcId}/fail`, body)
+		);
 	}
 
 	/*
@@ -150,7 +156,9 @@ export class AutomotiveJobApiService {
 
 	/** Lists enabled automotive part profiles (`GET /automotive-parts`). */
 	listParts(): Promise<{ items: IAutomotivePartProfile[]; total: number }> {
-		return firstValueFrom(this.http.get<{ items: IAutomotivePartProfile[]; total: number }>(`${this.baseUrl}/automotive-parts`));
+		return firstValueFrom(
+			this.http.get<{ items: IAutomotivePartProfile[]; total: number }>(`${this.baseUrl}/automotive-parts`)
+		);
 	}
 
 	/** Fetches stock balances for a part (`GET /automotive-parts/:id/stock`), one row per warehouse variant. */
@@ -168,13 +176,16 @@ export class AutomotiveJobApiService {
 	}
 
 	/** Consumes a part against a job (`POST /automotive-jobs/:jobId/parts/consumptions`). */
-	consumePart(jobId: string, body: {
-		automotivePartProfileId: string;
-		warehouseId: string;
-		warehouseProductVariantId: string;
-		quantity: number;
-		operationKey: string;
-	}): Promise<IPartStockMovement> {
+	consumePart(
+		jobId: string,
+		body: {
+			automotivePartProfileId: string;
+			warehouseId: string;
+			warehouseProductVariantId: string;
+			quantity: number;
+			operationKey: string;
+		}
+	): Promise<IPartStockMovement> {
 		return firstValueFrom(
 			this.http.post<IPartStockMovement>(`${this.baseUrl}/automotive-jobs/${jobId}/parts/consumptions`, body)
 		);

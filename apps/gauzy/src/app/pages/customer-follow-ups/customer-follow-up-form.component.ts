@@ -16,7 +16,13 @@ import {
 	ITask,
 	IVehicle
 } from '@gauzy/contracts';
-import { Store, EmployeesService, OrganizationContactService, TasksService, InvoicesService } from '@gauzy/ui-core/core';
+import {
+	Store,
+	EmployeesService,
+	OrganizationContactService,
+	TasksService,
+	InvoicesService
+} from '@gauzy/ui-core/core';
 import { EstimateApiService } from '../estimates/estimate-api.service';
 import { RepairOrderApiService } from '../repair-orders/repair-order-api.service';
 import { VehicleApiService } from '../vehicles/vehicle-api.service';
@@ -227,7 +233,9 @@ export class CustomerFollowUpFormComponent implements OnInit, OnChanges {
 	}
 
 	vehicleLabel(vehicle: IVehicle): string {
-		return [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ') || vehicle.vinNormalized || vehicle.id;
+		return (
+			[vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ') || vehicle.vinNormalized || vehicle.id
+		);
 	}
 
 	repairOrderLabel(item: IRepairOrder): string {
@@ -281,14 +289,12 @@ export class CustomerFollowUpFormComponent implements OnInit, OnChanges {
 		};
 		this.submitting = true;
 		try {
-			const followUp = this.mode === 'edit' && this.followUp?.id
-				? await this.api.update(this.followUp.id, payload)
-				: await this.api.create(payload);
+			const followUp =
+				this.mode === 'edit' && this.followUp?.id
+					? await this.api.update(this.followUp.id, payload)
+					: await this.api.create(payload);
 			this.saved.emit(followUp);
-			this.toastr.success(
-				this.mode === 'edit' ? 'Follow-up updated.' : 'Follow-up created.',
-				'Success'
-			);
+			this.toastr.success(this.mode === 'edit' ? 'Follow-up updated.' : 'Follow-up created.', 'Success');
 			if (this.mode === 'create') {
 				this.form.reset({
 					type: CustomerFollowUpTypeEnum.POST_SERVICE_SATISFACTION,

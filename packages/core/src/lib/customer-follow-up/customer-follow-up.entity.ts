@@ -1,13 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { JoinColumn, RelationId } from 'typeorm';
-import {
-	IsDate,
-	IsEnum,
-	IsNotEmpty,
-	IsOptional,
-	IsString,
-	IsUUID
-} from 'class-validator';
+import { IsDate, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import {
 	BaseEntityEnum,
 	CustomerFollowUpSourceEventTypeEnum,
@@ -36,9 +29,13 @@ import {
 import { ColumnIndex, MultiORMColumn, MultiORMEntity, MultiORMManyToOne } from '../core/decorators/entity';
 import { MikroOrmCustomerFollowUpRepository } from './repository/mikro-orm-customer-follow-up.repository';
 
-@ColumnIndex('IDX_customer_follow_up_tenant_source_event_key_unique', ['tenantId', 'organizationId', 'sourceEventKey'], {
-	unique: true
-})
+@ColumnIndex(
+	'IDX_customer_follow_up_tenant_source_event_key_unique',
+	['tenantId', 'organizationId', 'sourceEventKey'],
+	{
+		unique: true
+	}
+)
 @ColumnIndex('IDX_customer_follow_up_customer_status_due', ['customerId', 'status', 'dueAt'])
 @MultiORMEntity('customer_follow_up', { mikroOrmRepository: () => MikroOrmCustomerFollowUpRepository })
 export class CustomerFollowUp extends TenantOrganizationBaseEntity implements ICustomerFollowUp {

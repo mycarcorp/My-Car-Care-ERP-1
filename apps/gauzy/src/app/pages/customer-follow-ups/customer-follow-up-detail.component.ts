@@ -3,12 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NbToastrService } from '@nebular/theme';
 import { firstValueFrom } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
-import {
-	CustomerFollowUpStatusEnum,
-	ID,
-	IEmployee,
-	PermissionsEnum
-} from '@gauzy/contracts';
+import { CustomerFollowUpStatusEnum, ID, IEmployee, PermissionsEnum } from '@gauzy/contracts';
 import { EmployeesService, Store } from '@gauzy/ui-core/core';
 import { CustomerFollowUpApiService, ICustomerFollowUpView } from './customer-follow-up-api.service';
 
@@ -105,7 +100,10 @@ export class CustomerFollowUpDetailComponent implements OnInit {
 		} catch (error) {
 			this.notFound = true;
 			this.followUp = undefined;
-			this.toastr.danger(error?.error?.message || error?.message || 'Unable to load customer follow-up.', 'Error');
+			this.toastr.danger(
+				error?.error?.message || error?.message || 'Unable to load customer follow-up.',
+				'Error'
+			);
 		} finally {
 			this.loading = false;
 		}
@@ -123,7 +121,7 @@ export class CustomerFollowUpDetailComponent implements OnInit {
 	}
 
 	get availableTransitions(): CustomerFollowUpStatusEnum[] {
-		return this.followUp ? TRANSITIONS[this.followUp.status] ?? [] : [];
+		return this.followUp ? (TRANSITIONS[this.followUp.status] ?? []) : [];
 	}
 
 	statusBadgeStatus(status: CustomerFollowUpStatusEnum): string {
@@ -194,7 +192,8 @@ export class CustomerFollowUpDetailComponent implements OnInit {
 				status,
 				statusReason: this.statusReason?.trim() || undefined,
 				dueAt: this.dueAt ?? undefined,
-				deferredUntil: status === CustomerFollowUpStatusEnum.DEFERRED ? this.deferredUntil ?? undefined : undefined
+				deferredUntil:
+					status === CustomerFollowUpStatusEnum.DEFERRED ? (this.deferredUntil ?? undefined) : undefined
 			});
 			this.patchLocalState();
 			this.toastr.success(`Status changed to ${status}.`, 'Success');

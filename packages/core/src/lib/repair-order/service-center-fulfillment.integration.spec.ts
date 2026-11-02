@@ -139,14 +139,24 @@ describe('Service Center fulfillment workflow (real DB)', () => {
 		const scope = { tenant: tenantRel, organization: orgRel };
 
 		await dataSource.getRepository(Tenant).save({ id: t, name: 'Test Tenant' } as any);
-		await dataSource.getRepository(Organization).save({ id: o, name: 'Test Org', currency: 'USD', ...scope } as any);
+		await dataSource
+			.getRepository(Organization)
+			.save({ id: o, name: 'Test Org', currency: 'USD', ...scope } as any);
 		// The acting user must exist: labor/QC write `updatedByUserId = currentUser().id` (FK to user).
 		await dataSource
 			.getRepository(User)
-			.save(dataSource.getRepository(User).create({ id: tenant.user.id, email: 'actor@test.local', firstName: 'Actor' }) as any);
-		await dataSource.getRepository(OrganizationContact).save(
-			dataSource.getRepository(OrganizationContact).create({ id: CUSTOMER_ID, name: 'Ada Customer', ...scope })
-		);
+			.save(
+				dataSource
+					.getRepository(User)
+					.create({ id: tenant.user.id, email: 'actor@test.local', firstName: 'Actor' }) as any
+			);
+		await dataSource
+			.getRepository(OrganizationContact)
+			.save(
+				dataSource
+					.getRepository(OrganizationContact)
+					.create({ id: CUSTOMER_ID, name: 'Ada Customer', ...scope })
+			);
 		await dataSource.getRepository(Vehicle).save(
 			dataSource.getRepository(Vehicle).create({
 				id: VEHICLE_ID,
@@ -161,10 +171,18 @@ describe('Service Center fulfillment workflow (real DB)', () => {
 		// Technician employee (needs a User for the relation); must be assignable (isActive !== false).
 		const techUser = await dataSource
 			.getRepository(User)
-			.save(dataSource.getRepository(User).create({ email: `${TECHNICIAN_ID}@test.local`, firstName: 'Tech' }) as any);
-		await dataSource.getRepository(Employee).save(
-			dataSource.getRepository(Employee).create({ id: TECHNICIAN_ID, userId: techUser.id, isActive: true, ...scope } as any)
-		);
+			.save(
+				dataSource
+					.getRepository(User)
+					.create({ email: `${TECHNICIAN_ID}@test.local`, firstName: 'Tech' }) as any
+			);
+		await dataSource
+			.getRepository(Employee)
+			.save(
+				dataSource
+					.getRepository(Employee)
+					.create({ id: TECHNICIAN_ID, userId: techUser.id, isActive: true, ...scope } as any)
+			);
 
 		// Appointment the repair order arrived from (appointmentId is a required FK).
 		await dataSource.getRepository(EmployeeAppointment).save(
@@ -512,10 +530,7 @@ describe('Service Center fulfillment workflow (real DB)', () => {
 		employeeIdSpy.mockReturnValue(null);
 
 		// --- Stage 7: Invoice generation -------------------------------------------------
-		const invoiceItemService = new InvoiceItemService(
-			dataSource.getRepository(InvoiceItem) as any,
-			{} as any
-		);
+		const invoiceItemService = new InvoiceItemService(dataSource.getRepository(InvoiceItem) as any, {} as any);
 		const invoiceServiceStub = { getHighestInvoiceNumber: jest.fn(async () => ({ max: 0 })) } as any;
 		const roInvoiceService = new RepairOrderInvoiceService(
 			dataSource.getRepository(RepairOrder) as any,

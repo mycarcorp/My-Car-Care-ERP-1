@@ -21,7 +21,10 @@ export class FinancingApiService {
 	constructor(private readonly http: HttpClient) {}
 
 	/** Lists financing applications (`GET /financing`), optionally filtered (e.g. by repairOrderId). */
-	list(where?: Record<string, unknown>, relations: string[] = ['customer', 'vehicle', 'repairOrder']): Promise<IPagination<IFinancingApplication>> {
+	list(
+		where?: Record<string, unknown>,
+		relations: string[] = ['customer', 'vehicle', 'repairOrder']
+	): Promise<IPagination<IFinancingApplication>> {
 		return firstValueFrom(
 			this.http.get<IPagination<IFinancingApplication>>(this.baseUrl, {
 				params: toParams({ ...(where ? { where } : {}), relations })

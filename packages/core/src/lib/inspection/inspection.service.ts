@@ -77,7 +77,9 @@ export class InspectionService extends TenantAwareCrudService<Inspection> {
 	 * @returns The inspection with its findings and display relations.
 	 */
 	async findByIdWithFindings(id: ID): Promise<Inspection> {
-		return await this.findOneByIdString(id, { relations: ['findings', 'repairOrder', 'vehicle', 'technician'] } as any);
+		return await this.findOneByIdString(id, {
+			relations: ['findings', 'repairOrder', 'vehicle', 'technician']
+		} as any);
 	}
 
 	/**

@@ -1,15 +1,18 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 import {
-	IsDateString,
-	IsEnum,
-	IsNotEmpty,
-	IsOptional,
-	IsString,
-	IsUUID
-} from 'class-validator';
-import { ID, CustomerFollowUpStatusEnum, CustomerFollowUpTypeEnum, CustomerFollowUpSourceEventTypeEnum } from '@gauzy/contracts';
+	ID,
+	CustomerFollowUpStatusEnum,
+	CustomerFollowUpTypeEnum,
+	CustomerFollowUpSourceEventTypeEnum
+} from '@gauzy/contracts';
 import { TenantOrganizationBaseDTO } from '../../core/dto';
-import { ICustomerFollowUpCreateInput, ICustomerFollowUpUpdateInput, ICustomerFollowUpAssignInput, ICustomerFollowUpTransitionInput } from '@gauzy/contracts';
+import {
+	ICustomerFollowUpCreateInput,
+	ICustomerFollowUpUpdateInput,
+	ICustomerFollowUpAssignInput,
+	ICustomerFollowUpTransitionInput
+} from '@gauzy/contracts';
 
 export class CreateCustomerFollowUpDTO extends TenantOrganizationBaseDTO implements ICustomerFollowUpCreateInput {
 	@ApiProperty()
@@ -107,7 +110,9 @@ export class CreateCustomerFollowUpDTO extends TenantOrganizationBaseDTO impleme
 	ownerEmployeeId?: ID;
 }
 
-export class UpdateCustomerFollowUpDTO extends PartialType(CreateCustomerFollowUpDTO) implements ICustomerFollowUpUpdateInput {}
+export class UpdateCustomerFollowUpDTO
+	extends PartialType(CreateCustomerFollowUpDTO)
+	implements ICustomerFollowUpUpdateInput {}
 
 export class AssignCustomerFollowUpDTO implements ICustomerFollowUpAssignInput {
 	@ApiProperty()

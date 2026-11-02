@@ -119,9 +119,12 @@ describe('FinancingApplicationService funding (real DB)', () => {
 		tenant = createTenantFixture();
 		// Seed the real Tenant and Organization parents so the tenant/org *relations* resolve.
 		await dataSource.getRepository(Tenant).save({ id: tenant.tenantId, name: 'Test Tenant' } as any);
-		await dataSource
-			.getRepository(Organization)
-			.save({ id: tenant.organizationId, name: 'Test Org', currency: 'USD', tenant: { id: tenant.tenantId } as any } as any);
+		await dataSource.getRepository(Organization).save({
+			id: tenant.organizationId,
+			name: 'Test Org',
+			currency: 'USD',
+			tenant: { id: tenant.tenantId } as any
+		} as any);
 
 		await dataSource.getRepository(Payment).clear();
 		await dataSource.getRepository(Invoice).clear();
@@ -185,9 +188,7 @@ describe('FinancingApplicationService funding (real DB)', () => {
 
 		// The persisted application row (re-read from the real DB, not the returned object) carries
 		// the funded state: FUNDED, the settled amount, the linked invoice, and a cleared sentinel.
-		const stored = await dataSource
-			.getRepository(FinancingApplication)
-			.findOneByOrFail({ id: application.id });
+		const stored = await dataSource.getRepository(FinancingApplication).findOneByOrFail({ id: application.id });
 		expect(stored.status).toBe(FinancingApplicationStatusEnum.FUNDED);
 		expect(Number(stored.fundedAmount)).toBe(1500);
 		expect(stored.invoiceId).toBe(INVOICE_ID);
@@ -239,9 +240,7 @@ describe('FinancingApplicationService funding (real DB)', () => {
 		await expect(service.fund(application.id)).rejects.toThrow(/does not cover/i);
 		// No payment was recorded and the application is untouched.
 		expect(await dataSource.getRepository(Payment).count({ where: { invoiceId: INVOICE_ID } })).toBe(0);
-		const stored = await dataSource
-			.getRepository(FinancingApplication)
-			.findOneByOrFail({ id: application.id });
+		const stored = await dataSource.getRepository(FinancingApplication).findOneByOrFail({ id: application.id });
 		expect(stored.status).toBe(FinancingApplicationStatusEnum.ACCEPTED);
 	});
 });

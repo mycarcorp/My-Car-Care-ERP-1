@@ -1,11 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { NbDialogRef, NbToastrService } from '@nebular/theme';
 import { TranslateService } from '@ngx-translate/core';
-import {
-	ID,
-	IFinancingApplication,
-	IFinancingApplicationCreateInput
-} from '@gauzy/contracts';
+import { ID, IFinancingApplication, IFinancingApplicationCreateInput } from '@gauzy/contracts';
 import { FinancingApiService } from './financing-api.service';
 import { AutomotiveJobApiService } from '../automotive-jobs/automotive-job-api.service';
 import { EstimateApiService } from '../estimates/estimate-api.service';
@@ -70,9 +66,7 @@ export class FinancingMutationComponent implements OnInit {
 				this.estimateApi.listByRepairOrder(this.repairOrderId)
 			]);
 			// All authorized lines must reference the SAME approval (one approved estimate per RO).
-			const approvalIds = new Set(
-				(lines ?? []).map((line) => line?.customerWorkApprovalId).filter(Boolean)
-			);
+			const approvalIds = new Set((lines ?? []).map((line) => line?.customerWorkApprovalId).filter(Boolean));
 			const estimateList = (estimates?.items ?? []).filter((item) => !!item?.id);
 			if (approvalIds.size !== 1 || estimateList.length !== 1) {
 				// Zero = no approved work; more than one = ambiguous, never silently guess.

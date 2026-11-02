@@ -49,7 +49,13 @@ export class CreateCustomerFollowUp1790900000000 implements MigrationInterface {
 					...base,
 					{ name: 'title', type: 'varchar', length: '255', isNullable: false },
 					{ name: 'description', type: 'text', isNullable: true },
-					{ name: 'type', type: 'varchar', length: '255', isNullable: false, default: "'POST_SERVICE_SATISFACTION'" },
+					{
+						name: 'type',
+						type: 'varchar',
+						length: '255',
+						isNullable: false,
+						default: "'POST_SERVICE_SATISFACTION'"
+					},
 					{ name: 'status', type: 'varchar', length: '255', isNullable: false, default: "'OPEN'" },
 					{ name: 'dueAt', type: dateType, isNullable: true },
 					{ name: 'scheduledAt', type: dateType, isNullable: true },
@@ -73,8 +79,15 @@ export class CreateCustomerFollowUp1790900000000 implements MigrationInterface {
 		);
 
 		await queryRunner.createIndices('customer_follow_up', [
-			new TableIndex({ name: 'IDX_customer_follow_up_tenant_source_event_key_unique', columnNames: ['tenantId', 'organizationId', 'sourceEventKey'], isUnique: true }),
-			new TableIndex({ name: 'IDX_customer_follow_up_customer_status_due', columnNames: ['customerId', 'status', 'dueAt'] })
+			new TableIndex({
+				name: 'IDX_customer_follow_up_tenant_source_event_key_unique',
+				columnNames: ['tenantId', 'organizationId', 'sourceEventKey'],
+				isUnique: true
+			}),
+			new TableIndex({
+				name: 'IDX_customer_follow_up_customer_status_due',
+				columnNames: ['customerId', 'status', 'dueAt']
+			})
 		]);
 
 		await queryRunner.createForeignKeys('customer_follow_up', [

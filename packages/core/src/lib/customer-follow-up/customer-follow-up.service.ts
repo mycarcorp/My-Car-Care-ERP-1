@@ -84,8 +84,12 @@ export class CustomerFollowUpService extends TenantAwareCrudService<CustomerFoll
 		const scope = this.scope(input);
 		const existing = input.sourceEventKey
 			? await this.typeOrmCustomerFollowUpRepository.findOne({
-				where: { sourceEventKey: input.sourceEventKey, tenantId: scope.tenantId, organizationId: scope.organizationId }
-			})
+					where: {
+						sourceEventKey: input.sourceEventKey,
+						tenantId: scope.tenantId,
+						organizationId: scope.organizationId
+					}
+				})
 			: null;
 		if (existing) {
 			return existing;
@@ -196,10 +200,7 @@ export class CustomerFollowUpService extends TenantAwareCrudService<CustomerFoll
 		return followUp;
 	}
 
-	private async ensureEmployeeInScope(
-		employeeId: ID,
-		scope: { tenantId: ID; organizationId: ID }
-	): Promise<void> {
+	private async ensureEmployeeInScope(employeeId: ID, scope: { tenantId: ID; organizationId: ID }): Promise<void> {
 		if (!employeeId) return;
 		const employee = await this.employees.findOneByIdString(employeeId);
 		if (employee.tenantId !== scope.tenantId || employee.organizationId !== scope.organizationId) {
@@ -286,7 +287,13 @@ export class CustomerFollowUpService extends TenantAwareCrudService<CustomerFoll
 		if (invoice && invoice.organizationContactId !== customer.id) {
 			throw new BadRequestException('Invoice must belong to the selected customer.');
 		}
-		if (existing?.taskId && resolvedVehicleId === undefined && resolvedRepairOrderId === undefined && resolvedEstimateId === undefined && resolvedInvoiceId === undefined) {
+		if (
+			existing?.taskId &&
+			resolvedVehicleId === undefined &&
+			resolvedRepairOrderId === undefined &&
+			resolvedEstimateId === undefined &&
+			resolvedInvoiceId === undefined
+		) {
 			// no-op; the existing task association already belongs to the scoped follow-up.
 		}
 
@@ -307,7 +314,11 @@ export class CustomerFollowUpService extends TenantAwareCrudService<CustomerFoll
 		};
 	}
 
-	private assertScope(entity: { tenantId?: ID; organizationId?: ID }, scope: { tenantId: ID; organizationId: ID }, label: string): void {
+	private assertScope(
+		entity: { tenantId?: ID; organizationId?: ID },
+		scope: { tenantId: ID; organizationId: ID },
+		label: string
+	): void {
 		if (entity.tenantId !== scope.tenantId || entity.organizationId !== scope.organizationId) {
 			throw new BadRequestException(`${label} must belong to the current tenant and organization.`);
 		}

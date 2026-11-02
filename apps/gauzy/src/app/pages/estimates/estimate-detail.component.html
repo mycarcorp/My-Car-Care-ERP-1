@@ -3,9 +3,7 @@
 		<button nbButton size="small" status="basic" (click)="back()">
 			{{ 'ESTIMATES_PAGE.DETAIL.BACK' | translate }}
 		</button>
-		<h4 *ngIf="estimate">
-			{{ 'ESTIMATES_PAGE.DETAIL.TITLE' | translate }} #{{ estimate.estimateNumber }}
-		</h4>
+		<h4 *ngIf="estimate">{{ 'ESTIMATES_PAGE.DETAIL.TITLE' | translate }} #{{ estimate.estimateNumber }}</h4>
 	</nb-card-header>
 	<nb-card-body>
 		<div *ngIf="loading" class="estimate-detail__loading">
@@ -93,22 +91,12 @@
 
 			<div class="estimate-detail__actions">
 				<ng-container *ngxPermissionsOnly="['ORG_ESTIMATE_EDIT']">
-					<button
-						*ngIf="canFinalize()"
-						nbButton
-						status="primary"
-						(click)="finalize()"
-					>
+					<button *ngIf="canFinalize()" nbButton status="primary" (click)="finalize()">
 						{{ 'ESTIMATES_PAGE.DETAIL.FINALIZE' | translate }}
 					</button>
 				</ng-container>
 				<ng-container *ngxPermissionsOnly="['ORG_ESTIMATE_SEND']">
-					<button
-						*ngIf="canSend()"
-						nbButton
-						status="info"
-						(click)="send()"
-					>
+					<button *ngIf="canSend()" nbButton status="info" (click)="send()">
 						{{ 'ESTIMATES_PAGE.DETAIL.SEND' | translate }}
 					</button>
 				</ng-container>
@@ -135,10 +123,7 @@
 				</ng-container>
 			</div>
 
-			<div
-				*ngIf="approvalDeliveryStatus || approvalDeliveryError"
-				class="estimate-detail__delivery-state"
-			>
+			<div *ngIf="approvalDeliveryStatus || approvalDeliveryError" class="estimate-detail__delivery-state">
 				<div class="estimate-detail__row">
 					<span class="estimate-detail__label">Delivery channel</span>
 					<span>{{ approvalDeliveryChannel || 'EMAIL' }}</span>
@@ -153,7 +138,11 @@
 				</div>
 				<div
 					class="estimate-detail__delivery-actions"
-					*ngIf="(approvalDeliveryStatus === deliveryStatuses.FAILED || approvalDeliveryStatus === deliveryStatuses.UNAVAILABLE) && approvalRequestToken"
+					*ngIf="
+						(approvalDeliveryStatus === deliveryStatuses.FAILED ||
+							approvalDeliveryStatus === deliveryStatuses.UNAVAILABLE) &&
+						approvalRequestToken
+					"
 				>
 					<button
 						nbButton

@@ -183,13 +183,34 @@ describe('CustomerFollowUpService', () => {
 			jest.spyOn(RequestContext, 'currentEmployeeId').mockReturnValue(EMPLOYEE_ID);
 			jest.spyOn(RequestContext, 'currentUser').mockReturnValue({ id: 'user-1' } as never);
 			followUps = {
-				manager: { transaction: jest.fn(async (callback) => callback({ getRepository: () => ({ create: jest.fn((value) => value), save: jest.fn(async (value) => value) }) })) },
+				manager: {
+					transaction: jest.fn(async (callback) =>
+						callback({
+							getRepository: () => ({
+								create: jest.fn((value) => value),
+								save: jest.fn(async (value) => value)
+							})
+						})
+					)
+				},
 				findOne: jest.fn(async () => null),
 				save: jest.fn(async (value) => value),
 				merge: jest.fn((entity, patch) => ({ ...entity, ...patch }))
 			};
-			employees = { findOneByIdString: jest.fn(async () => ({ id: EMPLOYEE_ID, tenantId: TENANT_ID, organizationId: ORGANIZATION_ID })) };
-			organizationContacts = { findOneByIdString: jest.fn(async () => ({ id: CUSTOMER_ID, tenantId: TENANT_ID, organizationId: ORGANIZATION_ID })) };
+			employees = {
+				findOneByIdString: jest.fn(async () => ({
+					id: EMPLOYEE_ID,
+					tenantId: TENANT_ID,
+					organizationId: ORGANIZATION_ID
+				}))
+			};
+			organizationContacts = {
+				findOneByIdString: jest.fn(async () => ({
+					id: CUSTOMER_ID,
+					tenantId: TENANT_ID,
+					organizationId: ORGANIZATION_ID
+				}))
+			};
 			vehicles = { findOneByIdString: jest.fn(async () => null) };
 			repairOrders = { findOneByIdString: jest.fn(async () => null) };
 			estimates = { findOneByIdString: jest.fn(async () => null) };
@@ -278,7 +299,16 @@ describe('CustomerFollowUpService', () => {
 			dataSource = new DataSource({
 				type: 'better-sqlite3',
 				database: dbPath,
-				entities: [followUpSchema, contactSchema, vehicleSchema, repairOrderSchema, estimateSchema, invoiceSchema, taskSchema, employeeSchema],
+				entities: [
+					followUpSchema,
+					contactSchema,
+					vehicleSchema,
+					repairOrderSchema,
+					estimateSchema,
+					invoiceSchema,
+					taskSchema,
+					employeeSchema
+				],
 				synchronize: true,
 				logging: false
 			});
@@ -304,7 +334,12 @@ describe('CustomerFollowUpService', () => {
 				tenantId: '00000000-0000-4000-8000-000000000000',
 				organizationId: '11111111-1111-4111-8111-111111111111'
 			});
-			await vehicleRepository.save({ id: VEHICLE_ID, tenantId: TENANT_ID, organizationId: ORGANIZATION_ID, customerId: CUSTOMER_ID });
+			await vehicleRepository.save({
+				id: VEHICLE_ID,
+				tenantId: TENANT_ID,
+				organizationId: ORGANIZATION_ID,
+				customerId: CUSTOMER_ID
+			});
 			await repairOrderRepository.save({
 				id: REPAIR_ORDER_ID,
 				tenantId: TENANT_ID,
@@ -347,7 +382,7 @@ describe('CustomerFollowUpService', () => {
 			};
 			service = new CustomerFollowUpService(
 				followUpRepositoryAdapter as never,
-				{ } as never,
+				{} as never,
 				dependency as never,
 				dependency as never,
 				dependency as never,
@@ -398,7 +433,11 @@ describe('CustomerFollowUpService', () => {
 				sourceEventKey: 'repair-order:updated:2'
 			} as never);
 
-			const deferred = await service.defer(created.id as string, new Date('2025-01-01T00:00:00.000Z'), 'customer requested more time');
+			const deferred = await service.defer(
+				created.id as string,
+				new Date('2025-01-01T00:00:00.000Z'),
+				'customer requested more time'
+			);
 			const completed = await service.complete(created.id as string, 'completed after callback');
 			const reloaded: any = await followUpRepository.findOneByOrFail({ id: created.id as string });
 

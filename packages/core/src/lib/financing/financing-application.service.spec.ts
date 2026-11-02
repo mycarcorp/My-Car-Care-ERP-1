@@ -1,7 +1,11 @@
 import '../core/entities/internal';
 
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { CustomerWorkApprovalSubmissionStateEnum, FINANCING_ACTIVE_KEY, FinancingApplicationStatusEnum } from '@gauzy/contracts';
+import {
+	CustomerWorkApprovalSubmissionStateEnum,
+	FINANCING_ACTIVE_KEY,
+	FinancingApplicationStatusEnum
+} from '@gauzy/contracts';
 import { CrudService } from '../core/crud/crud.service';
 import { RequestContext } from '../core/context';
 import { InMemoryTenantRepository } from '../core/testing/tenant-isolation/in-memory-tenant-repository';
@@ -114,9 +118,9 @@ describe('FinancingApplicationService', () => {
 		// atomic claim is genuinely exercised: only a row matching every criteria key is updated,
 		// and `affected` reflects the real matched-row count (0 when the status precondition fails).
 		manager.update = jest.fn(async (_entity: any, criteria: any, partial: any) => {
-			const rows = (repository as any).all().filter((r: any) =>
-				Object.entries(criteria).every(([key, value]) => r[key] === value)
-			);
+			const rows = (repository as any)
+				.all()
+				.filter((r: any) => Object.entries(criteria).every(([key, value]) => r[key] === value));
 			for (const row of rows) Object.assign(row, partial);
 			return { affected: rows.length, raw: [], generatedMaps: [] };
 		});
@@ -361,10 +365,13 @@ describe('FinancingApplicationService', () => {
 			await expect(service.createApplication(validInput())).rejects.toBeInstanceOf(BadRequestException);
 		});
 
-		it.each(['DRAFT', 'SUPERSEDED', 'EXPIRED', 'CANCELLED'])('rejects an ineligible estimate status (%s)', async (status) => {
-			withEstimateStatus(status);
-			await expect(service.createApplication(validInput())).rejects.toBeInstanceOf(BadRequestException);
-		});
+		it.each(['DRAFT', 'SUPERSEDED', 'EXPIRED', 'CANCELLED'])(
+			'rejects an ineligible estimate status (%s)',
+			async (status) => {
+				withEstimateStatus(status);
+				await expect(service.createApplication(validInput())).rejects.toBeInstanceOf(BadRequestException);
+			}
+		);
 
 		it.each(['FINALIZED', 'SENT', 'VIEWED'])('accepts a customer-facing estimate status (%s)', async (status) => {
 			withEstimateStatus(status);

@@ -93,9 +93,12 @@ describe('Service Center pre-repair workflow (real DB)', () => {
 	/** Seeds the parent graph (tenant/org/customer/vehicle/technician/advisor/appointment). */
 	const seedGraph = async () => {
 		await dataSource.getRepository(Tenant).save({ id: tenant.tenantId, name: 'Test Tenant' } as any);
-		await dataSource
-			.getRepository(Organization)
-			.save({ id: tenant.organizationId, name: 'Test Org', currency: 'USD', tenant: { id: tenant.tenantId } as any } as any);
+		await dataSource.getRepository(Organization).save({
+			id: tenant.organizationId,
+			name: 'Test Org',
+			currency: 'USD',
+			tenant: { id: tenant.tenantId } as any
+		} as any);
 		await dataSource.getRepository(OrganizationContact).save(
 			dataSource.getRepository(OrganizationContact).create({
 				id: CUSTOMER_ID,
@@ -117,7 +120,10 @@ describe('Service Center pre-repair workflow (real DB)', () => {
 			} as any)
 		);
 		// Technician + advisor employees (each needs a User for the relation).
-		for (const [empId, first] of [[TECHNICIAN_ID, 'Tech'], [ADVISOR_ID, 'Advisor']] as const) {
+		for (const [empId, first] of [
+			[TECHNICIAN_ID, 'Tech'],
+			[ADVISOR_ID, 'Advisor']
+		] as const) {
 			const user = await dataSource
 				.getRepository(User)
 				.save(dataSource.getRepository(User).create({ email: `${empId}@test.local`, firstName: first }) as any);
@@ -185,16 +191,18 @@ describe('Service Center pre-repair workflow (real DB)', () => {
 		const repairOrderService = new RepairOrderService(
 			dataSource.getRepository(RepairOrder) as any,
 			{} as any,
-			{ findOneByIdString: jest.fn(async () => ({
-				id: APPOINTMENT_ID,
-				customerId: CUSTOMER_ID,
-				vehicleId: VEHICLE_ID,
-				employeeId: ADVISOR_ID,
-				originalConcern: 'Brake noise while stopping',
-				status: EmployeeAppointmentStatus.SCHEDULED,
-				tenantId: tenant.tenantId,
-				organizationId: tenant.organizationId
-			})) } as any,
+			{
+				findOneByIdString: jest.fn(async () => ({
+					id: APPOINTMENT_ID,
+					customerId: CUSTOMER_ID,
+					vehicleId: VEHICLE_ID,
+					employeeId: ADVISOR_ID,
+					originalConcern: 'Brake noise while stopping',
+					status: EmployeeAppointmentStatus.SCHEDULED,
+					tenantId: tenant.tenantId,
+					organizationId: tenant.organizationId
+				}))
+			} as any,
 			lookups.contactService as any,
 			lookups.vehicleService as any,
 			dataSource.getRepository(RepairOrder) as any, // jobs/labors/timeLogs share the RO manager? no—real repos
@@ -331,9 +339,7 @@ describe('Service Center pre-repair workflow (real DB)', () => {
 			dataSource.getRepository(Estimate) as any,
 			dataSource.getRepository(EstimateLine) as any
 		);
-		const estimateLine = await dataSource
-			.getRepository(EstimateLine)
-			.findOneByOrFail({ estimateId: estimate.id });
+		const estimateLine = await dataSource.getRepository(EstimateLine).findOneByOrFail({ estimateId: estimate.id });
 		const approval = await approvalService.submit(
 			request.id,
 			{ decisions: [{ estimateLineId: estimateLine.id, selected: true }] },
