@@ -1,0 +1,66 @@
+<nb-card class="parts">
+	<nb-card-header class="parts__header">
+		<span>{{ 'PARTS_PAGE.TITLE' | translate }}</span>
+		<input
+			nbInput
+			type="text"
+			[placeholder]="'PARTS_PAGE.SEARCH_PLACEHOLDER' | translate"
+			[(ngModel)]="search"
+			(ngModelChange)="onSearch($event)"
+			class="parts__search"
+		/>
+		<button
+			*ngxPermissionsOnly="['ORG_INVENTORY_PRODUCT_EDIT']"
+			nbButton
+			status="primary"
+			class="parts__add"
+			(click)="addPart()"
+		>
+			{{ 'PARTS_PAGE.ADD_PART' | translate }}
+		</button>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="parts__state">
+			<nb-spinner></nb-spinner>
+		</div>
+
+		<div *ngIf="!loading && loadError" class="parts__state">
+			<p>{{ 'PARTS_PAGE.LOAD_FAILED' | translate }}</p>
+			<button nbButton status="primary" (click)="load()">{{ 'BUTTONS.RETRY' | translate }}</button>
+		</div>
+
+		<div *ngIf="!loading && !loadError && filtered.length === 0" class="parts__state">
+			<p>{{ 'PARTS_PAGE.EMPTY' | translate }}</p>
+		</div>
+
+		<table *ngIf="!loading && !loadError && filtered.length > 0" class="parts__table">
+			<thead>
+				<tr>
+					<th>{{ 'PARTS_PAGE.PART_NUMBER' | translate }}</th>
+					<th>{{ 'PARTS_PAGE.MANUFACTURER' | translate }}</th>
+					<th>{{ 'PARTS_PAGE.OEM_NUMBER' | translate }}</th>
+					<th>{{ 'PARTS_PAGE.ENABLED' | translate }}</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr *ngFor="let part of filtered">
+					<td>{{ part.normalizedPartNumber }}</td>
+					<td>{{ part.manufacturer || '—' }}</td>
+					<td>{{ part.oemPartNumber || '—' }}</td>
+					<td>
+						<nb-badge
+							[text]="(part.enabled ? 'PARTS_PAGE.ACTIVE' : 'PARTS_PAGE.DISABLED') | translate"
+							[status]="part.enabled ? 'success' : 'basic'"
+						></nb-badge>
+					</td>
+					<td>
+						<button nbButton size="small" status="primary" (click)="view(part)">
+							{{ 'PARTS_PAGE.VIEW' | translate }}
+						</button>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</nb-card-body>
+</nb-card>

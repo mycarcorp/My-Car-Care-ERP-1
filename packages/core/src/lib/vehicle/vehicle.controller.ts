@@ -1,20 +1,24 @@
 import { Body, Controller, Get, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
-import { IPagination, IVehicle, PermissionsEnum } from '@gauzy/contracts';
+import { IPagination, IVehicle, IVehicleVinDecodeResult, PermissionsEnum } from '@gauzy/contracts';
 import { BaseQueryDTO, CrudController } from '../core/crud';
 import { PermissionGuard, TenantPermissionGuard } from '../shared/guards';
 import { Permissions } from '../shared/decorators';
 import { ParseJsonPipe, UUIDValidationPipe, UseValidationPipe } from '../shared/pipes';
-import { CreateVehicleDTO, UpdateVehicleDTO } from './dto';
+import { CreateVehicleDTO, DecodeVehicleVinDTO, UpdateVehicleDTO } from './dto';
 import { Vehicle } from './vehicle.entity';
+import { VehicleVinDecoderService } from './vehicle-vin-decoder.service';
 import { VehicleService } from './vehicle.service';
 
 @ApiTags('Vehicle')
 @UseGuards(TenantPermissionGuard)
 @Controller('/vehicles')
 export class VehicleController extends CrudController<Vehicle> {
-	constructor(private readonly vehicleService: VehicleService) {
+	constructor(
+		private readonly vehicleService: VehicleService,
+		private readonly vehicleVinDecoderService: VehicleVinDecoderService
+	) {
 		super(vehicleService);
 	}
 
@@ -22,6 +26,16 @@ export class VehicleController extends CrudController<Vehicle> {
 	@UseValidationPipe({ transform: true })
 	async pagination(@Query() filter: BaseQueryDTO<Vehicle>): Promise<IPagination<IVehicle>> {
 		return this.vehicleService.paginate(filter);
+	}
+
+	@Post('decode-vin')
+	@UseGuards(PermissionGuard)
+	@Permissions(PermissionsEnum.ALL_ORG_EDIT)
+	@UseValidationPipe({ transform: true })
+	@ApiOperation({ summary: 'Decode a VIN via the configured provider (server-side)' })
+	@ApiResponse({ status: HttpStatus.OK })
+	async decodeVin(@Body() input: DecodeVehicleVinDTO): Promise<IVehicleVinDecodeResult> {
+		return this.vehicleVinDecoderService.decode(input.vin);
 	}
 
 	@Get()

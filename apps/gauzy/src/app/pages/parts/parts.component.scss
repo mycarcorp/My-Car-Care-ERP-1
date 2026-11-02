@@ -1,0 +1,31 @@
+.parts {
+	&__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	&__search {
+		max-width: 20rem;
+	}
+
+	&__state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 2rem 0;
+	}
+
+	&__table {
+		width: 100%;
+		border-collapse: collapse;
+
+		th,
+		td {
+			text-align: left;
+			padding: 0.5rem 0.75rem;
+		}
+	}
+}

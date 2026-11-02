@@ -109,6 +109,7 @@ export * from './lib/job-search-occupation.model';
 export * from './lib/known-default-secrets';
 export * from './lib/language.model';
 export * from './lib/make-com.model';
+export * from './lib/marketing-event.model';
 export * from './lib/mention.model';
 export * from './lib/organization-award.model';
 export * from './lib/organization-contact.model';

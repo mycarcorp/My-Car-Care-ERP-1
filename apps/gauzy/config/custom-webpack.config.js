@@ -64,14 +64,13 @@ module.exports = {
 			}
 		]
 	},
-	// Enable persistent caching for faster rebuilds in development
+	// Enable in-memory caching for faster rebuilds in development.
+	// The Angular dev-server (nx serve) requires cache.type 'memory'; 'filesystem'
+	// is rejected by its Webpack schema validation and prevents the server starting.
 	// Note: Angular's build system may handle caching differently, so this may not have full effect
 	cache: isDev
 		? {
-				type: 'filesystem',
-				buildDependencies: {
-					config: [__filename]
-				}
+				type: 'memory'
 		  }
 		: false,
 	optimization: {

@@ -16,6 +16,7 @@ import {
 	IRepairOrderArrivalInput,
 	IRepairOrderCancelInput,
 	IRepairOrderCloseInput,
+	REPAIR_ORDER_COMPLETED_EVENT,
 	RepairOrderStatusEnum
 } from '@gauzy/contracts';
 import { RequestContext } from '../core/context';
@@ -31,6 +32,7 @@ import { VehicleService } from '../vehicle/vehicle.service';
 import { MikroOrmRepairOrderRepository } from './repository/mikro-orm-repair-order.repository';
 import { TypeOrmRepairOrderRepository } from './repository/type-orm-repair-order.repository';
 import { RepairOrder } from './repair-order.entity';
+import { MarketingEvent } from '../marketing-event/marketing-event.entity';
 
 const RO_TRANSITIONS: Record<RepairOrderStatusEnum, RepairOrderStatusEnum[]> = {
 	[RepairOrderStatusEnum.OPEN]: [RepairOrderStatusEnum.IN_PROGRESS, RepairOrderStatusEnum.CANCELLED],
@@ -183,8 +185,28 @@ export class RepairOrderService extends TenantAwareCrudService<RepairOrder> {
 		if (repairOrder.status !== RepairOrderStatusEnum.READY) {
 			throw new BadRequestException('Only a ready repair order can be closed.');
 		}
-		repairOrder.status = RepairOrderStatusEnum.CLOSED;
-		return this.typeOrmRepairOrderRepository.save(repairOrder);
+		    return this.typeOrmRepairOrderRepository.manager.transaction(async (manager) => {
+			    const repairOrderRepository = manager.getRepository(RepairOrder);
+			    const marketingEventRepository = manager.getRepository(MarketingEvent);
+			    repairOrder.status = RepairOrderStatusEnum.CLOSED;
+			    const saved = await repairOrderRepository.save(repairOrder);
+			    await marketingEventRepository.insert({
+				    eventId: randomUUID(),
+				    eventType: REPAIR_ORDER_COMPLETED_EVENT,
+				    schemaVersion: 1,
+				    idempotencyKey: `repair_order.completed:${repairOrder.tenantId}:${repairOrder.organizationId}:${repairOrder.id}`,
+				    occurredAt: new Date(),
+				    aggregateType: 'repair_order',
+				    aggregateId: repairOrder.id,
+				    repairOrderId: repairOrder.id,
+				    customerId: repairOrder.customerId,
+				    vehicleId: repairOrder.vehicleId,
+				    appointmentId: repairOrder.appointmentId,
+				    tenantId: repairOrder.tenantId,
+				    organizationId: repairOrder.organizationId
+			    });
+			    return saved;
+		    });
 	}
 
 	async cancel(id: ID, input: IRepairOrderCancelInput): Promise<RepairOrder> {

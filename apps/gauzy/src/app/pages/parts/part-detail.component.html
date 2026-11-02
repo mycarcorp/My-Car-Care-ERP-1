@@ -1,0 +1,135 @@
+<nb-card class="part-detail">
+	<nb-card-header class="part-detail__header">
+		<button nbButton status="basic" size="small" (click)="back()">
+			{{ 'PARTS_PAGE.DETAIL.BACK' | translate }}
+		</button>
+		<span>{{ 'PARTS_PAGE.DETAIL.TITLE' | translate }}</span>
+		<button
+			*ngIf="part"
+			*ngxPermissionsOnly="['ORG_INVENTORY_PRODUCT_EDIT']"
+			nbButton
+			status="primary"
+			size="small"
+			class="part-detail__edit"
+			(click)="edit()"
+		>
+			{{ 'PARTS_PAGE.DETAIL.EDIT' | translate }}
+		</button>
+		<button
+			*ngIf="part"
+			*ngxPermissionsOnly="['ORG_INVENTORY_PRODUCT_EDIT']"
+			nbButton
+			status="info"
+			size="small"
+			class="part-detail__adjust"
+			(click)="adjustStock()"
+		>
+			{{ 'PARTS_PAGE.DETAIL.ADJUST_STOCK' | translate }}
+		</button>
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="part-detail__state"><nb-spinner></nb-spinner></div>
+
+		<div *ngIf="!loading && notFound" class="part-detail__state">
+			<p>{{ 'PARTS_PAGE.DETAIL.NOT_FOUND' | translate }}</p>
+		</div>
+
+		<ng-container *ngIf="!loading && !notFound && part">
+			<section class="part-detail__section">
+				<h4>{{ 'PARTS_PAGE.DETAIL.DETAILS' | translate }}</h4>
+				<div class="part-detail__grid">
+					<div><strong>{{ 'PARTS_PAGE.PART_NUMBER' | translate }}:</strong> {{ part.normalizedPartNumber }}</div>
+					<div><strong>{{ 'PARTS_PAGE.MANUFACTURER' | translate }}:</strong> {{ part.manufacturer || '—' }}</div>
+					<div><strong>{{ 'PARTS_PAGE.OEM_NUMBER' | translate }}:</strong> {{ part.oemPartNumber || '—' }}</div>
+					<div><strong>{{ 'PARTS_PAGE.AFTERMARKET_NUMBER' | translate }}:</strong> {{ part.aftermarketPartNumber || '—' }}</div>
+					<div><strong>{{ 'PARTS_PAGE.DETAIL.BARCODE' | translate }}:</strong> {{ part.barcode || '—' }}</div>
+					<div>
+						<strong>{{ 'PARTS_PAGE.ENABLED' | translate }}:</strong>
+						<nb-badge
+							[text]="(part.enabled ? 'PARTS_PAGE.ACTIVE' : 'PARTS_PAGE.DISABLED') | translate"
+							[status]="part.enabled ? 'success' : 'basic'"
+						></nb-badge>
+					</div>
+				</div>
+			</section>
+
+			<section class="part-detail__section">
+				<h4>{{ 'PARTS_PAGE.DETAIL.STOCK' | translate }}</h4>
+				<p class="part-detail__total">
+					<strong>{{ 'PARTS_PAGE.DETAIL.TOTAL_ON_HAND' | translate }}:</strong> {{ totalOnHand }}
+				</p>
+				<p *ngIf="stock.length === 0" class="part-detail__muted">
+					{{ 'PARTS_PAGE.DETAIL.NO_STOCK' | translate }}
+				</p>
+				<table *ngIf="stock.length > 0" class="part-detail__table">
+					<thead>
+						<tr>
+							<th>{{ 'PARTS_PAGE.DETAIL.WAREHOUSE' | translate }}</th>
+							<th>{{ 'PARTS_PAGE.DETAIL.QUANTITY' | translate }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr *ngFor="let s of stock">
+							<td>{{ s.warehouseProduct?.warehouse?.name || '—' }}</td>
+							<td>{{ s.quantity }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+
+			<section class="part-detail__section">
+				<h4>{{ 'PARTS_PAGE.DETAIL.SUPPLIERS' | translate }}</h4>
+				<p *ngIf="vendors.length === 0" class="part-detail__muted">
+					{{ 'PARTS_PAGE.DETAIL.NO_SUPPLIERS' | translate }}
+				</p>
+				<table *ngIf="vendors.length > 0" class="part-detail__table">
+					<thead>
+						<tr>
+							<th>{{ 'PARTS_PAGE.DETAIL.SUPPLIER_PART_NUMBER' | translate }}</th>
+							<th>{{ 'PARTS_PAGE.DETAIL.SUPPLIER_COST' | translate }}</th>
+							<th>{{ 'PARTS_PAGE.DETAIL.LEAD_TIME_DAYS' | translate }}</th>
+							<th>{{ 'PARTS_PAGE.DETAIL.PREFERRED' | translate }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr *ngFor="let v of vendors">
+							<td>{{ v.supplierPartNumber || '—' }}</td>
+							<td>{{ v.supplierCost ?? '—' }}</td>
+							<td>{{ v.leadTimeDays ?? '—' }}</td>
+							<td>{{ (v.preferred ? 'BUTTONS.YES' : 'BUTTONS.NO') | translate }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+
+			<section class="part-detail__section">
+				<h4>{{ 'PARTS_PAGE.DETAIL.MOVEMENTS' | translate }}</h4>
+				<p *ngIf="movements.length === 0" class="part-detail__muted">
+					{{ 'PARTS_PAGE.DETAIL.NO_MOVEMENTS' | translate }}
+				</p>
+				<table *ngIf="movements.length > 0" class="part-detail__table">
+					<thead>
+						<tr>
+							<th>{{ 'PARTS_PAGE.DETAIL.TYPE' | translate }}</th>
+							<th>{{ 'PARTS_PAGE.DETAIL.QUANTITY_DELTA' | translate }}</th>
+							<th>{{ 'PARTS_PAGE.DETAIL.BEFORE' | translate }}</th>
+							<th>{{ 'PARTS_PAGE.DETAIL.AFTER' | translate }}</th>
+							<th>{{ 'PARTS_PAGE.DETAIL.UNIT_COST' | translate }}</th>
+							<th>{{ 'PARTS_PAGE.DETAIL.REASON' | translate }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr *ngFor="let m of movements">
+							<td>{{ m.type }}</td>
+							<td>{{ m.quantityDelta }}</td>
+							<td>{{ m.quantityBefore }}</td>
+							<td>{{ m.quantityAfter }}</td>
+							<td>{{ m.unitCost ?? '—' }}</td>
+							<td>{{ m.reason || '—' }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+		</ng-container>
+	</nb-card-body>
+</nb-card>

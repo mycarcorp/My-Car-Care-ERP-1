@@ -64,6 +64,9 @@
 				>
 					{{ 'REPAIR_ORDERS_PAGE.DETAIL.GENERATE_INVOICE' | translate }}
 				</button>
+				<button *ngIf="canGenerateInvoice()" nbButton status="basic" (click)="viewInvoice()">
+					{{ 'REPAIR_ORDERS_PAGE.DETAIL.VIEW_INVOICE' | translate }}
+				</button>
 				<button *ngIf="canClose()" nbButton status="success" (click)="close()" [disabled]="!canClose()">
 					{{ 'REPAIR_ORDERS_PAGE.DETAIL.CLOSE' | translate }}
 				</button>

@@ -99,18 +99,48 @@ export class RepairOrderDetailComponent extends TranslationBaseComponent impleme
 	}
 
 	/**
-	 * Generates the DRAFT invoice for this repair order via the authoritative backend action.
+	 * Generates the DRAFT invoice for this repair order via the authoritative backend
+	 * action, then navigates to the generated invoice (the backend is idempotent and
+	 * returns the existing invoice on repeat calls).
 	 */
 	async generateInvoice(): Promise<void> {
 		if (!this.canGenerateInvoice()) {
 			return;
 		}
 		try {
-			await this.api.generateInvoice(this.repairOrder.id);
+			const invoice = await this.api.generateInvoice(this.repairOrder.id);
 			this.toastrService.success(
 				this.getTranslation('REPAIR_ORDERS_PAGE.DETAIL.INVOICE_GENERATED'),
 				this.getTranslation('TOASTR.TITLE.SUCCESS')
 			);
+			if (invoice?.id) {
+				this.router.navigate(['/pages/invoices/view', invoice.id]);
+			}
+		} catch (error) {
+			this.toastrService.danger(
+				error?.error?.message ||
+					error?.message ||
+					this.getTranslation('REPAIR_ORDERS_PAGE.DETAIL.INVOICE_FAILED'),
+				this.getTranslation('TOASTR.TITLE.ERROR')
+			);
+		}
+	}
+
+	/**
+	 * Opens the invoice already generated for this repair order, if one exists, by
+	 * resolving it via the generic invoices endpoint filtered by repairOrderId.
+	 */
+	async viewInvoice(): Promise<void> {
+		try {
+			const invoice = await this.api.getInvoiceForRepairOrder(this.repairOrder.id);
+			if (invoice?.id) {
+				this.router.navigate(['/pages/invoices/view', invoice.id]);
+			} else {
+				this.toastrService.info(
+					this.getTranslation('REPAIR_ORDERS_PAGE.DETAIL.NO_INVOICE'),
+					this.getTranslation('TOASTR.TITLE.INFO')
+				);
+			}
 		} catch (error) {
 			this.toastrService.danger(
 				error?.error?.message ||

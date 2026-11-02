@@ -31,6 +31,7 @@ export class VehicleMutationComponent implements OnInit {
 	public currentMileage: number;
 	public loading = false;
 	public submitting = false;
+	public decodingVin = false;
 	public organization: IOrganization;
 
 	private readonly dialogRef = inject<NbDialogRef<VehicleMutationComponent>>(NbDialogRef);
@@ -92,6 +93,52 @@ export class VehicleMutationComponent implements OnInit {
 			);
 		} finally {
 			this.loading = false;
+		}
+	}
+
+	/**
+	 * Decodes the entered VIN via the server-side provider (`POST /vehicles/decode-vin`)
+	 * and prefills only empty fields. Existing user-entered values are never
+	 * overwritten — the user reviews and confirms before saving.
+	 */
+	async decodeVin(): Promise<void> {
+		const vin = this.vinNormalized?.trim();
+		if (!vin) {
+			this.toastr.warning(
+				this.getTranslation('VEHICLES_PAGE.MUTATION.DECODE_REQUIRES_VIN'),
+				this.getTranslation('TOASTR.TITLE.WARNING')
+			);
+			return;
+		}
+		this.decodingVin = true;
+		try {
+			const result = await this.api.decodeVin(vin);
+			if (!this.year && result.year) {
+				this.year = result.year;
+			}
+			if (!this.make?.trim() && result.make) {
+				this.make = result.make;
+			}
+			if (!this.model?.trim() && result.model) {
+				this.model = result.model;
+			}
+			if (!this.color?.trim() && result.raw && typeof result.raw === 'object') {
+				const color = (result.raw as any)?.attributes?.exterior_color;
+				if (typeof color === 'string' && color.trim()) {
+					this.color = color.trim();
+				}
+			}
+			this.toastr.success(
+				this.getTranslation('VEHICLES_PAGE.MUTATION.DECODE_SUCCESS'),
+				this.getTranslation('TOASTR.TITLE.SUCCESS')
+			);
+		} catch (error) {
+			this.toastr.danger(
+				error?.error?.message || error?.message || this.getTranslation('VEHICLES_PAGE.MUTATION.DECODE_FAILED'),
+				this.getTranslation('TOASTR.TITLE.ERROR')
+			);
+		} finally {
+			this.decodingVin = false;
 		}
 	}
 

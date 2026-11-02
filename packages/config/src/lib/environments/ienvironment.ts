@@ -165,6 +165,11 @@ export interface IEnvironment {
 
 	gauzyCloudEndpoint?: string;
 
+	/** Optional CarsXE VIN-decoder API key (server-side only; never exposed to the client). */
+	carsxeApiKey?: string;
+	/** Optional override for the CarsXE API base URL. Defaults to https://api.carsxe.com. */
+	carsxeApiBaseUrl?: string;
+
 	smtpConfig?: ISMTPConfig;
 	defaultCurrency: string;
 

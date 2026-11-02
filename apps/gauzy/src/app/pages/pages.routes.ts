@@ -36,6 +36,7 @@ export const getPagesRoutes = (_pageRouteRegistryService: PageRouteRegistryServi
 		...getRepairOrdersRoute(),
 		...getCustomerFollowUpsRoute(),
 		...getVehiclesRoute(),
+		...getPartsRoute(),
 		...getEstimatesRoute(),
 		...getInspectionsRoute(),
 		...getDiagnosticsRoute(),
@@ -212,6 +213,18 @@ function getVehiclesRoute(): Route[] {
 		{
 			path: 'vehicles',
 			loadChildren: () => import('./vehicles/vehicles.module').then((m) => m.VehiclesModule)
+		}
+	];
+}
+
+/**
+ * Gets the parts & inventory route.
+ */
+function getPartsRoute(): Route[] {
+	return [
+		{
+			path: 'parts',
+			loadChildren: () => import('./parts/parts.module').then((m) => m.PartsModule)
 		}
 	];
 }

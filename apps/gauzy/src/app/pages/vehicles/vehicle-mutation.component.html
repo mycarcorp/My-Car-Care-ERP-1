@@ -9,14 +9,27 @@
 		<ng-container *ngIf="!loading">
 			<div class="form-group">
 				<label for="vin">{{ 'VEHICLES_PAGE.VIN' | translate }} *</label>
-				<input
-					id="vin"
-					nbInput
-					type="text"
-					fullWidth
-					[placeholder]="'VEHICLES_PAGE.MUTATION.VIN_PLACEHOLDER' | translate"
-					[(ngModel)]="vinNormalized"
-				/>
+				<div class="vehicle-mutation__vin-row">
+					<input
+						id="vin"
+						nbInput
+						type="text"
+						fullWidth
+						[placeholder]="'VEHICLES_PAGE.MUTATION.VIN_PLACEHOLDER' | translate"
+						[(ngModel)]="vinNormalized"
+					/>
+					<button
+						nbButton
+						status="info"
+						size="small"
+						type="button"
+						(click)="decodeVin()"
+						[disabled]="decodingVin || !vinNormalized"
+						class="vehicle-mutation__decode-btn"
+					>
+						{{ (decodingVin ? 'VEHICLES_PAGE.MUTATION.DECODING' : 'VEHICLES_PAGE.MUTATION.DECODE_VIN') | translate }}
+					</button>
+				</div>
 			</div>
 			<div class="form-group">
 				<label for="year">{{ 'VEHICLES_PAGE.YEAR' | translate }}</label>

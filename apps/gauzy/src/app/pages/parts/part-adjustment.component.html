@@ -1,0 +1,85 @@
+<nb-card class="part-adjustment">
+	<nb-card-header>{{ 'PARTS_PAGE.ADJUST.TITLE' | translate }}</nb-card-header>
+	<nb-card-body>
+		<div class="form-group">
+			<label for="balance">{{ 'PARTS_PAGE.ADJUST.WAREHOUSE' | translate }} *</label>
+			<nb-select
+				id="balance"
+				fullWidth
+				[placeholder]="'PARTS_PAGE.ADJUST.WAREHOUSE_PLACEHOLDER' | translate"
+				[(ngModel)]="selectedBalanceId"
+			>
+				<nb-option *ngFor="let balance of balances" [value]="balance.id">
+					{{ balanceLabel(balance) }}
+				</nb-option>
+			</nb-select>
+			<p *ngIf="balances.length === 0" class="part-adjustment__hint">
+				{{ 'PARTS_PAGE.ADJUST.NO_BALANCE' | translate }}
+			</p>
+		</div>
+
+		<div class="form-group">
+			<label>{{ 'PARTS_PAGE.ADJUST.DIRECTION' | translate }} *</label>
+			<div class="part-adjustment__direction">
+				<nb-radio-group [(ngModel)]="direction">
+					<nb-radio [value]="directionIn">{{ 'PARTS_PAGE.ADJUST.IN' | translate }}</nb-radio>
+					<nb-radio [value]="directionOut">{{ 'PARTS_PAGE.ADJUST.OUT' | translate }}</nb-radio>
+				</nb-radio-group>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<label for="quantity">{{ 'PARTS_PAGE.ADJUST.QUANTITY' | translate }} *</label>
+			<input
+				id="quantity"
+				nbInput
+				type="number"
+				min="0.001"
+				step="0.001"
+				fullWidth
+				[placeholder]="'PARTS_PAGE.ADJUST.QUANTITY_PLACEHOLDER' | translate"
+				[(ngModel)]="quantity"
+			/>
+		</div>
+
+		<div class="form-group">
+			<label for="reason">{{ 'PARTS_PAGE.ADJUST.REASON' | translate }} *</label>
+			<nb-select
+				id="reason"
+				fullWidth
+				[placeholder]="'PARTS_PAGE.ADJUST.REASON_PLACEHOLDER' | translate"
+				[(ngModel)]="reason"
+			>
+				<nb-option *ngFor="let r of reasons" [value]="r">
+					{{ 'PARTS_PAGE.ADJUST.REASONS.' + r | translate }}
+				</nb-option>
+			</nb-select>
+		</div>
+
+		<div class="form-group">
+			<label for="notes">
+				{{ 'PARTS_PAGE.ADJUST.NOTES' | translate }}<span *ngIf="isOtherReason"> *</span>
+			</label>
+			<textarea
+				id="notes"
+				nbInput
+				fullWidth
+				[placeholder]="'PARTS_PAGE.ADJUST.NOTES_PLACEHOLDER' | translate"
+				[(ngModel)]="notes"
+			></textarea>
+		</div>
+	</nb-card-body>
+	<nb-card-footer class="part-adjustment__footer">
+		<button nbButton status="basic" (click)="close()" [disabled]="submitting">
+			{{ 'PARTS_PAGE.ADJUST.CANCEL' | translate }}
+		</button>
+		<button
+			nbButton
+			status="primary"
+			(click)="submit()"
+			[disabled]="submitting || balances.length === 0"
+		>
+			{{ 'PARTS_PAGE.ADJUST.SUBMIT' | translate }}
+		</button>
+	</nb-card-footer>
+</nb-card>

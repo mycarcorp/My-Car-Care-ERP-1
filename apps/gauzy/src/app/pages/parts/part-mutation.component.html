@@ -1,0 +1,96 @@
+<nb-card class="part-mutation">
+	<nb-card-header>
+		{{ (isEdit ? 'PARTS_PAGE.MUTATION.EDIT_TITLE' : 'PARTS_PAGE.MUTATION.ADD_TITLE') | translate }}
+	</nb-card-header>
+	<nb-card-body>
+		<div *ngIf="loading" class="part-mutation__loading">
+			<nb-spinner></nb-spinner>
+		</div>
+		<ng-container *ngIf="!loading">
+			<div class="form-group" *ngIf="!isEdit">
+				<label for="variant">{{ 'PARTS_PAGE.MUTATION.VARIANT' | translate }} *</label>
+				<nb-select
+					id="variant"
+					fullWidth
+					[placeholder]="'PARTS_PAGE.MUTATION.VARIANT_PLACEHOLDER' | translate"
+					[(ngModel)]="productVariantId"
+				>
+					<nb-option *ngFor="let variant of variants" [value]="variant.id">
+						{{ variantLabel(variant) }}
+					</nb-option>
+				</nb-select>
+			</div>
+			<div class="form-group">
+				<label for="partNumber">{{ 'PARTS_PAGE.MUTATION.PART_NUMBER' | translate }} *</label>
+				<input
+					id="partNumber"
+					nbInput
+					type="text"
+					fullWidth
+					[placeholder]="'PARTS_PAGE.MUTATION.PART_NUMBER_PLACEHOLDER' | translate"
+					[(ngModel)]="normalizedPartNumber"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="manufacturer">{{ 'PARTS_PAGE.MUTATION.MANUFACTURER' | translate }}</label>
+				<input
+					id="manufacturer"
+					nbInput
+					type="text"
+					fullWidth
+					[(ngModel)]="manufacturer"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="oem">{{ 'PARTS_PAGE.MUTATION.OEM_NUMBER' | translate }}</label>
+				<input
+					id="oem"
+					nbInput
+					type="text"
+					fullWidth
+					[(ngModel)]="oemPartNumber"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="aftermarket">{{ 'PARTS_PAGE.MUTATION.AFTERMARKET_NUMBER' | translate }}</label>
+				<input
+					id="aftermarket"
+					nbInput
+					type="text"
+					fullWidth
+					[(ngModel)]="aftermarketPartNumber"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="barcode">{{ 'PARTS_PAGE.MUTATION.BARCODE' | translate }}</label>
+				<input
+					id="barcode"
+					nbInput
+					type="text"
+					fullWidth
+					[(ngModel)]="barcode"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="internalNotes">{{ 'PARTS_PAGE.MUTATION.INTERNAL_NOTES' | translate }}</label>
+				<textarea
+					id="internalNotes"
+					nbInput
+					fullWidth
+					[(ngModel)]="internalNotes"
+				></textarea>
+			</div>
+			<div class="form-group part-mutation__enabled">
+				<nb-checkbox [(ngModel)]="enabled">{{ 'PARTS_PAGE.MUTATION.ENABLED' | translate }}</nb-checkbox>
+			</div>
+		</ng-container>
+	</nb-card-body>
+	<nb-card-footer class="part-mutation__footer">
+		<button nbButton status="basic" (click)="close()" [disabled]="submitting">
+			{{ 'PARTS_PAGE.MUTATION.CANCEL' | translate }}
+		</button>
+		<button nbButton status="primary" (click)="submit()" [disabled]="submitting">
+			{{ (isEdit ? 'PARTS_PAGE.MUTATION.SAVE' : 'PARTS_PAGE.MUTATION.CREATE') | translate }}
+		</button>
+	</nb-card-footer>
+</nb-card>

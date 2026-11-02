@@ -1,0 +1,20 @@
+.part-adjustment {
+	min-width: 24rem;
+	max-width: 32rem;
+
+	&__direction {
+		display: flex;
+		gap: 1rem;
+	}
+
+	&__hint {
+		margin-top: 0.5rem;
+		font-size: 0.85rem;
+	}
+
+	&__footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.5rem;
+	}
+}

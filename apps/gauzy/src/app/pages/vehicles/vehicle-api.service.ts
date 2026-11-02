@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { ID, IPagination, IVehicle } from '@gauzy/contracts';
+import { ID, IPagination, IVehicle, IVehicleVinDecodeResult } from '@gauzy/contracts';
 import { API_PREFIX } from '@gauzy/ui-core/common';
 
 @Injectable({ providedIn: 'root' })
@@ -9,6 +9,17 @@ export class VehicleApiService {
 	private readonly baseUrl = API_PREFIX;
 
 	constructor(private readonly http: HttpClient) {}
+
+	/**
+	 * Decodes a VIN server-side via `POST /vehicles/decode-vin`
+	 * (backend permission: PermissionsEnum.ALL_ORG_EDIT). The provider key never
+	 * reaches the client.
+	 */
+	decodeVin(vin: string): Promise<IVehicleVinDecodeResult> {
+		return firstValueFrom(
+			this.http.post<IVehicleVinDecodeResult>(`${this.baseUrl}/vehicles/decode-vin`, { vin })
+		);
+	}
 
 	/**
 	 * Programmatic list access; the list page itself is backed by a ServerDataSource

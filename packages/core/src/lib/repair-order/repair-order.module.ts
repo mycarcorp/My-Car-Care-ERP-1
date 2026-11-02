@@ -10,6 +10,7 @@ import { PartStockMovement } from '../automotive-part/part-stock-movement.entity
 import { EstimateLine } from '../estimate/estimate-line.entity';
 import { Invoice } from '../invoice/invoice.entity';
 import { InvoiceModule } from '../invoice/invoice.module';
+import { MarketingEvent } from '../marketing-event/marketing-event.entity';
 import { InvoiceItemModule } from '../invoice-item/invoice-item.module';
 import { TimeLog } from '../time-tracking/time-log/time-log.entity';
 import { EmployeeAppointmentModule } from '../employee-appointment/employee-appointment.module';
@@ -35,7 +36,8 @@ import { ServiceHistoryService } from './service-history.service';
 			EstimateLine,
 			PartStockMovement,
 			AutomotivePartProfile,
-			Invoice
+						Invoice,
+						MarketingEvent
 		]),
 		MikroOrmModule.forFeature([
 			RepairOrder,
@@ -46,7 +48,8 @@ import { ServiceHistoryService } from './service-history.service';
 			EstimateLine,
 			PartStockMovement,
 			AutomotivePartProfile,
-			Invoice
+						Invoice,
+						MarketingEvent
 		]),
 		EmployeeAppointmentModule,
 		OrganizationContactModule,

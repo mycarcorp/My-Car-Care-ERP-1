@@ -293,6 +293,8 @@ export const environment: IEnvironment = {
 	gauzyAIRESTEndpoint: process.env.GAUZY_AI_REST_ENDPOINT,
 
 	gauzyCloudEndpoint: process.env.GAUZY_CLOUD_ENDPOINT,
+	carsxeApiKey: process.env.CARSXE_API_KEY,
+	carsxeApiBaseUrl: process.env.CARSXE_API_BASE_URL,
 
 	smtpConfig: {
 		host: process.env.MAIL_HOST,

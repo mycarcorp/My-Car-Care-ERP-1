@@ -1,0 +1,20 @@
+.part-mutation {
+	min-width: 24rem;
+	max-width: 32rem;
+
+	&__loading {
+		display: flex;
+		justify-content: center;
+		padding: 2rem 0;
+	}
+
+	&__footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.5rem;
+	}
+
+	&__enabled {
+		margin-bottom: 0;
+	}
+}

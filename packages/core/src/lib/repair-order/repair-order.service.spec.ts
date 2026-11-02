@@ -10,6 +10,7 @@ import { createTenantFixture } from '../core/testing/tenant-isolation/tenant-iso
 import { MultiORMEnum } from '../core/utils';
 import { RepairOrder } from './repair-order.entity';
 import { RepairOrderService } from './repair-order.service';
+import { MarketingEvent } from '../marketing-event/marketing-event.entity';
 
 describe('RepairOrderService vehicle arrival', () => {
 	type ScopeOverride = {
@@ -212,6 +213,9 @@ describe('RepairOrderService vehicle arrival', () => {
 
 describe('RepairOrderService lifecycle', () => {
 	const REPAIR_ORDER_ID = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d';
+	const APPOINTMENT_ID = '2a48a729-7dd1-4a96-a79e-8426d34d7e5d';
+	const CUSTOMER_ID = '17bc6abf-1462-4774-a05f-0becdf2940d0';
+	const VEHICLE_ID = '3d3a26b3-d31a-42a3-a044-c23a7eeb8a2f';
 	const LABOR_ID = '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b';
 	let service: RepairOrderService;
 	let tenant: ReturnType<typeof createTenantFixture>;
@@ -219,16 +223,20 @@ describe('RepairOrderService lifecycle', () => {
 	let jobs: InMemoryTenantRepository;
 	let labors: InMemoryTenantRepository;
 	let timeLogs: InMemoryTenantRepository;
+	let marketingEvents: Array<Partial<MarketingEvent>>;
+	let transactionFailure: Error | undefined;
 
 	const seedRepairOrder = (status: RepairOrderStatusEnum, overrides: Record<string, unknown> = {}) =>
 		repairOrders.seed({
 			id: REPAIR_ORDER_ID,
 			tenantId: tenant.tenantId,
 			organizationId: tenant.organizationId,
+						appointmentId: APPOINTMENT_ID,
+						customerId: CUSTOMER_ID,
+						vehicleId: VEHICLE_ID,
 			status,
 			...overrides
 		} as RepairOrder);
-
 	const seedJob = (id: string, status: AutomotiveJobStatusEnum) =>
 		jobs.seed({
 			id,
@@ -262,6 +270,34 @@ describe('RepairOrderService lifecycle', () => {
 		jobs = new InMemoryTenantRepository(new Set(['id', 'tenantId', 'organizationId']));
 		labors = new InMemoryTenantRepository(new Set(['id', 'tenantId', 'organizationId']));
 		timeLogs = new InMemoryTenantRepository(new Set(['id', 'tenantId', 'organizationId']));
+		marketingEvents = [];
+		transactionFailure = undefined;
+		(repairOrders as any).manager = {
+			transaction: async (work: (manager: any) => Promise<any>) => {
+				const originalStatus = (await repairOrders.findOneBy({ id: REPAIR_ORDER_ID }))?.status;
+				const eventCount = marketingEvents.length;
+				try {
+					const result = await work({
+						getRepository: (entity: unknown) =>
+							entity === RepairOrder
+								? repairOrders
+								: {
+									  insert: async (event: Partial<MarketingEvent>) => {
+										  marketingEvents.push(event);
+										  if (transactionFailure) throw transactionFailure;
+										  return { identifiers: [], generatedMaps: [], raw: [] };
+									  }
+								  }
+					});
+					return result;
+				} catch (error) {
+					const repairOrder = await repairOrders.findOneBy({ id: REPAIR_ORDER_ID });
+					if (repairOrder && originalStatus) repairOrder.status = originalStatus;
+					marketingEvents.splice(eventCount);
+					throw error;
+				}
+			}
+		};
 		service = new RepairOrderService(
 			repairOrders as any,
 			{} as any,
@@ -385,6 +421,22 @@ describe('RepairOrderService lifecycle', () => {
 		const result = await service.close(REPAIR_ORDER_ID, {});
 
 		expect(result.status).toBe(RepairOrderStatusEnum.CLOSED);
+		expect(marketingEvents).toHaveLength(1);
+		expect(marketingEvents[0]).toMatchObject({
+			eventType: 'repair_order.completed',
+			schemaVersion: 1,
+			tenantId: tenant.tenantId,
+			organizationId: tenant.organizationId,
+			aggregateType: 'repair_order',
+			aggregateId: REPAIR_ORDER_ID,
+			repairOrderId: REPAIR_ORDER_ID,
+			customerId: CUSTOMER_ID,
+			vehicleId: VEHICLE_ID,
+			appointmentId: APPOINTMENT_ID
+		});
+		expect(marketingEvents[0]?.idempotencyKey).toBe(
+			`repair_order.completed:${tenant.tenantId}:${tenant.organizationId}:${REPAIR_ORDER_ID}`
+		);
 	});
 
 	it('returns an already closed repair order without changes', async () => {
@@ -395,14 +447,25 @@ describe('RepairOrderService lifecycle', () => {
 
 		expect(result.status).toBe(RepairOrderStatusEnum.CLOSED);
 		expect(saveSpy).not.toHaveBeenCalled();
+		expect(marketingEvents).toHaveLength(0);
 	});
 
+	it('rolls back the repair-order status and event together', async () => {
+		seedRepairOrder(RepairOrderStatusEnum.READY);
+		transactionFailure = new Error('outbox insert failed');
+
+		await expect(service.close(REPAIR_ORDER_ID, {})).rejects.toThrow('outbox insert failed');
+
+		expect((await repairOrders.findOneBy({ id: REPAIR_ORDER_ID }))?.status).toBe(RepairOrderStatusEnum.READY);
+		expect(marketingEvents).toHaveLength(0);
+	});
 	it.each([RepairOrderStatusEnum.OPEN, RepairOrderStatusEnum.IN_PROGRESS])(
 		'rejects closing a %s repair order',
 		async (status) => {
 			seedRepairOrder(status);
 
 			await expect(service.close(REPAIR_ORDER_ID, {})).rejects.toBeInstanceOf(BadRequestException);
+			expect(marketingEvents).toHaveLength(0);
 		}
 	);
 

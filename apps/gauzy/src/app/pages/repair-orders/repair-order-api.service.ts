@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import {
 	ID,
+	IInvoice,
 	IPagination,
 	IRepairOrder,
 	IRepairOrderArrivalInput,
@@ -38,8 +39,20 @@ export class RepairOrderApiService {
 		return firstValueFrom(this.http.patch<IRepairOrder>(`${this.baseUrl}/repair-orders/${id}/cancel`, body));
 	}
 
-	generateInvoice(id: ID): Promise<unknown> {
-		return firstValueFrom(this.http.post(`${this.baseUrl}/repair-orders/${id}/invoice`, {}));
+	generateInvoice(id: ID): Promise<IInvoice> {
+		return firstValueFrom(this.http.post<IInvoice>(`${this.baseUrl}/repair-orders/${id}/invoice`, {}));
+	}
+
+	/**
+	 * Finds the invoice generated for a repair order, if any, via the generic
+	 * invoices endpoint filtered by repairOrderId.
+	 */
+	async getInvoiceForRepairOrder(repairOrderId: ID): Promise<IInvoice | undefined> {
+		const data = JSON.stringify({ findInput: { repairOrderId } });
+		const { items } = await firstValueFrom(
+			this.http.get<IPagination<IInvoice>>(`${API_PREFIX}/invoices`, { params: { data } })
+		);
+		return items?.[0];
 	}
 
 	getHistory(id: ID): Promise<IServiceHistoryRecord> {
